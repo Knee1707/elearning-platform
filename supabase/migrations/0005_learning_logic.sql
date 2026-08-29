@@ -1,0 +1,70 @@
+-- =====================================================================
+-- 0005_learning_logic.sql  ·  Chủ: M2
+-- Hàm/trigger học tập, chấm điểm, chứng chỉ, điểm danh, Q&A, thông báo.
+-- BỎ COMMENT từng khối rồi ĐIỀN THÂN. Tên phải khớp DATA_DICTIONARY.md.
+-- Chạy sau 0004, trước 0006.
+-- =====================================================================
+
+-- ------------------------------------------------------------------ --
+-- Tiến độ: cập nhật % xem, lưu vị trí, đánh dấu hoàn thành
+-- ------------------------------------------------------------------ --
+-- create or replace function fn_update_watch(p_lesson uuid, p_percent int)
+-- returns void language plpgsql security invoker set search_path = public as $$
+-- begin
+--   insert into lesson_progress (user_id, lesson_id, watched_percent)
+--   values (auth.uid(), p_lesson, greatest(0, least(100, p_percent)))
+--   on conflict (user_id, lesson_id)
+--   do update set watched_percent = greatest(lesson_progress.watched_percent, excluded.watched_percent),
+--                 updated_at = now();
+-- end $$;
+
+-- create or replace function fn_save_position(p_lesson uuid, p_seconds int)  -- TODO(M2)
+-- create or replace function fn_mark_complete(p_lesson uuid)                  -- TODO(M2)
+
+-- ------------------------------------------------------------------ --
+-- ĐIỂM DANH VIDEO (tự động): % >= ngưỡng system_setting → attendance(video)
+--   Ngưỡng: (fn_get_setting('attendance_video_percent') #>> '{}')::int  (mặc định 95)
+--   Bảng attendance: source='video', lesson_id set, live_session_id NULL.
+--   course_id lấy qua fn_lesson_course(p.lesson_id). Chống trùng: on conflict do nothing.
+-- ------------------------------------------------------------------ --
+-- create or replace function fn_attendance_on_video()
+-- returns trigger language plpgsql security definer set search_path = public as $$
+-- declare v_threshold int := coalesce((fn_get_setting('attendance_video_percent') #>> '{}')::int, 95);
+-- begin
+--   if new.watched_percent >= v_threshold then
+--     insert into attendance (user_id, course_id, source, lesson_id)
+--     values (new.user_id, fn_lesson_course(new.lesson_id), 'video', new.lesson_id)
+--     on conflict do nothing;
+--   end if;
+--   return new;
+-- end $$;
+-- create trigger trg_attendance_on_video
+--   after insert or update of watched_percent on lesson_progress
+--   for each row execute function fn_attendance_on_video();
+
+-- ------------------------------------------------------------------ --
+-- fn_join_live_session(p_live) → ghi attendance(live) rồi trả meet_url
+-- ------------------------------------------------------------------ --
+-- create or replace function fn_join_live_session(p_live uuid)
+-- returns text language plpgsql security definer set search_path = public as $$
+-- declare v_ls live_sessions%rowtype;
+-- begin
+--   select * into v_ls from live_sessions where id = p_live;
+--   if not found then raise exception 'Không thấy buổi live'; end if;
+--   insert into attendance (user_id, course_id, source, live_session_id)
+--   values (auth.uid(), v_ls.course_id, 'live', p_live)
+--   on conflict do nothing;
+--   return v_ls.meet_url;
+-- end $$;
+
+-- ------------------------------------------------------------------ --
+-- Còn lại (viết theo DATA_DICTIONARY.md mục 6):
+--   view_course_progress
+--   fn_get_quiz(p_quiz)                 -- KHÔNG trả is_correct cho học viên
+--   fn_submit_attempt(p_exam, p_answers jsonb) returns int   -- chấm phía DB
+--   trg_issue_certificate               -- cấp khi score >= exams.pass_score
+--   fn_verify_certificate(p_code)
+--   view_attendance
+--   fn_add_note / fn_ask_question / fn_answer_question / fn_mark_read
+-- ------------------------------------------------------------------ --
+-- TODO(M2)

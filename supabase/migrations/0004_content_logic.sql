@@ -1,0 +1,52 @@
+-- =====================================================================
+-- 0004_content_logic.sql  ·  Chủ: M1
+-- View/hàm nội dung. BỎ COMMENT từng khối rồi ĐIỀN THÂN.
+-- Dùng ĐÚNG tên trong DATA_DICTIONARY.md (hook sẽ chặn nếu sai).
+-- Chạy sau 0003, trước 0006.
+-- =====================================================================
+
+-- ------------------------------------------------------------------ --
+-- view_course_catalog — khóa đã publish cho trang chủ / trang duyệt
+--   Cột gợi ý: id, title, slug, price, level, thumbnail_url, is_featured,
+--              instructor_name, avg_rating, rating_count, created_at
+-- ------------------------------------------------------------------ --
+-- create or replace view view_course_catalog with (security_invoker = true) as
+-- select c.id, c.title, c.slug, c.price, c.level, c.thumbnail_url, c.is_featured,
+--        p.full_name as instructor_name,
+--        coalesce(round(avg(r.rating), 1), 0) as avg_rating,
+--        count(r.id) as rating_count,
+--        c.created_at
+-- from courses c
+-- join profiles p on p.id = c.instructor_id
+-- left join reviews r on r.course_id = c.id and r.status = 'visible'
+-- where c.status = 'published'
+-- group by c.id, p.full_name
+-- order by c.created_at desc;
+
+-- ------------------------------------------------------------------ --
+-- fn_search_courses(p_keyword, p_category, p_level, p_max_price, p_min_rating)
+--   Full-text trên title + description, lọc động. Trả setof view_course_catalog.
+-- ------------------------------------------------------------------ --
+-- create or replace function fn_search_courses(
+--   p_keyword    text    default null,
+--   p_category   uuid    default null,
+--   p_level      text    default null,
+--   p_max_price  numeric default null,
+--   p_min_rating numeric default null
+-- ) returns setof view_course_catalog
+-- language sql stable security invoker set search_path = public as $$
+--   select * from view_course_catalog vc
+--   where (p_keyword    is null or vc.title ilike '%' || p_keyword || '%')
+--     and (p_category   is null or exists (select 1 from courses c where c.id = vc.id and c.category_id = p_category))
+--     and (p_level      is null or vc.level = p_level)
+--     and (p_max_price  is null or vc.price <= p_max_price)
+--     and (p_min_rating is null or vc.avg_rating >= p_min_rating);
+-- $$;
+
+-- ------------------------------------------------------------------ --
+-- view_course_detail — chi tiết 1 khóa (mô tả, GV, mục lục chương→bài)
+-- view_course_rating  — course_id, avg_rating, rating_count
+-- view_instructor_stats — instructor_id, student_count, revenue, completion_rate
+-- fn_apply_coupon(p_code, p_course_ids) returns numeric — giá sau giảm
+-- ------------------------------------------------------------------ --
+-- TODO(M1): viết 4 đối tượng trên theo DATA_DICTIONARY.md mục 5.

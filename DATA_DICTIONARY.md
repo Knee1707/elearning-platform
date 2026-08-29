@@ -1,0 +1,222 @@
+# DATA_DICTIONARY.md — Sổ đăng ký TÊN (chống đặt sai / đụng tên)
+
+> **Đây là NGUỒN TÊN DUY NHẤT.** Mọi bảng/cột/enum/hàm/view/trigger/policy phải dùng đúng tên ở đây.
+> Nguồn gốc: các file `supabase/migrations/*.sql`. Nếu lệch, **migration là đúng**, sửa file này theo.
+
+## 0. Nguyên tắc vàng (đọc trước)
+
+1. **CẤM tự đặt tên mới** cho bảng/cột/hàm/view nằm ngoài sổ này.
+2. Cần thêm bảng/cột/hàm/view → **mở issue cho Leader**, thêm vào sổ này **TRƯỚC**, rồi mới code.
+3. Quy tắc gõ: bảng/cột `snake_case`; hàm `fn_`, view `view_`, trigger `trg_`, index `idx_`, policy `<bảng>_<hành_động>_<vai>`. Tham số hàm dùng tiền tố `p_` (trừ vài helper RLS cũ: `cid/ch/le/pid/qid`).
+4. Hàm/view có chữ **[M1]** hoặc **[M2]** = tên đã **đặt trước (reserved)**. M1/M2 phải tạo **đúng tên + đúng tham số** này, không đổi.
+
+---
+
+## 1. ENUM (11) — dùng đúng tên type + đúng giá trị
+
+| Enum | Giá trị hợp lệ |
+|---|---|
+| `user_role` | `student` · `instructor` · `admin` |
+| `course_status` | `draft` · `pending` · `published` · `rejected` · `hidden` |
+| `enrollment_status` | `active` · `refunded` |
+| `payment_status` | `pending` · `paid` · `refunded` |
+| `attendance_source` | `video` · `live` |
+| `coupon_type` | `percent` · `fixed` |
+| `review_status` | `visible` · `hidden` · `pending` |
+| `refund_status` | `pending` · `approved` · `rejected` |
+| `report_status` | `open` · `resolved` · `dismissed` |
+| `payout_status` | `draft` · `paid` |
+| `notif_type` | `purchase` · `reply` · `system` · `reminder` |
+
+---
+
+## 2. BẢNG + CỘT (33 bảng) — tên cột phải KHỚP 100%
+
+> Cột chung mọi bảng có PK: `id uuid` (trừ `system_setting` PK là `key`, `course_tag` PK ghép).
+> **FK→** = khóa ngoại tới bảng nào.
+
+### Cụm L — Danh tính · Thương mại (0001 + 0003)
+
+| Bảng | Cột (đúng thứ tự, đúng tên) |
+|---|---|
+| `profiles` | `id`(PK,FK→auth.users) · `full_name` · `avatar_url` · `role`(user_role) · `is_banned` · `created_at` |
+| `system_setting` | `key`(PK) · `value`(jsonb) · `updated_at` |
+| `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` |
+| `coupon` | `id` · `code`(UNIQUE) · `type`(coupon_type) · `value` · `instructor_id`(FK→profiles) · `valid_from` · `valid_to` · `usage_limit` · `used_count` · `created_at` |
+| `enrollments` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `status`(enrollment_status) · `purchased_at` |
+| `cart_item` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `added_at` |
+| `wishlist` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) |
+| `payments` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `coupon_id`(FK→coupon) · `amount` · `method` · `status`(payment_status) · `created_at` |
+| `refund` | `id` · `payment_id`(FK→payments) · `reason` · `status`(refund_status) · `created_at` · `resolved_at` |
+| `payout` | `id` · `instructor_id`(FK→profiles) · `period` · `gross` · `platform_fee` · `net` · `status`(payout_status) |
+
+### Cụm M1 — Nội dung (0002)
+
+| Bảng | Cột |
+|---|---|
+| `categories` | `id` · `name` · `slug`(UNIQUE) |
+| `tag` | `id` · `name` · `slug`(UNIQUE) |
+| `course_tag` | `course_id`(FK→courses) · `tag_id`(FK→tag) — PK ghép (course_id, tag_id) |
+| `courses` | `id` · `instructor_id`(FK→profiles) · `category_id`(FK→categories) · `title` · `slug`(UNIQUE) · `description` · `level` · `price` · `status`(course_status) · `thumbnail_url` · `is_featured` · `created_at` · `updated_at` |
+| `chapters` | `id` · `course_id`(FK→courses) · `title` · `position` |
+| `lessons` | `id` · `chapter_id`(FK→chapters) · `title` · `video_url` · `video_status` · `duration_seconds` · `is_free` · `position` |
+| `attachments` | `id` · `lesson_id`(FK→lessons) · `name` · `file_url` · `type` |
+| `reviews` | `id` · `course_id`(FK→courses) · `user_id`(FK→profiles) · `rating` · `comment` · `status`(review_status) · `created_at` |
+
+### Cụm M2 — Học tập · Đánh giá · Điểm danh (0003)
+
+| Bảng | Cột |
+|---|---|
+| `lesson_progress` | `id` · `user_id`(FK→profiles) · `lesson_id`(FK→lessons) · `watched_percent` · `is_completed` · `last_position_seconds` · `updated_at` |
+| `lesson_note` | `id` · `user_id`(FK→profiles) · `lesson_id`(FK→lessons) · `timestamp_seconds` · `content` · `created_at` |
+| `qa_question` | `id` · `lesson_id`(FK→lessons) · `user_id`(FK→profiles) · `content` · `created_at` |
+| `qa_answer` | `id` · `question_id`(FK→qa_question) · `user_id`(FK→profiles) · `content` · `created_at` |
+| `quizzes` | `id` · `lesson_id`(FK→lessons) · `title` · `pass_score` |
+| `questions` | `id` · `quiz_id`(FK→quizzes) · `content` · `position` |
+| `options` | `id` · `question_id`(FK→questions) · `content` · `is_correct` |
+| `exams` | `id` · `course_id`(FK→courses) · `title` · `time_limit_minutes` · `pass_score` |
+| `exam_attempts` | `id` · `exam_id`(FK→exams) · `user_id`(FK→profiles) · `score` · `started_at` · `submitted_at` |
+| `answers` | `id` · `attempt_id`(FK→exam_attempts) · `question_id`(FK→questions) · `option_id`(FK→options) |
+| `certificates` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `code`(UNIQUE) · `issued_at` |
+| `live_sessions` | `id` · `course_id`(FK→courses) · `title` · `meet_url` · `scheduled_at` · `created_by`(FK→profiles) |
+| `attendance` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `source`(attendance_source) · `lesson_id`(FK→lessons) · `live_session_id`(FK→live_sessions) · `attended_at` |
+| `notification` | `id` · `user_id`(FK→profiles) · `type`(notif_type) · `title` · `body` · `is_read` · `created_at` |
+| `report` | `id` · `reporter_id`(FK→profiles) · `entity` · `entity_id` · `reason` · `status`(report_status) · `created_at` |
+
+---
+
+## 3. RÀNG BUỘC — tên đã đặt + quy tắc đặt tên mới
+
+### UNIQUE (chống trùng) — dùng đúng bộ cột này
+| Bảng | Cột UNIQUE |
+|---|---|
+| `enrollments` | (`user_id`, `course_id`) |
+| `cart_item` | (`user_id`, `course_id`) |
+| `wishlist` | (`user_id`, `course_id`) |
+| `payout` | (`instructor_id`, `period`) |
+| `reviews` | (`course_id`, `user_id`) |
+| `lesson_progress` | (`user_id`, `lesson_id`) |
+| `answers` | (`attempt_id`, `question_id`) |
+| `certificates` | (`user_id`, `course_id`) · `code` |
+| `coupon` | `code` |
+| `courses` | `slug` |
+| `categories` / `tag` | `slug` |
+| `attendance` | index `uq_attendance_once` = (`user_id`, `source`, `coalesce(lesson_id, live_session_id)`) |
+
+### CHECK đã đặt tên (dùng lại đúng tên nếu sửa)
+| Tên | Bảng | Nội dung |
+|---|---|---|
+| `coupon_percent_max` | `coupon` | mã percent ≤ 100 |
+| `attendance_source_shape` | `attendance` | video→`lesson_id`, live→`live_session_id` (đúng 1 nguồn) |
+
+> CHECK khác (không đặt tên riêng, để Postgres tự đặt): `value>0`, `price>=0`, `rating between 1 and 5`, `watched_percent between 0 and 100`, `pass_score between 0 and 100`, `duration_seconds>=0`, `amount>=0`, `time_limit_minutes>0`, `last_position_seconds>=0`, `timestamp_seconds>=0`.
+
+### Quy tắc đặt tên ràng buộc/index MỚI (khi thêm)
+```
+UNIQUE (đặt tên):  uq_<bảng>_<cột>         uq_attendance_once
+CHECK  (đặt tên):  <bảng>_<luật>          coupon_percent_max
+Index:             idx_<bảng>_<cột>       idx_lessons_chapter_id
+Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
+```
+
+### Index đã tạo (đừng tạo trùng)
+`idx_activity_log_user_id`, `idx_activity_log_created_at`, `idx_coupon_code`,
+`idx_courses_instructor_id`, `idx_courses_category_id`, `idx_courses_status`,
+`idx_course_tag_tag_id`, `idx_chapters_course_id`, `idx_lessons_chapter_id`,
+`idx_attachments_lesson_id`, `idx_reviews_course_id`, `idx_enrollments_user_id`,
+`idx_enrollments_course_id`, `idx_cart_item_user_id`, `idx_wishlist_user_id`,
+`idx_payments_user_id`, `idx_payments_course_id`, `idx_payments_created_at`,
+`idx_refund_payment_id`, `idx_payout_instructor_id`, `idx_lesson_progress_user_id`,
+`idx_lesson_note_user_lesson`, `idx_qa_question_lesson_id`, `idx_qa_answer_question_id`,
+`idx_quizzes_lesson_id`, `idx_questions_quiz_id`, `idx_options_question_id`,
+`idx_exams_course_id`, `idx_exam_attempts_user_id`, `idx_exam_attempts_exam_id`,
+`idx_answers_attempt_id`, `idx_certificates_user_id`, `idx_live_sessions_course_id`,
+`idx_attendance_course_id`, `idx_attendance_user_id`, `uq_attendance_once`,
+`idx_notification_user_unread`, `idx_report_status`.
+
+---
+
+## 4. HÀM / VIEW / TRIGGER của L (ĐÃ CÓ — đừng tạo lại)
+
+**Helper RLS (0001/0002/0003):** `fn_current_role()`, `fn_is_admin()`, `fn_owns_course(cid)`, `fn_course_visible(cid)`, `fn_chapter_course(ch)`, `fn_lesson_course(le)`, `fn_is_enrolled(cid)`, `fn_owns_payment(pid)`, `fn_quiz_course(qid)`, `fn_question_course(qid)`, `fn_touch_updated_at()`.
+
+**Nghiệp vụ (0006):**
+| Hàm | Tham số |
+|---|---|
+| `fn_get_setting` | `p_key text` |
+| `fn_add_to_cart` | `p_course uuid` |
+| `fn_remove_from_cart` | `p_course uuid` |
+| `fn_toggle_wishlist` | `p_course uuid` → bool |
+| `fn_mock_purchase` | `p_course_ids uuid[]`, `p_coupon_code text` |
+| `fn_request_refund` | `p_payment uuid`, `p_reason text` |
+| `fn_approve_refund` | `p_refund uuid` |
+| `fn_generate_payout` | `p_period text` |
+| `fn_set_role` | `p_user uuid`, `p_role user_role` |
+| `fn_toggle_ban` | `p_user uuid` → bool |
+| `fn_moderate_course` | `p_course uuid`, `p_status course_status` |
+| `fn_moderate_review` | `p_review uuid`, `p_status review_status` |
+| `fn_resolve_report` | `p_report uuid`, `p_status report_status` |
+
+**View:** `view_admin_dashboard`, `view_instructor_payout`.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses).
+
+---
+
+## 5. HÀM / VIEW DÀNH RIÊNG cho M1 — TẠO ĐÚNG TÊN (0004_content_logic.sql)
+
+| Loại | Tên (reserved) | Tham số / cột |
+|---|---|---|
+| view | `view_course_catalog` | khóa `published` + `avg_rating` + `is_featured`, sort mới nhất |
+| fn | `fn_search_courses` | `p_keyword text`, `p_category uuid`, `p_level text`, `p_max_price numeric`, `p_min_rating numeric` |
+| view | `view_course_detail` | khóa + GV + chương→bài |
+| view | `view_course_rating` | `course_id`, `avg_rating`, `rating_count` |
+| view | `view_instructor_stats` | `instructor_id`, `student_count`, `revenue`, `completion_rate` |
+| fn | `fn_apply_coupon` | `p_code text`, `p_course_ids uuid[]` → `numeric` (giá sau giảm) |
+
+---
+
+## 6. HÀM / VIEW / TRIGGER DÀNH RIÊNG cho M2 — TẠO ĐÚNG TÊN (0005_learning_logic.sql)
+
+| Loại | Tên (reserved) | Tham số |
+|---|---|---|
+| fn | `fn_update_watch` | `p_lesson uuid`, `p_percent int` |
+| fn | `fn_save_position` | `p_lesson uuid`, `p_seconds int` |
+| fn | `fn_mark_complete` | `p_lesson uuid` |
+| view | `view_course_progress` | `user_id`, `course_id`, `percent` |
+| fn | `fn_get_quiz` | `p_quiz uuid` → câu hỏi + đáp án **KHÔNG kèm `is_correct`** |
+| fn | `fn_submit_attempt` | `p_exam uuid`, `p_answers jsonb` → `int` (điểm) |
+| trg | `trg_issue_certificate` | cấp khi đạt |
+| fn | `fn_verify_certificate` | `p_code text` |
+| trg | `trg_attendance_on_video` | `% ≥ ngưỡng` → attendance(video) |
+| fn | `fn_join_live_session` | `p_live uuid` → `text` (meet_url) |
+| view | `view_attendance` | báo cáo điểm danh |
+| fn | `fn_add_note` | `p_lesson uuid`, `p_seconds int`, `p_content text` |
+| fn | `fn_ask_question` | `p_lesson uuid`, `p_content text` |
+| fn | `fn_answer_question` | `p_question uuid`, `p_content text` |
+| fn | `fn_mark_read` | `p_notification uuid` |
+
+---
+
+## 7. TÊN HÀM TS trong `lib/queries` (App↔Data) — M3/M4 gọi đúng
+
+| File (chủ) | Hàm TS (camelCase) |
+|---|---|
+| `auth.ts` (L) | `getCurrentUser`, `getMyProfile`, `requireRole` |
+| `commerce.ts` (L) | `addToCart`, `removeFromCart`, `toggleWishlist`, `mockPurchase`, `requestRefund`, `isEnrolled` |
+| `admin.ts` (L) | `getAdminDashboard`, `moderateCourse`, `moderateReview`, `resolveReport`, `setRole`, `toggleBan`, `approveRefund`, `generatePayout` |
+| `courses.ts` (M1) | `getCourseCatalog`, `searchCourses`, `getCourseDetail`, `applyCoupon` |
+| `progress.ts` (M2) | `updateWatch`, `savePosition`, `markComplete`, `getCourseProgress` |
+| `quiz.ts` (M2) | `getQuiz`, `submitAttempt`, `verifyCertificate` |
+| `attendance.ts` (M2) | `joinLiveSession`, `getMyAttendance`, `getClassAttendance` |
+| `qa.ts` (M2) | `addNote`, `askQuestion`, `answerQuestion`, `markRead` |
+
+> Quy tắc map: DB `snake_case` ⇄ TS `camelCase`, làm ở `lib/queries`. UI luôn nhận `camelCase`.
+
+---
+
+## 8. Khi cần THÊM tên mới (bắt buộc)
+
+1. Mở issue mô tả bảng/cột/hàm cần thêm + lý do.
+2. Leader thêm dòng vào sổ này + (nếu là bảng/cột) viết migration mới `NNNN_*.sql`.
+3. Mới đó thành viên mới được dùng tên đó trong code.
+4. **CẤM** vừa code vừa tự đặt tên chưa có trong sổ.

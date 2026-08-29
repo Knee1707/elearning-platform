@@ -1,0 +1,5 @@
+#!/bin/sh
+# Hook chặn đặt tên sai / lệnh hủy dự án trước khi commit.
+# Cài (chạy 1 lần / máy):  git config core.hooksPath .githooks
+# (Đã tự cài qua "prepare" khi `pnpm install`.)
+node scripts/naming-guard.mjs --staged
