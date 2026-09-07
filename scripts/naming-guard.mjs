@@ -46,15 +46,16 @@ const ALLOWED = {
     "fn_update_watch", "fn_save_position", "fn_mark_complete", "fn_get_quiz",
     "fn_submit_attempt", "fn_verify_certificate", "fn_join_live_session",
     "fn_add_note", "fn_ask_question", "fn_answer_question", "fn_mark_read",
+    "fn_issue_certificate", "fn_attendance_on_video", "fn_notify_on_answer",
   ]),
   views: new Set([
     "view_admin_dashboard", "view_instructor_payout", "view_course_catalog",
     "view_course_detail", "view_course_rating", "view_instructor_stats",
-    "view_course_progress", "view_attendance",
+    "view_course_progress", "view_attendance", "view_certificate",
   ]),
   triggers: new Set([
     "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate",
-    "trg_attendance_on_video",
+    "trg_attendance_on_video", "trg_notify_on_answer",
   ]),
 };
 
