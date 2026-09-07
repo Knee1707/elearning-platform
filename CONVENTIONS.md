@@ -37,6 +37,7 @@ Index      idx_<bảng>_<cột>           idx_lessons_chapter_id
 - **RLS bật cho MỌI bảng.** Hàm dùng trong RLS đặt `security definer` + `set search_path = public` để không đệ quy.
 - Cột nullable trong UNIQUE index thường: dùng `coalesce(...)` (xem `attendance`) hoặc `nulls not distinct`. **Seed idempotent dùng `where not exists`, không dựa `on conflict` khi có cột nullable.**
 - Migration đặt tên `NNNN_mô_tả.sql`, số tăng dần, KHÔNG sửa file đã merge.
+- **KHÔNG `select *` trên `lessons`, `attachments`, `live_sessions`** — các cột URL (`video_url`, `file_url`, `meet_url`) đã bị thu hồi quyền (migration 0007). Chọn cột tường minh; lấy URL qua hàm gác quyền: `fn_get_lesson_video` / `fn_get_attachment` / `fn_join_live_session` · `fn_get_live_meet`.
 
 ## 3. TypeScript / React
 

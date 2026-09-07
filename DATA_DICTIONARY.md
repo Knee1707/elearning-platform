@@ -156,6 +156,9 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_moderate_course` | `p_course uuid`, `p_status course_status` |
 | `fn_moderate_review` | `p_review uuid`, `p_status review_status` |
 | `fn_resolve_report` | `p_report uuid`, `p_status report_status` |
+| `fn_get_lesson_video` **[HOTFIX 0007]** | `p_lesson uuid` → `text` (URL video nếu is_free / đã ghi danh / chủ / admin, ngược lại `null`) |
+| `fn_get_attachment` **[HOTFIX 0007]** | `p_attachment uuid` → `text` (URL tài liệu, điều kiện như trên) |
+| `fn_get_live_meet` **[HOTFIX 0007]** | `p_live uuid` → `text` (meet_url cho chủ/admin quản lý; HV vào qua `fn_join_live_session`) |
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
 **Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses).

@@ -39,7 +39,7 @@ const ALLOWED = {
     "fn_get_setting", "fn_add_to_cart", "fn_remove_from_cart", "fn_toggle_wishlist",
     "fn_mock_purchase", "fn_request_refund", "fn_approve_refund", "fn_generate_payout",
     "fn_set_role", "fn_toggle_ban", "fn_moderate_course", "fn_moderate_review",
-    "fn_resolve_report",
+    "fn_resolve_report", "fn_get_lesson_video", "fn_get_attachment", "fn_get_live_meet",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

@@ -90,6 +90,26 @@ export async function applyCoupon(code: string, courseIds: string[]): Promise<nu
 }
 
 
+// Lấy URL video của 1 bài học — gọi fn_get_lesson_video (kiểm quyền phía DB).
+// Trả null nếu chưa đủ quyền (bài trả phí + chưa ghi danh) → UI hiện "Mua để xem".
+export async function getLessonVideo(lessonId: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_get_lesson_video", { p_lesson: lessonId });
+  if (error) throw error;
+  return typeof data === "string" ? data : null;
+}
+
+
+// Lấy URL tài liệu đính kèm — gọi fn_get_attachment (kiểm quyền phía DB).
+// Trả null nếu chưa đủ quyền (tài liệu bài trả phí + chưa ghi danh).
+export async function getAttachmentUrl(attachmentId: string): Promise<string | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_get_attachment", { p_attachment: attachmentId });
+  if (error) throw error;
+  return typeof data === "string" ? data : null;
+}
+
+
 // khai báo hàm map dữ liệu catalog của khoá học từ database sang camelCase (object)
 function mapCatalogCourse(row: DatabaseRow): CourseCatalog {
   return {
