@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "check:names": "node scripts/naming-guard.mjs --all",
+    "check:m2": "node scripts/check-m2.mjs",
     "prepare": "git config core.hooksPath .githooks || exit 0",
     "db:reset": "npx supabase@latest db reset",
     "db:types": "npx supabase@latest gen types typescript --local > src/types/database.types.ts"

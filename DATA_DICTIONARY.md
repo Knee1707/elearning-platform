@@ -185,14 +185,19 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | view | `view_course_progress` | `user_id`, `course_id`, `percent` |
 | fn | `fn_get_quiz` | `p_quiz uuid` → câu hỏi + đáp án **KHÔNG kèm `is_correct`** |
 | fn | `fn_submit_attempt` | `p_exam uuid`, `p_answers jsonb` → `int` (điểm) |
+| fn | `fn_issue_certificate` | trigger function cho `trg_issue_certificate` |
 | trg | `trg_issue_certificate` | cấp khi đạt |
 | fn | `fn_verify_certificate` | `p_code text` |
+| view | `view_certificate` | danh sách chứng chỉ đã cấp |
+| fn | `fn_attendance_on_video` | trigger function cho `trg_attendance_on_video` |
 | trg | `trg_attendance_on_video` | `% ≥ ngưỡng` → attendance(video) |
 | fn | `fn_join_live_session` | `p_live uuid` → `text` (meet_url) |
 | view | `view_attendance` | báo cáo điểm danh |
 | fn | `fn_add_note` | `p_lesson uuid`, `p_seconds int`, `p_content text` |
 | fn | `fn_ask_question` | `p_lesson uuid`, `p_content text` |
 | fn | `fn_answer_question` | `p_question uuid`, `p_content text` |
+| trg | `trg_notify_on_answer` | sinh thông báo khi có câu trả lời mới |
+| fn | `fn_notify_on_answer` | trigger function cho `trg_notify_on_answer` |
 | fn | `fn_mark_read` | `p_notification uuid` |
 
 ---
