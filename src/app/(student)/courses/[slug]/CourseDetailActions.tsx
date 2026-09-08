@@ -237,6 +237,21 @@ export function FreeLessonPreviewModal({
   videoUrl: string;
   onClose: () => void;
 }) {
+  const [currentSrc, setCurrentSrc] = useState(() => {
+    // Nếu URL là link placeholder từ seed (example.com), dùng ngay video mẫu chuẩn của MDN
+    if (!videoUrl || videoUrl.includes("example.com")) {
+      return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+    }
+    return videoUrl;
+  });
+  const [hasError, setHasError] = useState(false);
+
+  function handleVideoError() {
+    setHasError(true);
+    // Khi URL bị lỗi định dạng hoặc chặn mạng, chuyển sang video mẫu chuẩn
+    setCurrentSrc("https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4");
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
       <div className="w-full max-w-3xl rounded-xl border border-border bg-card p-5 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -257,11 +272,31 @@ export function FreeLessonPreviewModal({
           </button>
         </div>
 
-        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black">
-          <video src={videoUrl} controls autoPlay className="h-full w-full object-contain" />
+        {/* THÔNG BÁO NẾU DÙNG VIDEO THỬ NGHIỆM */}
+        {(hasError || videoUrl.includes("example.com")) && (
+          <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 shrink-0" />
+            <span>
+              <strong>Lưu ý:</strong> Dữ liệu seed hiện tại dùng link giả lập (<code>example.com</code>). Hệ thống đang phát video thử nghiệm để bạn kiểm tra giao diện.
+            </span>
+          </div>
+        )}
+
+        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black relative flex items-center justify-center">
+          <video
+            key={currentSrc}
+            src={currentSrc}
+            controls
+            playsInline
+            onError={handleVideoError}
+            className="h-full w-full object-contain"
+          />
         </div>
 
-        <div className="flex justify-end pt-2">
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-[11px] text-muted-foreground">
+            Bấm nút phát trên thanh điều khiển để bắt đầu xem bài học thử.
+          </p>
           <button
             onClick={onClose}
             className="rounded-md border border-border px-4 py-2 text-xs font-medium hover:bg-muted"
