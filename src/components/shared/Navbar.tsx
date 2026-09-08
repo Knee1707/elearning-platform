@@ -46,6 +46,22 @@ export function Navbar() {
     let isMounted = true;
 
     async function loadUserData() {
+      // 1. Kiểm tra nếu đang ở chế độ Demo Login
+      const isDemo = typeof window !== "undefined" && localStorage.getItem("demo_logged_in") === "true";
+      if (isDemo && isMounted) {
+        setProfile({
+          id: "00000000-0000-0000-0000-000000000002",
+          fullName: "Trần Thị Học Viên A",
+          avatarUrl: null,
+          role: "student",
+          isBanned: false,
+          createdAt: new Date().toISOString(),
+        });
+        setCartCount(1);
+        setUnreadNotifsCount(2);
+        return;
+      }
+
       try {
         const supabase = createClient();
         const {
@@ -61,7 +77,7 @@ export function Navbar() {
           return;
         }
 
-        // 1. Tải hồ sơ người dùng
+        // Tải hồ sơ người dùng
         const { data: profileData } = await supabase
           .from("profiles")
           .select("*")
@@ -79,7 +95,7 @@ export function Navbar() {
           });
         }
 
-        // 2. Tải số lượng giỏ hàng
+        // Tải số lượng giỏ hàng
         const { count: cartTotal } = await supabase
           .from("cart_item")
           .select("id", { count: "exact", head: true })
@@ -89,7 +105,7 @@ export function Navbar() {
           setCartCount(cartTotal ?? 0);
         }
 
-        // 3. Tải số thông báo chưa đọc
+        // Tải số thông báo chưa đọc
         const { count: notifTotal } = await supabase
           .from("notification")
           .select("id", { count: "exact", head: true })
@@ -117,14 +133,50 @@ export function Navbar() {
     };
   }, [pathname]);
 
+  // Đăng nhập thử nghiệm cho môi trường dev/test
+  async function handleDemoLogin() {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signInWithPassword({
+        email: "hva@demo.local",
+        password: "Password123!",
+      });
+    } catch {
+      // Bỏ qua lỗi nếu chưa có server Supabase thật
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem("demo_logged_in", "true");
+    }
+
+    setProfile({
+      id: "00000000-0000-0000-0000-000000000002",
+      fullName: "Trần Thị Học Viên A",
+      avatarUrl: null,
+      role: "student",
+      isBanned: false,
+      createdAt: new Date().toISOString(),
+    });
+    setCartCount(1);
+    setUnreadNotifsCount(2);
+    window.dispatchEvent(new Event("cart-updated"));
+  }
+
   async function handleSignOut() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("demo_logged_in");
+    }
+    setProfile(null);
+    setCartCount(0);
+    setUnreadNotifsCount(0);
+
     try {
       const supabase = createClient();
       await supabase.auth.signOut();
-      window.location.href = "/";
     } catch {
-      window.location.href = "/";
+      // Bỏ qua lỗi
     }
+    window.location.href = "/";
   }
 
   const isActive = (path: string) =>
@@ -297,6 +349,14 @@ export function Navbar() {
             </div>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 transition-colors hover:bg-amber-500/20"
+                title="Bật phiên đăng nhập thử nghiệm Học Viên A (phục vụ test trước khi xong M4)"
+              >
+                ⚡ Test Login (HV)
+              </button>
               <Link
                 href="/login"
                 className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -346,21 +406,33 @@ export function Navbar() {
             </Link>
 
             {!profile && (
-              <div className="mt-2 flex gap-2 border-t border-border pt-3">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 rounded-md border border-border py-2 text-center text-xs font-medium hover:bg-muted"
+              <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleDemoLogin();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full rounded-md border border-amber-500/40 bg-amber-500/10 py-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
                 >
-                  Đăng nhập
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex-1 rounded-md bg-primary py-2 text-center text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Đăng ký
-                </Link>
+                  ⚡ Test Login (HV)
+                </button>
+                <div className="flex gap-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 rounded-md border border-border py-2 text-center text-xs font-medium hover:bg-muted"
+                  >
+                    Đăng nhập
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex-1 rounded-md bg-primary py-2 text-center text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Đăng ký
+                  </Link>
+                </div>
               </div>
             )}
           </nav>
