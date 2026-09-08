@@ -49,6 +49,9 @@ export function Navbar() {
       // 1. Kiểm tra nếu đang ở chế độ Demo Login
       const isDemo = typeof window !== "undefined" && localStorage.getItem("demo_logged_in") === "true";
       if (isDemo && isMounted) {
+        if (typeof document !== "undefined" && !document.cookie.includes("demo_logged_in=true")) {
+          document.cookie = "demo_logged_in=true; path=/; max-age=86400; SameSite=Lax";
+        }
         setProfile({
           id: "00000000-0000-0000-0000-000000000002",
           fullName: "Trần Thị Học Viên A",
@@ -147,6 +150,7 @@ export function Navbar() {
 
     if (typeof window !== "undefined") {
       localStorage.setItem("demo_logged_in", "true");
+      document.cookie = "demo_logged_in=true; path=/; max-age=86400; SameSite=Lax";
     }
 
     setProfile({
@@ -165,6 +169,7 @@ export function Navbar() {
   async function handleSignOut() {
     if (typeof window !== "undefined") {
       localStorage.removeItem("demo_logged_in");
+      document.cookie = "demo_logged_in=; path=/; max-age=0";
     }
     setProfile(null);
     setCartCount(0);
