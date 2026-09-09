@@ -99,7 +99,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-65px)] flex-col md:flex-row overflow-hidden bg-background">
+    <div className="flex h-[calc(100vh-65px)] flex-col md:flex-row overflow-hidden bg-[#F8FAFC]">
       {/* 1. MỤC LỤC CHƯƠNG & BÀI HỌC (CỘT TRÁI TRÊN DESKTOP) */}
       <div
         className={`fixed inset-y-0 left-0 z-40 w-80 transform transition-transform duration-200 ease-in-out md:static md:w-80 lg:w-96 md:translate-x-0 ${
@@ -117,7 +117,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             setCurrentLessonId(id);
             setMobileSidebarOpen(false);
           }}
-          className="h-full w-full"
+          className="h-full w-full shadow-sm"
         />
       </div>
 
@@ -125,27 +125,27 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
       {mobileSidebarOpen && (
         <div
           onClick={() => setMobileSidebarOpen(false)}
-          className="fixed inset-0 z-30 bg-black/50 md:hidden"
+          className="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-xs md:hidden"
         />
       )}
 
       {/* 2. KHÔNG GIAN HỌC TẬP CHÍNH (CỘT PHẢI) */}
       <main className="flex flex-1 flex-col overflow-y-auto">
         {/* Thanh bar điều khiển trên cùng */}
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur shadow-xs">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setMobileSidebarOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium md:hidden hover:bg-muted"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 md:hidden hover:bg-slate-50 hover:text-blue-600 shadow-xs"
             >
-              <ListFilter className="h-4 w-4 text-primary" />
+              <ListFilter className="h-4 w-4 text-blue-600" />
               <span>Mục lục bài học</span>
             </button>
-            <span className="hidden sm:inline-block text-xs font-medium text-muted-foreground">
-              Đang học bài:
+            <span className="hidden sm:inline-block text-xs font-semibold text-slate-400">
+              Đang học:
             </span>
-            <span className="max-w-[240px] truncate text-xs font-semibold text-foreground sm:max-w-md">
+            <span className="max-w-[220px] truncate text-xs font-bold text-slate-900 sm:max-w-md">
               {currentLesson?.title ?? "Bài giảng"}
             </span>
           </div>
@@ -156,7 +156,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               type="button"
               onClick={() => prevLesson && setCurrentLessonId(prevLesson.id)}
               disabled={!prevLesson}
-              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 shadow-xs active:scale-95"
               title={prevLesson ? `Về bài: ${prevLesson.title}` : "Đây là bài đầu tiên"}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
@@ -167,15 +167,15 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             <button
               type="button"
               onClick={handleCompleteLesson}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium shadow-sm transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold shadow-xs transition-all active:scale-95 ${
                 completedLessonIds.includes(currentLesson?.id ?? "")
-                  ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 hover:bg-emerald-500/20"
-                  : "bg-primary text-primary-foreground hover:bg-primary/90"
+                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
               }`}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               <span>
-                {completedLessonIds.includes(currentLesson?.id ?? "") ? "Đã xong" : "Hoàn thành bài"}
+                {completedLessonIds.includes(currentLesson?.id ?? "") ? "Đã xong bài" : "Hoàn thành bài"}
               </span>
             </button>
 
@@ -184,7 +184,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               type="button"
               onClick={() => nextLesson && setCurrentLessonId(nextLesson.id)}
               disabled={!nextLesson}
-              className="flex items-center gap-1 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 shadow-xs active:scale-95"
               title={nextLesson ? `Tới bài: ${nextLesson.title}` : "Đây là bài cuối cùng"}
             >
               <span className="hidden sm:inline">Bài tiếp</span>
@@ -206,23 +206,23 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               onSeekComplete={() => setSeekToTime(null)}
             />
           ) : (
-            <div className="rounded-2xl border border-border p-8 text-center text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-xs">
               Không có bài học nào trong khóa học này.
             </div>
           )}
 
           {/* Gợi ý bài thi Quiz nếu bài học có quiz đính kèm */}
           {currentLesson && (
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/90 to-indigo-50/50 p-4 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm shadow-blue-500/25">
                   <FileQuestion className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-semibold text-foreground">
+                  <h4 className="text-xs font-bold text-slate-900">
                     Kiểm tra kiến thức với Quiz trắc nghiệm
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-slate-500 font-medium">
                     Củng cố lý thuyết của bài học này trước khi bước sang nội dung tiếp theo
                   </p>
                 </div>
@@ -230,7 +230,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
 
               <Link
                 href="/quiz/50000000-0000-0000-0000-000000000001"
-                className="flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                className="flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
               >
                 <span>Làm Quiz ngay</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -241,14 +241,14 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
           {/* HỆ THỐNG CÁC TABS TƯƠNG TÁC (TỔNG QUAN / GHI CHÚ / HỎI ĐÁP) */}
           <div className="mt-8">
             {/* Header Tabs */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-slate-200 gap-1 sm:gap-2">
               <button
                 type="button"
                 onClick={() => setActiveTab("overview")}
-                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
                   activeTab === "overview"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <FileText className="h-4 w-4" />
@@ -258,10 +258,10 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("notes")}
-                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
                   activeTab === "notes"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <Bookmark className="h-4 w-4" />
@@ -271,10 +271,10 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               <button
                 type="button"
                 onClick={() => setActiveTab("qa")}
-                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-2 border-b-2 px-4 py-3 text-xs font-bold transition-colors ${
                   activeTab === "qa"
-                    ? "border-primary text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-900"
                 }`}
               >
                 <MessageSquare className="h-4 w-4" />
@@ -285,28 +285,28 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             {/* Nội dung Tab */}
             <div className="py-6">
               {activeTab === "overview" && (
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div>
-                    <h2 className="text-lg font-bold text-foreground">{currentLesson?.title}</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Khóa học: <span className="font-medium text-foreground">{course.title}</span> • Giảng viên:{" "}
-                      <span className="font-medium text-foreground">{course.instructorName}</span>
+                    <h2 className="text-lg font-bold text-slate-900">{currentLesson?.title}</h2>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Khóa học: <span className="font-semibold text-slate-800">{course.title}</span> • Giảng viên:{" "}
+                      <span className="font-semibold text-slate-800">{course.instructorName}</span>
                     </p>
                   </div>
 
-                  <div className="rounded-xl border border-border/80 bg-card p-4 space-y-3">
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                       Tóm tắt bài học & Mục tiêu
                     </h3>
-                    <p className="text-xs leading-relaxed text-foreground">
+                    <p className="text-xs leading-relaxed text-slate-600">
                       {course.description}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 pt-2">
-                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-200/60">
                         <GraduationCap className="h-3.5 w-3.5" />
                         Cấp độ: {course.level === "beginner" ? "Cơ bản" : course.level === "intermediate" ? "Trung cấp" : "Nâng cao"}
                       </span>
-                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200/60">
                         <Award className="h-3.5 w-3.5" />
                         Có cấp chứng chỉ hoàn thành
                       </span>

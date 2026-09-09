@@ -230,18 +230,18 @@ export function VideoPlayer({
   // Giao diện khi bài học bị khóa (chưa ghi danh)
   if (state === "locked") {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card p-12 text-center shadow-sm">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/10 text-amber-500">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-xs">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-200/50">
           <Lock className="h-7 w-7" />
         </div>
-        <h3 className="mt-4 text-base font-semibold text-foreground">Bài học này thuộc nội dung trả phí</h3>
-        <p className="mt-1.5 max-w-md text-xs text-muted-foreground">
+        <h3 className="mt-4 text-base font-black text-slate-900">Bài học này thuộc nội dung trả phí</h3>
+        <p className="mt-1.5 max-w-md text-xs text-slate-500 leading-relaxed font-medium">
           Bạn cần ghi danh khóa học để mở khóa toàn bộ bài giảng chất lượng cao, tài liệu đính kèm và làm bài thi nhận chứng chỉ.
         </p>
         <div className="mt-6 flex items-center gap-3">
           <Link
             href="/cart"
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
           >
             <Sparkles className="h-4 w-4" />
             <span>Mua khóa học ngay</span>
@@ -254,20 +254,20 @@ export function VideoPlayer({
   // Giao diện khi đang tải
   if (state === "loading") {
     return (
-      <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-border bg-muted/40">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="mt-3 text-xs font-medium text-muted-foreground">Đang tải trình phát video...</span>
+      <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-slate-200 bg-slate-50">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <span className="mt-3 text-xs font-semibold text-slate-500">Đang tải bài giảng video...</span>
       </div>
     );
   }
 
   // Giao diện phát video hoàn chỉnh
   return (
-    <div ref={containerRef} className="group relative overflow-hidden rounded-2xl border border-border bg-black shadow-md">
+    <div ref={containerRef} className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-xl">
       {/* Thông báo tiếp tục xem */}
       {resumeNotice && (
-        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md animate-in fade-in">
-          <Sparkles className="h-3.5 w-3.5 text-primary" />
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-full bg-slate-900/90 border border-white/10 px-3.5 py-1.5 text-xs font-bold text-white backdrop-blur-md animate-in fade-in">
+          <Sparkles className="h-3.5 w-3.5 text-blue-400" />
           <span>{resumeNotice}</span>
         </div>
       )}
@@ -293,12 +293,12 @@ export function VideoPlayer({
       />
 
       {/* Thanh điều khiển nhanh bên dưới video */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-neutral-900/90 px-4 py-2.5 text-xs text-white">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-slate-950/95 px-4 py-2.5 text-xs text-white">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={togglePlay}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:bg-blue-500 shadow-sm shadow-blue-500/25 active:scale-95"
             aria-label={isPlaying ? "Tạm dừng" : "Phát"}
           >
             {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current ml-0.5" />}
@@ -307,26 +307,26 @@ export function VideoPlayer({
           <button
             type="button"
             onClick={() => handleSkip(-10)}
-            className="flex h-8 items-center gap-1 rounded-md px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-8 items-center gap-1 rounded-full px-2.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             title="Tua lùi 10 giây"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span className="text-[11px]">-10s</span>
+            <span className="text-[11px] font-mono">-10s</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleSkip(10)}
-            className="flex h-8 items-center gap-1 rounded-md px-2 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+            className="flex h-8 items-center gap-1 rounded-full px-2.5 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
             title="Tua tới 10 giây"
           >
             <RotateCw className="h-3.5 w-3.5" />
-            <span className="text-[11px]">+10s</span>
+            <span className="text-[11px] font-mono">+10s</span>
           </button>
 
-          <div className="ml-2 text-[11px] text-white/70">
+          <div className="ml-2 text-[11px] font-mono text-white/70">
             <span>{formatTime(currentTime)}</span>
-            <span className="mx-1">/</span>
+            <span className="mx-1 text-white/40">/</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
@@ -335,14 +335,14 @@ export function VideoPlayer({
           {/* Tốc độ phát */}
           <div className="flex items-center gap-1">
             <Gauge className="h-3.5 w-3.5 text-white/60" />
-            <div className="flex items-center gap-1 rounded-md bg-white/10 p-0.5 text-[11px]">
+            <div className="flex items-center gap-1 rounded-full bg-white/10 p-0.5 text-[11px]">
               {[0.75, 1, 1.25, 1.5, 2].map((rate) => (
                 <button
                   key={rate}
                   type="button"
                   onClick={() => handlePlaybackRateChange(rate)}
-                  className={`rounded px-1.5 py-0.5 font-medium transition-colors ${
-                    playbackRate === rate ? "bg-primary text-primary-foreground" : "text-white/80 hover:text-white"
+                  className={`rounded-full px-2 py-0.5 font-bold transition-colors ${
+                    playbackRate === rate ? "bg-blue-600 text-white" : "text-white/80 hover:text-white"
                   }`}
                 >
                   {rate}x
@@ -355,7 +355,7 @@ export function VideoPlayer({
           <button
             type="button"
             onClick={toggleMute}
-            className="rounded p-1 text-white/70 transition-colors hover:text-white"
+            className="rounded-full p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             aria-label={isMuted ? "Bật âm thanh" : "Tắt tiếng"}
           >
             {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
@@ -365,7 +365,7 @@ export function VideoPlayer({
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="rounded p-1 text-white/70 transition-colors hover:text-white"
+            className="rounded-full p-1.5 text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             aria-label="Toàn màn hình"
           >
             <Maximize className="h-4 w-4" />

@@ -60,7 +60,15 @@ export function Navbar() {
           isBanned: false,
           createdAt: new Date().toISOString(),
         });
-        setCartCount(1);
+        
+        // Đọc số lượng giỏ hàng từ localStorage (nếu có thêm vào giỏ trong demo mode)
+        try {
+          const demoCart = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+          setCartCount(demoCart.length > 0 ? demoCart.length : 1);
+        } catch {
+          setCartCount(1);
+        }
+
         setUnreadNotifsCount(2);
         return;
       }
@@ -188,48 +196,60 @@ export function Navbar() {
     pathname === path || (path !== "/" && pathname.startsWith(path));
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all shadow-sm">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* LOGO & BRAND */}
-        <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-90">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2.5 transition-transform hover:scale-102">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
               <GraduationCap className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-bold tracking-tight text-foreground sm:text-lg">
-                Nhom7EduLearn
+              <span className="text-base font-black tracking-tight text-slate-900 sm:text-lg leading-tight">
+                Nhom7<span className="text-blue-600">Edu</span>
               </span>
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                LMS Đào tạo
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+                E-Learning Platform
               </span>
             </div>
           </Link>
 
-          {/* DESKTOP NAVIGATION LINKS */}
+          {/* DESKTOP NAVIGATION LINKS (PrepEdu Pill Style) */}
           <nav className="hidden items-center gap-1 md:flex">
             <Link
               href="/courses"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
                 isActive("/courses")
-                  ? "bg-muted text-primary"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-blue-50 text-blue-600 shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <Compass className="h-4 w-4" />
-              <span>Khám phá</span>
+              <Compass className="h-3.5 w-3.5" />
+              <span>Khám phá khóa học</span>
             </Link>
 
             <Link
               href="/my"
-              className={`flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
                 isActive("/my")
-                  ? "bg-muted text-primary"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  ? "bg-blue-50 text-blue-600 shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
               }`}
             >
-              <BookOpen className="h-4 w-4" />
-              <span>Học của tôi</span>
+              <BookOpen className="h-3.5 w-3.5" />
+              <span>Góc học tập</span>
+            </Link>
+
+            <Link
+              href="/certificates"
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                isActive("/certificates")
+                  ? "bg-blue-50 text-blue-600 shadow-xs"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
+            >
+              <Award className="h-3.5 w-3.5" />
+              <span>Chứng chỉ</span>
             </Link>
           </nav>
         </div>
@@ -240,11 +260,11 @@ export function Navbar() {
           <Link
             href="/cart"
             aria-label="Giỏ hàng"
-            className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-600 active:scale-95"
           >
-            <ShoppingCart className="h-4 w-4" />
+            <ShoppingCart className="h-5 w-5" />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground animate-in zoom-in-50">
+              <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-black text-white shadow-sm animate-in zoom-in-50">
                 {cartCount > 9 ? "9+" : cartCount}
               </span>
             )}
@@ -254,11 +274,11 @@ export function Navbar() {
           <Link
             href="/notifications"
             aria-label="Thông báo"
-            className="relative flex h-9 w-9 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-600 active:scale-95"
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-5 w-5" />
             {unreadNotifsCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-destructive ring-2 ring-background" />
+              <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
             )}
           </Link>
 
@@ -267,53 +287,53 @@ export function Navbar() {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-border/60 p-1 pr-2.5 transition-colors hover:bg-muted"
+                className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1 pr-3 transition-all hover:border-blue-300 hover:shadow-sm"
                 aria-expanded={profileDropdownOpen}
               >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-xs font-bold text-white shadow-sm">
                   {profile.fullName ? profile.fullName.charAt(0).toUpperCase() : "U"}
                 </div>
-                <span className="hidden max-w-[120px] truncate text-xs font-medium text-foreground sm:inline-block">
+                <span className="hidden max-w-[120px] truncate text-xs font-bold text-slate-800 sm:inline-block">
                   {profile.fullName || "Tài khoản"}
                 </span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
               </button>
 
               {/* DROPDOWN MENU */}
               {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-popover p-1.5 text-popover-foreground shadow-lg animate-in fade-in-80 zoom-in-95">
-                  <div className="border-b border-border/60 px-2.5 py-2">
-                    <p className="text-sm font-semibold truncate">{profile.fullName}</p>
-                    <p className="text-[11px] text-muted-foreground capitalize">
+                <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 text-slate-800 shadow-xl animate-in fade-in-80 zoom-in-95">
+                  <div className="border-b border-slate-100 px-3 py-2.5">
+                    <p className="text-sm font-bold text-slate-900 truncate">{profile.fullName}</p>
+                    <p className="text-[11px] font-medium text-slate-500 capitalize">
                       Vai trò: {profile.role === "admin" ? "Quản trị viên" : profile.role === "instructor" ? "Giảng viên" : "Học viên"}
                     </p>
                   </div>
 
-                  <div className="py-1">
+                  <div className="py-1.5 space-y-0.5">
                     <Link
                       href="/my"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
                     >
-                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                      <BookOpen className="h-4 w-4 text-blue-600" />
                       <span>Khóa học của tôi</span>
                     </Link>
 
                     <Link
                       href="/certificates"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
                     >
-                      <Award className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Award className="h-4 w-4 text-amber-500" />
                       <span>Chứng chỉ đã đạt</span>
                     </Link>
 
                     <Link
                       href="/profile"
                       onClick={() => setProfileDropdownOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
                     >
-                      <User className="h-3.5 w-3.5 text-muted-foreground" />
+                      <User className="h-4 w-4 text-slate-400" />
                       <span>Hồ sơ cá nhân</span>
                     </Link>
 
@@ -321,9 +341,9 @@ export function Navbar() {
                       <Link
                         href="/studio"
                         onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-blue-600 transition-colors hover:bg-blue-50"
                       >
-                        <LayoutDashboard className="h-3.5 w-3.5" />
+                        <LayoutDashboard className="h-4 w-4" />
                         <span>Khu vực Giảng viên (Studio)</span>
                       </Link>
                     )}
@@ -332,20 +352,20 @@ export function Navbar() {
                       <Link
                         href="/admin"
                         onClick={() => setProfileDropdownOpen(false)}
-                        className="flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-50"
                       >
-                        <LayoutDashboard className="h-3.5 w-3.5" />
+                        <LayoutDashboard className="h-4 w-4" />
                         <span>Trang Quản trị (Admin)</span>
                       </Link>
                     )}
                   </div>
 
-                  <div className="border-t border-border/60 pt-1">
+                  <div className="border-t border-slate-100 pt-1">
                     <button
                       onClick={handleSignOut}
-                      className="flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-50"
                     >
-                      <LogOut className="h-3.5 w-3.5" />
+                      <LogOut className="h-4 w-4" />
                       <span>Đăng xuất</span>
                     </button>
                   </div>
@@ -357,22 +377,22 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={handleDemoLogin}
-                className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-xs font-medium text-amber-600 dark:text-amber-400 transition-colors hover:bg-amber-500/20"
-                title="Bật phiên đăng nhập thử nghiệm Học Viên A (phục vụ test trước khi xong M4)"
+                className="rounded-full border border-amber-300 bg-amber-50 px-3.5 py-1.5 text-xs font-bold text-amber-700 transition-all hover:bg-amber-100 shadow-xs"
+                title="Bật phiên đăng nhập thử nghiệm Học Viên A"
               >
                 ⚡ Test Login (HV)
               </button>
               <Link
                 href="/login"
-                className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                className="rounded-full px-4 py-2 text-xs font-bold text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
               >
                 Đăng nhập
               </Link>
               <Link
                 href="/register"
-                className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+                className="rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-blue-500/20 transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95"
               >
-                Đăng ký
+                Đăng ký ngay
               </Link>
             </div>
           )}
@@ -380,45 +400,54 @@ export function Navbar() {
           {/* MOBILE MENU TOGGLE BUTTON */}
           <button
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-border/60 text-muted-foreground md:hidden hover:bg-muted"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 md:hidden hover:bg-slate-100"
             aria-label="Menu"
           >
-            {mobileMenuOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
       {/* MOBILE EXPANDED MENU */}
       {mobileMenuOpen && (
-        <div className="border-b border-border bg-background px-4 py-3 md:hidden">
+        <div className="border-b border-slate-200 bg-white px-4 py-4 md:hidden animate-in slide-in-from-top-2">
           <nav className="flex flex-col gap-2">
             <Link
               href="/courses"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-600"
             >
-              <Compass className="h-4 w-4 text-primary" />
+              <Compass className="h-4 w-4 text-blue-600" />
               <span>Khám phá khóa học</span>
             </Link>
 
             <Link
               href="/my"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted"
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-600"
             >
-              <BookOpen className="h-4 w-4 text-primary" />
-              <span>Học của tôi</span>
+              <BookOpen className="h-4 w-4 text-blue-600" />
+              <span>Góc học tập của tôi</span>
+            </Link>
+
+            <Link
+              href="/certificates"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-blue-50 hover:text-blue-600"
+            >
+              <Award className="h-4 w-4 text-amber-500" />
+              <span>Chứng chỉ đã đạt</span>
             </Link>
 
             {!profile && (
-              <div className="mt-2 flex flex-col gap-2 border-t border-border pt-3">
+              <div className="mt-2 flex flex-col gap-2 border-t border-slate-100 pt-3">
                 <button
                   type="button"
                   onClick={() => {
                     handleDemoLogin();
                     setMobileMenuOpen(false);
                   }}
-                  className="w-full rounded-md border border-amber-500/40 bg-amber-500/10 py-2 text-center text-xs font-medium text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
+                  className="w-full rounded-full border border-amber-300 bg-amber-50 py-2.5 text-center text-xs font-bold text-amber-700 hover:bg-amber-100"
                 >
                   ⚡ Test Login (HV)
                 </button>
@@ -426,14 +455,14 @@ export function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex-1 rounded-md border border-border py-2 text-center text-xs font-medium hover:bg-muted"
+                    className="flex-1 rounded-full border border-slate-200 py-2.5 text-center text-xs font-bold text-slate-700 hover:bg-slate-50"
                   >
                     Đăng nhập
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex-1 rounded-md bg-primary py-2 text-center text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                    className="flex-1 rounded-full bg-blue-600 py-2.5 text-center text-xs font-bold text-white hover:bg-blue-700 shadow-md shadow-blue-500/20"
                   >
                     Đăng ký
                   </Link>

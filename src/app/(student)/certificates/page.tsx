@@ -66,28 +66,28 @@ export default function MyCertificatesPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
       <Navbar />
 
       <main className="flex-1 mx-auto max-w-6xl w-full px-4 py-8 sm:px-6">
         {/* Header trang */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-500">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200/60 px-3 py-1 text-xs font-bold text-amber-700 uppercase tracking-wider">
               <Award className="h-4 w-4" />
               <span>Thành tích & Chứng nhận chính quy</span>
             </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
               Chứng chỉ của tôi
             </h1>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
               Vinh danh các chứng chỉ hoàn thành xuất sắc lộ trình đào tạo, có giá trị xác thực công khai toàn cầu.
             </p>
           </div>
 
           <Link
             href="/my"
-            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground shadow-sm hover:bg-muted"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all active:scale-95"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Về Khóa học của tôi</span>
@@ -97,20 +97,20 @@ export default function MyCertificatesPage() {
         {/* Danh sách chứng chỉ */}
         <div className="mt-8">
           {isLoading ? (
-            <div className="py-20 text-center text-xs text-muted-foreground">
+            <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách chứng chỉ của bạn...
             </div>
           ) : certificates.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-              <Award className="mx-auto h-12 w-12 text-muted-foreground/40" />
-              <h3 className="mt-4 text-base font-semibold text-foreground">Chưa có chứng chỉ nào</h3>
-              <p className="mt-1.5 text-xs text-muted-foreground">
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
+              <Award className="mx-auto h-12 w-12 text-slate-300" />
+              <h3 className="mt-4 text-base font-bold text-slate-900">Chưa có chứng chỉ nào</h3>
+              <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                 Hãy hoàn thành 100% nội dung các bài học và vượt qua bài kiểm tra trắc nghiệm để được cấp chứng chỉ!
               </p>
               <div className="mt-6">
                 <Link
                   href="/my"
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
                 >
                   <GraduationCap className="h-3.5 w-3.5" />
                   <span>Tiếp tục học tập</span>
@@ -122,7 +122,7 @@ export default function MyCertificatesPage() {
               {certificates.map((cert) => (
                 <div
                   key={cert.id}
-                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#c5a059]/40 bg-card p-6 shadow-sm transition-all hover:border-[#c5a059] hover:shadow-md"
+                  className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-[#c5a059]/40 bg-white p-6 shadow-xs transition-all hover:border-[#c5a059] hover:shadow-md"
                 >
                   <div className="absolute top-0 right-0 h-16 w-16 overflow-hidden">
                     <div className="absolute transform rotate-45 bg-[#c5a059] text-white text-[9px] font-bold py-0.5 right-[-35px] top-[18px] w-[120px] text-center shadow-sm">
@@ -131,33 +131,33 @@ export default function MyCertificatesPage() {
                   </div>
 
                   <div>
-                    <div className="flex items-center gap-2 text-xs font-semibold text-[#aa7c11] dark:text-[#d4af37]">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[#aa7c11]">
                       <ShieldCheck className="h-4 w-4" />
                       <span>Chứng nhận chính thức</span>
                     </div>
 
-                    <h3 className="mt-2 text-base font-bold text-foreground leading-snug line-clamp-2">
+                    <h3 className="mt-2 text-base font-black text-slate-900 leading-snug line-clamp-2">
                       {cert.courseTitle}
                     </h3>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Giảng viên ký xác nhận: <strong className="text-foreground">{cert.instructorName}</strong>
+                    <p className="mt-1 text-xs text-slate-500 font-medium">
+                      Giảng viên ký xác nhận: <strong className="text-slate-800">{cert.instructorName}</strong>
                     </p>
 
-                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-400 font-medium">
                       <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5 text-primary" />
+                        <Calendar className="h-3.5 w-3.5 text-blue-600" />
                         <span>{new Date(cert.issuedAt).toLocaleDateString("vi-VN")}</span>
                       </span>
                       <span>•</span>
-                      <span className="font-mono font-semibold text-foreground">Mã: {cert.code}</span>
+                      <span className="font-mono font-bold text-slate-700">Mã: {cert.code}</span>
                     </div>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                     <Link
                       href={`/verify/${cert.code}`}
                       target="_blank"
-                      className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors"
                     >
                       <span>Tra cứu công khai</span>
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -166,7 +166,7 @@ export default function MyCertificatesPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedCert(cert)}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-[#c5a059] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-[#aa7c11]"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-[#c5a059] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#c5a059]/25 transition-all hover:bg-[#aa7c11] active:scale-95"
                     >
                       <Eye className="h-4 w-4" />
                       <span>Xem & In chứng chỉ</span>

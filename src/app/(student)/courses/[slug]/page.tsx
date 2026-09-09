@@ -17,7 +17,7 @@ import { isEnrolled } from "@/lib/queries/commerce";
 import { formatDate } from "@/lib/utils";
 import { CourseDetailActions, CourseSyllabus } from "./CourseDetailActions";
 
-// Khóa học chi tiết mẫu khi DB chưa có dữ liệu
+// Khóa học chi tiết mẫu khi DB chưa có dữ liệu (đồng bộ 100% với Catalog)
 const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
   "lap-trinh-web-nextjs": {
     id: "demo-course-1",
@@ -64,16 +64,6 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             isFree: true,
             position: 2,
           },
-          {
-            id: "les-3",
-            chapterId: "chap-1",
-            title: "03. Cơ chế Server Components vs Client Components",
-            videoUrl: null,
-            videoStatus: "ready",
-            durationSeconds: 900,
-            isFree: false,
-            position: 3,
-          },
         ],
       },
       {
@@ -83,69 +73,130 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
         position: 2,
         lessons: [
           {
-            id: "les-4",
+            id: "les-3",
             chapterId: "chap-2",
-            title: "04. Cấu hình Semantic Design Tokens và shadcn/ui",
+            title: "03. Cấu hình Semantic Design Tokens và shadcn/ui",
             videoUrl: null,
             videoStatus: "ready",
             durationSeconds: 850,
             isFree: false,
             position: 1,
           },
-          {
-            id: "les-5",
-            chapterId: "chap-2",
-            title: "05. Thiết kế Header, Navbar và Navigation đa cấp",
-            videoUrl: null,
-            videoStatus: "ready",
-            durationSeconds: 1100,
-            isFree: false,
-            position: 2,
-          },
         ],
       },
+    ],
+  },
+  "nhap-mon-frontend": {
+    id: "demo-course-3",
+    instructorId: "demo-inst-3",
+    categoryId: "cat-fe",
+    title: "Nhập môn Lập trình Giao diện Web (HTML5, CSS3, Tailwind)",
+    slug: "nhap-mon-frontend",
+    description:
+      "Khóa học miễn phí dành cho người mới bắt đầu muốn tạo dựng các trang web đẹp mắt và responsive cùng HTML5, CSS3 và Tailwind CSS.",
+    level: "beginner",
+    price: 0,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "Kỹ sư Lê Hoàng C",
+    avgRating: 4.7,
+    ratingCount: 215,
+    chapters: [
       {
-        id: "chap-3",
-        courseId: "demo-course-1",
-        title: "Chương 3: Kết nối CSDL Supabase, Auth & Bảo mật RLS",
-        position: 3,
+        id: "chap-fe-1",
+        courseId: "demo-course-3",
+        title: "Chương 1: Nền tảng HTML5 & Cấu trúc trang Web",
+        position: 1,
         lessons: [
           {
-            id: "les-6",
-            chapterId: "chap-3",
-            title: "06. Khởi tạo Supabase Client & Quản lý phiên đăng nhập SSR",
-            videoUrl: null,
+            id: "les-fe-1",
+            chapterId: "chap-fe-1",
+            title: "01. Cấu trúc một trang web và các thẻ HTML cơ bản",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             videoStatus: "ready",
-            durationSeconds: 1250,
-            isFree: false,
+            durationSeconds: 600,
+            isFree: true,
             position: 1,
           },
+        ],
+      },
+    ],
+  },
+  "postgresql-supabase-chuyen-sau": {
+    id: "demo-course-2",
+    instructorId: "demo-inst-2",
+    categoryId: "cat-db",
+    title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
+    slug: "postgresql-supabase-chuyen-sau",
+    description:
+      "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng cho ứng dụng lớn cùng PostgreSQL và Supabase.",
+    level: "advanced",
+    price: 399000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "TS. Trần Thị B",
+    avgRating: 4.8,
+    ratingCount: 96,
+    chapters: [
+      {
+        id: "chap-db-1",
+        courseId: "demo-course-2",
+        title: "Chương 1: Kiến trúc Postgres & Supabase Baas",
+        position: 1,
+        lessons: [
           {
-            id: "les-7",
-            chapterId: "chap-3",
-            title: "07. Thiết lập Row Level Security (RLS) bảo vệ dữ liệu",
-            videoUrl: null,
+            id: "les-db-1",
+            chapterId: "chap-db-1",
+            title: "01. Khởi tạo DB và cấu hình Row Level Security (RLS)",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             videoStatus: "ready",
-            durationSeconds: 1400,
-            isFree: false,
-            position: 2,
+            durationSeconds: 700,
+            isFree: true,
+            position: 1,
           },
         ],
       },
+    ],
+  },
+  "nodejs-restful-api": {
+    id: "demo-course-4",
+    instructorId: "demo-inst-4",
+    categoryId: "cat-be",
+    title: "Xây dựng RESTful API & Microservices với Node.js & Express",
+    slug: "nodejs-restful-api",
+    description:
+      "Thiết kế hệ thống Backend chịu tải cao, JWT Authentication, phân quyền và Docker hóa cho hệ thống microservices.",
+    level: "intermediate",
+    price: 350000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "ThS. Phạm Quốc D",
+    avgRating: 4.6,
+    ratingCount: 88,
+    chapters: [
       {
-        id: "chap-4",
-        courseId: "demo-course-1",
-        title: "Chương 4: Thi kết thúc khóa & Nhận Chứng chỉ Tốt nghiệp",
-        position: 4,
+        id: "chap-be-1",
+        courseId: "demo-course-4",
+        title: "Chương 1: Thiết kế REST API chuẩn kiến trúc sạch",
+        position: 1,
         lessons: [
           {
-            id: "les-8",
-            chapterId: "chap-4",
-            title: "08. Đánh giá cuối kỳ: Làm bài thi trắc nghiệm trực tuyến",
-            videoUrl: null,
+            id: "les-be-1",
+            chapterId: "chap-be-1",
+            title: "01. Giới thiệu kiến trúc MVC & Routing trong Express",
+            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
             videoStatus: "ready",
-            durationSeconds: 1800,
-            isFree: false,
+            durationSeconds: 650,
+            isFree: true,
             position: 1,
           },
         ],
@@ -201,16 +252,6 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               isFree: true,
               position: 1,
             },
-            {
-              id: "demo-les-2",
-              chapterId: "demo-chap-1",
-              title: "02. Hướng dẫn thiết lập môi trường",
-              videoUrl: null,
-              videoStatus: "ready",
-              durationSeconds: 650,
-              isFree: false,
-              position: 2,
-            },
           ],
         },
       ],
@@ -234,65 +275,65 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   const totalDurationHours = (totalDurationSeconds / 3600).toFixed(1);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
       <Navbar />
 
       <main className="flex-1 pb-16">
-        {/* COURSE HERO SECTION */}
-        <div className="border-b border-border/50 bg-muted/30 py-8 lg:py-12">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {/* COURSE HERO SECTION (PrepEdu Style) */}
+        <div className="border-b border-slate-200 bg-white py-8 lg:py-12 shadow-xs">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {/* BREADCRUMB */}
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-4">
-              <Link href="/" className="hover:text-foreground transition-colors">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-4">
+              <Link href="/" className="hover:text-blue-600 transition-colors">
                 Trang chủ
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <Link href="/courses" className="hover:text-foreground transition-colors">
+              <Link href="/courses" className="hover:text-blue-600 transition-colors">
                 Khóa học
               </Link>
               <ChevronRight className="h-3 w-3" />
-              <span className="text-foreground font-medium truncate max-w-xs">{course.title}</span>
+              <span className="text-slate-800 font-bold truncate max-w-xs">{course.title}</span>
             </div>
 
             <div className="max-w-3xl space-y-4">
               {course.isFeatured && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/30 px-3 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-3 py-0.5 text-xs font-black uppercase tracking-wider text-blue-950 shadow-xs">
                   <Sparkles className="h-3 w-3" />
                   <span>Khóa học nổi bật</span>
                 </span>
               )}
 
-              <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
+              <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-slate-900 leading-tight">
                 {course.title}
               </h1>
 
-              <p className="text-base text-muted-foreground leading-relaxed">
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
                 {course.description}
               </p>
 
               {/* STATS ROW */}
-              <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 text-xs text-slate-500">
                 {/* SAO */}
-                <div className="flex items-center gap-1.5 font-medium text-foreground">
+                <div className="flex items-center gap-1.5 font-bold text-slate-900">
                   <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  <span className="font-bold text-sm">
+                  <span className="text-sm">
                     {course.avgRating > 0 ? course.avgRating.toFixed(1) : "5.0"}
                   </span>
-                  <span className="text-muted-foreground">
-                    ({course.ratingCount > 0 ? course.ratingCount : 120} đánh giá)
+                  <span className="text-slate-400 font-normal">
+                    ({course.ratingCount > 0 ? course.ratingCount : 120} học viên đánh giá)
                   </span>
                 </div>
 
                 {/* GIẢNG VIÊN */}
                 <div className="flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5" />
-                  <span>Giảng viên: <strong className="text-foreground">{course.instructorName}</strong></span>
+                  <User className="h-3.5 w-3.5 text-blue-600" />
+                  <span>Giảng viên: <strong className="text-slate-900">{course.instructorName}</strong></span>
                 </div>
 
                 {/* NGÀY CẬP NHẬT */}
                 <div className="flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5" />
-                  <span>Cập nhật: {formatDate(course.updatedAt)}</span>
+                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                  <span>Cập nhật mới: {formatDate(course.updatedAt)}</span>
                 </div>
               </div>
             </div>
@@ -300,33 +341,33 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
         </div>
 
         {/* MAIN BODY: 2 COLUMNS */}
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
             {/* CỘT TRÁI (NỘI DUNG CHÍNH) */}
-            <div className="lg:col-span-2 space-y-10">
+            <div className="lg:col-span-2 space-y-8">
               {/* BẠN SẼ HỌC ĐƯỢC GÌ */}
-              <section className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-4">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  <span>Bạn sẽ học được gì trong khóa học này?</span>
+              <section className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm space-y-4">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <span>Bạn sẽ học và làm được gì sau khóa học?</span>
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-muted-foreground">
-                  <div className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm text-slate-600">
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-emerald-600 font-black shrink-0">✓</span>
                     <span>Làm chủ toàn bộ kiến thức cốt lõi và tư duy lập trình hiện đại.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-emerald-600 font-black shrink-0">✓</span>
                     <span>Tự tay xây dựng và triển khai dự án thực tế chuẩn Production.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold shrink-0">✓</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-emerald-600 font-black shrink-0">✓</span>
                     <span>Tự động theo dõi tiến độ học tập và điểm danh chuyên cần qua video.</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <span className="text-emerald-500 font-bold shrink-0">✓</span>
-                    <span>Làm bài thi trắc nghiệm kết khóa và nhận chứng chỉ danh dự xác thực.</span>
+                  <div className="flex items-start gap-2.5">
+                    <span className="text-emerald-600 font-black shrink-0">✓</span>
+                    <span>Làm bài thi trắc nghiệm kết khóa và nhận chứng chỉ danh dự xác thực QR.</span>
                   </div>
                 </div>
               </section>
@@ -335,17 +376,17 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               <section className="space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
-                      <BookOpen className="h-5 w-5 text-primary" />
-                      <span>Nội dung khóa học</span>
+                    <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                      <BookOpen className="h-5 w-5 text-blue-600" />
+                      <span>Giáo trình & Nội dung chi tiết</span>
                     </h2>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-slate-500 mt-0.5">
                       {course.chapters.length} chương • {totalLessons} bài học • Thời lượng ~{totalDurationHours} giờ
                     </p>
                   </div>
 
-                  <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                    Có bài học thử miễn phí
+                  <span className="text-xs text-emerald-600 font-bold bg-emerald-50 px-3 py-1 rounded-full">
+                    ✓ Có bài học thử miễn phí
                   </span>
                 </div>
 
@@ -354,24 +395,24 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               </section>
 
               {/* THÔNG TIN GIẢNG VIÊN */}
-              <section className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-4">
-                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  <span>Giảng viên phụ trách</span>
+              <section className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-sm space-y-4">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <GraduationCap className="h-5 w-5 text-blue-600" />
+                  <span>Giảng viên hướng dẫn</span>
                 </h2>
 
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary font-bold text-base shrink-0">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-700 font-bold text-lg shrink-0">
                     {course.instructorName ? course.instructorName.charAt(0) : "G"}
                   </div>
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-base text-foreground">
+                    <h3 className="font-bold text-base text-slate-900">
                       {course.instructorName}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      Giảng viên chuyên môn cao tại Nhom7EduLearn • Nhiều năm kinh nghiệm đào tạo thực chiến
+                    <p className="text-xs font-semibold text-blue-600">
+                      Giảng viên Chuyên môn cao tại Nhom7Edu • Nhiều năm kinh nghiệm đào tạo
                     </p>
-                    <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
+                    <p className="text-xs text-slate-500 pt-1 leading-relaxed">
                       Cam kết đồng hành cùng học viên trong suốt lộ trình, giải đáp mọi thắc mắc tại khu vực Thảo luận (Q&A) và tổ chức các buổi Live Session định kỳ.
                     </p>
                   </div>

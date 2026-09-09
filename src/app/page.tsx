@@ -88,101 +88,154 @@ export default async function HomePage() {
   const spotlightList = featuredCourses.length > 0 ? featuredCourses : displayCourses.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
+      {/* TOP PROMO BANNER (Phong cách PrepEdu) */}
+      <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-indigo-700 text-white text-xs py-2.5 px-4 text-center font-medium flex items-center justify-center gap-2 shadow-inner">
+        <span className="bg-amber-400 text-blue-950 px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase tracking-wide">
+          Ưu đãi mới
+        </span>
+        <span>
+          Nhập mã <strong className="underline decoration-amber-400 font-bold">SAVE100K</strong> khi thanh toán để giảm ngay 100.000₫ cho mọi khóa học!
+        </span>
+      </div>
+
       {/* NAVBAR */}
       <Navbar />
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative overflow-hidden border-b border-border/40 bg-gradient-to-b from-muted/50 via-background to-background py-16 sm:py-24">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="mx-auto max-w-3xl text-center space-y-6">
-              {/* BADGE */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1 text-xs font-semibold text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Nền tảng học tập trực tuyến thông minh</span>
+        <section className="relative overflow-hidden pt-12 pb-16 sm:py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+              
+              {/* CỘT TRÁI: TIÊU ĐỀ & CTA */}
+              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+                {/* BADGE */}
+                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5 text-xs font-bold text-blue-700">
+                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
+                  <span>Hệ thống Đào tạo Lập trình Thực chiến 2026</span>
+                </div>
+
+                {/* HEADING */}
+                <h1 className="text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl text-slate-900 leading-tight">
+                  Nâng tầm kỹ năng công nghệ cùng{" "}
+                  <span className="text-blue-600">
+                    Lộ trình chuẩn Thực chiến
+                  </span>
+                </h1>
+
+                {/* SUBTITLE */}
+                <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl mx-auto lg:mx-0">
+                  Nền tảng học trực tuyến thông minh giúp bạn làm chủ công nghệ từ số 0. Học qua video bài giảng chất lượng cao,
+                  thực hành tương tác, làm quiz đo lường năng lực và nhận chứng chỉ xác thực QR ngay sau khi tốt nghiệp.
+                </p>
+
+                {/* CTA BUTTONS (Pill Shapes) */}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3.5 pt-2">
+                  <Link
+                    href="/courses"
+                    className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-700 hover:shadow-xl active:scale-95"
+                  >
+                    <Compass className="h-4 w-4" />
+                    <span>Khám phá 50+ khóa học</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+
+                  <Link
+                    href="/courses/nhap-mon-frontend"
+                    className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 text-sm font-bold text-slate-700 shadow-sm transition-all hover:bg-slate-50 hover:border-blue-300 active:scale-95"
+                  >
+                    <BookOpen className="h-4 w-4 text-blue-600" />
+                    <span>Học thử miễn phí</span>
+                  </Link>
+                </div>
+
+                {/* STATS BAR */}
+                <div className="pt-8 border-t border-slate-200 grid grid-cols-2 gap-4 sm:grid-cols-4 text-left">
+                  <div>
+                    <p className="text-2xl font-black text-slate-900 font-mono">12.000+</p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">Học viên tham gia</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-slate-900 font-mono">50+</p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">Khóa học chất lượng</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-amber-500 font-mono">★ 4.9/5</p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">Đánh giá xuất sắc</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-black text-emerald-600 font-mono">100%</p>
+                    <p className="text-xs font-medium text-slate-500 mt-0.5">Chứng chỉ xác thực QR</p>
+                  </div>
+                </div>
               </div>
 
-              {/* HEADING */}
-              <h1 className="text-3xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl text-foreground">
-                Nâng Tầm Kỹ Năng Cùng{" "}
-                <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Nhom7EduLearn
-                </span>
-              </h1>
+              {/* CỘT PHẢI: BANNER THẺ NỔI (PrepEdu Style) */}
+              <div className="lg:col-span-5 relative hidden sm:block">
+                <div className="rounded-3xl bg-gradient-to-tr from-blue-100/70 via-indigo-50/50 to-blue-50/60 p-6 border border-blue-200/70 shadow-xl">
+                  {/* Floating Achievement Badge */}
+                  <div className="rounded-2xl bg-white p-4 shadow-lg border border-slate-100 mb-4 flex items-center gap-3 animate-float-soft">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">
+                      🏆
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block">Chứng chỉ Hoàn thành Chuẩn LMS</span>
+                      <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                        ✓ Mã định danh xác thực công khai
+                      </span>
+                    </div>
+                  </div>
 
-              {/* SUBTITLE */}
-              <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                Nền tảng đào tạo trực tuyến hiện đại với lộ trình chuẩn chỉ. Học qua video tương tác,
-                điểm danh tự động, phòng học trực tiếp Google Meet và nhận chứng chỉ xác thực công khai.
-              </p>
-
-              {/* CTA BUTTONS */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <Link
-                  href="/courses"
-                  className="flex items-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
-                >
-                  <Compass className="h-4 w-4" />
-                  <span>Khám phá khóa học</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-
-                <Link
-                  href="/my"
-                  className="flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  <span>Khóa học của tôi</span>
-                </Link>
-              </div>
-
-              {/* STATS BAR */}
-              <div className="pt-8 border-t border-border/60 grid grid-cols-2 gap-4 sm:grid-cols-4">
-                <div>
-                  <p className="text-2xl font-bold text-foreground">100+</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Khóa học chất lượng</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">10.000+</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Học viên tích cực</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">98%</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Tỷ lệ hài lòng</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">100%</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Chứng chỉ xác thực</p>
+                  {/* Course Progress Card */}
+                  <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
+                        Đang học gần đây
+                      </span>
+                      <span className="text-xs font-mono text-blue-600 font-bold">85% Hoàn thành</span>
+                    </div>
+                    <h4 className="font-bold text-slate-900 text-sm">Lập trình Fullstack Next.js 14 & Supabase</h4>
+                    <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full w-[85%] rounded-full"></div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
+                      <span>Còn 2 bài học & 1 bài thi Quiz</span>
+                      <Link href="/courses" className="px-3.5 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 transition-all">
+                        Tiếp tục học
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
+
             </div>
           </div>
         </section>
 
         {/* FEATURED COURSES SECTION */}
-        <section className="py-14 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+        <section className="py-14 sm:py-20 bg-white border-y border-slate-200/80">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
               <div>
-                <div className="flex items-center gap-2 text-primary text-xs font-semibold uppercase tracking-wider">
+                <div className="inline-flex items-center gap-2 text-blue-600 text-xs font-bold uppercase tracking-wider bg-blue-50 px-3 py-1 rounded-full">
                   <Sparkles className="h-3.5 w-3.5" />
-                  <span>Lựa chọn hàng đầu</span>
+                  <span>Khóa học được yêu thích</span>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground mt-1">
-                  Khóa học nổi bật
+                <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-2">
+                  Khóa học Tiêu biểu & Nổi bật
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Những khóa học được nhiều học viên đánh giá cao và lựa chọn nhất
+                <p className="text-sm text-slate-500 mt-1">
+                  Được thiết kế bám sát thực tế tuyển dụng, cập nhật công nghệ mới nhất 2026
                 </p>
               </div>
 
               <Link
                 href="/courses"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-full transition-all"
               >
                 <span>Xem tất cả khóa học</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
@@ -195,61 +248,61 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* WHY CHOOSE US SECTION */}
-        <section className="border-t border-border/40 bg-muted/30 py-16 sm:py-20">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="text-center max-w-2xl mx-auto mb-12 space-y-2">
-              <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+        {/* WHY CHOOSE US SECTION (Bento Style Sáng sủa) */}
+        <section className="py-16 sm:py-24 bg-[#F8FAFC]">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
+              <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
                 Trải nghiệm vượt trội
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                Tại sao chọn học tại Nhom7EduLearn?
+              <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                Tại sao bạn nên chọn học tại Nhom7Edu?
               </h2>
-              <p className="text-sm text-muted-foreground">
-                Chúng tôi mang đến hệ sinh thái học tập khép kín, tiện lợi và chú trọng kết quả thực tế.
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Hệ sinh thái học tập khép kín với các công cụ hỗ trợ thông minh giúp bạn tiếp thu kiến thức nhanh hơn.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {/* FEATURE 1 */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Video className="h-5 w-5" />
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-blue-300 space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <Video className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-base text-foreground">
+                <h3 className="font-bold text-base text-slate-900">
                   Học qua Video & Điểm danh tự động
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Trình phát video thông minh tự động lưu giây đang xem dở, tự động ghi nhận điểm danh
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  Trình phát video thông minh nhớ vị trí đang xem dở, cho phép tua tốc độ 1.5x, tự động ghi nhận điểm danh
                   chuyên cần khi bạn theo dõi đạt từ 95% thời lượng.
                 </p>
               </div>
 
               {/* FEATURE 2 */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Users className="h-5 w-5" />
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-300 space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                  <Users className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-base text-foreground">
-                  Buổi học Trực tiếp (Live Session)
+                <h3 className="font-bold text-base text-slate-900">
+                  Lớp học Trực tiếp (Live Meet)
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Hòa mình vào các lớp học trực tuyến Google Meet cùng giảng viên chỉ với 1 click, hệ
-                  thống tự động gác quyền và ghi nhận có mặt.
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  Tham gia các buổi trao đổi, giải đáp đồ án trực tiếp cùng giảng viên qua Google Meet chỉ với 1 click, hệ
+                  thống tự động gác quyền bảo mật theo vai trò.
                 </p>
               </div>
 
               {/* FEATURE 3 */}
-              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Award className="h-5 w-5" />
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-amber-300 space-y-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+                  <Award className="h-6 w-6" />
                 </div>
-                <h3 className="font-semibold text-base text-foreground">
-                  Chứng chỉ Trang trọng & Xác thực
+                <h3 className="font-bold text-base text-slate-900">
+                  Chứng chỉ Tốt nghiệp Xác thực QR
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Thi trắc nghiệm kết thúc khóa để nhận chứng chỉ danh dự cổ điển. Bất kỳ nhà tuyển
-                  dụng nào cũng có thể tra cứu mã chứng chỉ công khai.
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  Vượt qua bài thi trắc nghiệm chống gian lận để nhận chứng chỉ danh dự. Bất kỳ nhà tuyển
+                  dụng nào cũng có thể quét mã QR để tra cứu kết quả xác thực công khai.
                 </p>
               </div>
             </div>
@@ -257,32 +310,32 @@ export default async function HomePage() {
         </section>
 
         {/* ROLE SHORTCUTS SECTION (Dành cho thầy cô / bạn cùng nhóm trải nghiệm nhanh) */}
-        <section className="py-12 border-t border-border/40">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="rounded-xl border border-dashed border-border p-6 bg-card">
+        <section className="py-10 bg-white border-t border-slate-200/80">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-dashed border-slate-300 p-6 bg-slate-50/60">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <GraduationCap className="h-4 w-4 text-primary" />
-                    Lối tắt truy cập các phân hệ (Dành cho Giảng viên & Quản trị)
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4 text-blue-600" />
+                    Lối tắt truy cập các phân hệ khác (Dành cho Giảng viên & Quản trị)
                   </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Truy cập nhanh các màn hình chức năng thuộc phạm vi toàn hệ thống LMS
+                  <p className="text-xs text-slate-500 mt-1">
+                    Truy cập nhanh các màn hình chức năng thuộc các phân hệ M1, M2 và M4
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <Link
                     href="/studio"
-                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all shadow-xs"
                   >
-                    Studio Giảng viên (M4) →
+                    Studio Giảng viên (M2/M4) →
                   </Link>
                   <Link
                     href="/admin"
-                    className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all shadow-xs"
                   >
-                    Quản trị Admin (M4) →
+                    Quản trị Admin (M1/M4) →
                   </Link>
                 </div>
               </div>
@@ -292,12 +345,14 @@ export default async function HomePage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-border/60 bg-muted/40 py-8">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-foreground">Nhom7EduLearn</span>
-            <span>— Đồ án LMS Đào tạo trực tuyến</span>
+      <footer className="border-t border-slate-200 bg-white py-10">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">
+              E7
+            </div>
+            <span className="font-bold text-slate-900">Nhom7Edu</span>
+            <span>— Hệ thống Quản lý Học tập LMS Trực tuyến</span>
           </div>
           <p>© 2026 Nhóm 7 — Trường ĐH Sư phạm Kỹ thuật TP.HCM (HCMUTE).</p>
         </div>

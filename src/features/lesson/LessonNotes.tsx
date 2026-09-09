@@ -121,17 +121,17 @@ export function LessonNotes({ lessonId, currentTime, onSeek }: LessonNotesProps)
   return (
     <div className="space-y-6">
       {/* Form tạo ghi chú */}
-      <form onSubmit={handleSubmitNote} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Bookmark className="h-4 w-4 text-primary" />
+      <form onSubmit={handleSubmitNote} className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+            <Bookmark className="h-4 w-4 text-blue-600" />
             <span>Tạo ghi chú học tập</span>
           </div>
 
           <button
             type="button"
             onClick={handleCaptureCurrentTime}
-            className="flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+            className="flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 transition-colors hover:bg-blue-100"
           >
             <Clock className="h-3.5 w-3.5" />
             <span>Gắn mốc video: {formatSeconds(capturedSeconds > 0 ? capturedSeconds : currentTime)}</span>
@@ -143,18 +143,18 @@ export function LessonNotes({ lessonId, currentTime, onSeek }: LessonNotesProps)
           onChange={(e) => setContent(e.target.value)}
           placeholder="Nhập nội dung ghi nhớ, lưu ý quan trọng tại mốc thời gian này..."
           rows={3}
-          className="w-full resize-none rounded-lg border border-border bg-background p-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
         />
 
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            Mốc ghi nhớ: <strong className="text-foreground">{formatSeconds(capturedSeconds > 0 ? capturedSeconds : currentTime)}</strong>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-xs text-slate-400 font-medium">
+            Mốc ghi nhớ: <strong className="text-slate-800 font-mono">{formatSeconds(capturedSeconds > 0 ? capturedSeconds : currentTime)}</strong>
           </span>
 
           <button
             type="submit"
             disabled={isSubmitting || !content.trim()}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
           >
             {isSubmitting ? (
               <>
@@ -174,22 +174,22 @@ export function LessonNotes({ lessonId, currentTime, onSeek }: LessonNotesProps)
       {/* Danh sách ghi chú */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-bold text-slate-900">
             Ghi chú của bạn ({notes.length})
           </h3>
-          <span className="text-xs text-muted-foreground">Bấm vào mốc thời gian để tua video</span>
+          <span className="text-xs text-slate-400 font-medium">Bấm vào mốc thời gian để tua video</span>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="ml-2 text-xs">Đang tải danh sách ghi chú...</span>
+          <div className="flex items-center justify-center py-8 text-slate-400">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="ml-2 text-xs font-medium">Đang tải danh sách ghi chú...</span>
           </div>
         ) : notes.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/70 p-8 text-center">
-            <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/50" />
-            <p className="mt-2 text-sm font-medium text-foreground">Chưa có ghi chú nào cho bài học này</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs">
+            <Sparkles className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm font-bold text-slate-800">Chưa có ghi chú nào cho bài học này</p>
+            <p className="mt-1 text-xs text-slate-400 font-medium">
               Hãy ghi lại những điểm chính hoặc công thức cần nhớ trong lúc xem video nhé!
             </p>
           </div>
@@ -198,12 +198,12 @@ export function LessonNotes({ lessonId, currentTime, onSeek }: LessonNotesProps)
             {notes.map((note) => (
               <div
                 key={note.id}
-                className="group flex items-start gap-3 rounded-xl border border-border/70 bg-card/60 p-3.5 transition-colors hover:border-primary/40 hover:bg-card"
+                className="group flex items-start gap-3 rounded-2xl border border-slate-200/90 bg-white p-4 transition-all hover:border-blue-300 shadow-xs"
               >
                 <button
                   type="button"
                   onClick={() => onSeek(note.timestampSeconds)}
-                  className="mt-0.5 flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+                  className="mt-0.5 flex shrink-0 items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-mono font-bold text-blue-700 transition-colors hover:bg-blue-600 hover:text-white border border-blue-200/60"
                   title="Tua đến mốc thời gian này"
                 >
                   <Clock className="h-3 w-3" />
@@ -211,8 +211,8 @@ export function LessonNotes({ lessonId, currentTime, onSeek }: LessonNotesProps)
                 </button>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs leading-relaxed text-foreground whitespace-pre-wrap">{note.content}</p>
-                  <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  <p className="text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">{note.content}</p>
+                  <p className="mt-1.5 text-[11px] text-slate-400 font-medium">
                     {new Date(note.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} •{" "}
                     {new Date(note.createdAt).toLocaleDateString("vi-VN")}
                   </p>

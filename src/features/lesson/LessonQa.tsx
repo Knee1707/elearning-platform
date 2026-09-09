@@ -176,9 +176,9 @@ export function LessonQa({ lessonId }: LessonQaProps) {
   return (
     <div className="space-y-6">
       {/* Form đặt câu hỏi */}
-      <form onSubmit={handleAskQuestion} className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
-          <MessageSquare className="h-4 w-4 text-primary" />
+      <form onSubmit={handleAskQuestion} className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-900">
+          <MessageSquare className="h-4 w-4 text-blue-600" />
           <span>Hỏi đáp & Thảo luận bài học</span>
         </div>
 
@@ -187,14 +187,14 @@ export function LessonQa({ lessonId }: LessonQaProps) {
           onChange={(e) => setNewQuestionContent(e.target.value)}
           placeholder="Bạn có câu hỏi hoặc thắc mắc về nội dung bài giảng này? Hãy chia sẻ để giảng viên và các bạn cùng giải đáp nhé..."
           rows={3}
-          className="w-full resize-none rounded-lg border border-border bg-background p-3 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
         />
 
-        <div className="mt-3 flex justify-end">
+        <div className="flex justify-end pt-1">
           <button
             type="submit"
             disabled={isSubmittingQuestion || !newQuestionContent.trim()}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50"
           >
             {isSubmittingQuestion ? (
               <>
@@ -214,71 +214,71 @@ export function LessonQa({ lessonId }: LessonQaProps) {
       {/* Danh sách câu hỏi và phản hồi */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="text-sm font-bold text-slate-900">
             Các câu hỏi ({questions.length})
           </h3>
-          <span className="text-xs text-muted-foreground">Mới nhất lên đầu</span>
+          <span className="text-xs text-slate-400 font-medium">Mới nhất lên đầu</span>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="ml-2 text-xs">Đang tải thảo luận...</span>
+          <div className="flex items-center justify-center py-8 text-slate-400">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="ml-2 text-xs font-medium">Đang tải thảo luận...</span>
           </div>
         ) : questions.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border/70 p-8 text-center">
-            <Sparkles className="mx-auto h-8 w-8 text-muted-foreground/50" />
-            <p className="mt-2 text-sm font-medium text-foreground">Chưa có thảo luận nào trong bài này</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-xs">
+            <Sparkles className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm font-bold text-slate-800">Chưa có thảo luận nào trong bài này</p>
+            <p className="mt-1 text-xs text-slate-400 font-medium">
               Hãy là người đầu tiên đặt câu hỏi cho giảng viên và cộng đồng nhé!
             </p>
           </div>
         ) : (
           <div className="space-y-4">
             {questions.map((q) => (
-              <div key={q.id} className="rounded-xl border border-border/70 bg-card p-4 shadow-sm space-y-3">
+              <div key={q.id} className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
                 {/* Người hỏi & câu hỏi */}
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 shadow-xs">
                     H
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-foreground">Học viên</span>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-xs font-bold text-slate-900">Học viên</span>
+                      <span className="text-[11px] text-slate-400 font-medium">
                         {new Date(q.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} •{" "}
                         {new Date(q.createdAt).toLocaleDateString("vi-VN")}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs leading-relaxed text-foreground whitespace-pre-wrap">{q.content}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">{q.content}</p>
                   </div>
                 </div>
 
                 {/* Danh sách câu trả lời */}
                 {q.answers && q.answers.length > 0 && (
-                  <div className="ml-6 space-y-2.5 border-l-2 border-primary/30 pl-4 pt-1">
+                  <div className="ml-5 sm:ml-7 space-y-3 border-l-2 border-blue-200 pl-4 pt-1">
                     {q.answers.map((ans) => {
                       const isInstructor = ans.userId === "00000000-0000-0000-0000-000000000001";
                       return (
-                        <div key={ans.id} className="rounded-lg bg-muted/40 p-3">
+                        <div key={ans.id} className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
                           <div className="flex items-center gap-2">
                             {isInstructor ? (
-                              <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200/60 px-2 py-0.5 text-[10px] font-bold text-blue-700">
                                 <ShieldCheck className="h-3 w-3" />
                                 Giảng viên
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-xs font-medium text-foreground">
-                                <UserCheck className="h-3 w-3 text-muted-foreground" />
+                              <span className="inline-flex items-center gap-1 rounded-full bg-slate-200/70 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                                <UserCheck className="h-3 w-3 text-slate-500" />
                                 Bạn học
                               </span>
                             )}
-                            <span className="text-[10px] text-muted-foreground">
+                            <span className="text-[10px] text-slate-400 font-medium">
                               {new Date(ans.createdAt).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })} •{" "}
                               {new Date(ans.createdAt).toLocaleDateString("vi-VN")}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+                          <p className="mt-1.5 text-xs leading-relaxed text-slate-700 font-medium whitespace-pre-wrap">
                             {ans.content}
                           </p>
                         </div>
@@ -290,13 +290,13 @@ export function LessonQa({ lessonId }: LessonQaProps) {
                 {/* Nút hoặc form trả lời */}
                 <div className="pt-1">
                   {replyingToId === q.id ? (
-                    <form onSubmit={(e) => handleAnswer(q.id, e)} className="mt-2 space-y-2 rounded-lg bg-muted/30 p-3">
+                    <form onSubmit={(e) => handleAnswer(q.id, e)} className="mt-2 space-y-2 rounded-xl bg-slate-50 p-3.5 border border-slate-200/80">
                       <textarea
                         value={replyContent}
                         onChange={(e) => setReplyContent(e.target.value)}
                         placeholder="Nhập câu trả lời của bạn để hỗ trợ bạn học..."
                         rows={2}
-                        className="w-full resize-none rounded-md border border-border bg-background p-2.5 text-xs focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        className="w-full resize-none rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                       <div className="flex justify-end gap-2">
                         <button
@@ -305,14 +305,14 @@ export function LessonQa({ lessonId }: LessonQaProps) {
                             setReplyingToId(null);
                             setReplyContent("");
                           }}
-                          className="rounded px-2.5 py-1 text-xs text-muted-foreground hover:bg-muted"
+                          className="rounded-full px-3 py-1 text-xs font-semibold text-slate-500 hover:bg-slate-200/60 transition-colors"
                         >
                           Hủy
                         </button>
                         <button
                           type="submit"
                           disabled={isSubmittingReply || !replyContent.trim()}
-                          className="flex items-center gap-1 rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90 disabled:opacity-50"
+                          className="flex items-center gap-1 rounded-full bg-blue-600 px-4 py-1 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition-all disabled:opacity-50"
                         >
                           {isSubmittingReply ? "Đang gửi..." : "Gửi trả lời"}
                         </button>
@@ -322,7 +322,7 @@ export function LessonQa({ lessonId }: LessonQaProps) {
                     <button
                       type="button"
                       onClick={() => setReplyingToId(q.id)}
-                      className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
                     >
                       <CornerDownRight className="h-3.5 w-3.5" />
                       <span>Trả lời câu hỏi</span>

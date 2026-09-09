@@ -117,21 +117,21 @@ export default function MyLearningPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
       <Navbar />
 
       <main className="flex-1 mx-auto max-w-6xl w-full px-4 py-8 sm:px-6">
         {/* Header trang */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-border pb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200/60 px-3 py-1 text-xs font-bold text-blue-700 uppercase tracking-wider">
               <GraduationCap className="h-4 w-4" />
               <span>Góc học tập cá nhân</span>
             </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
               Khóa học của tôi
             </h1>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
               Theo dõi tiến trình học tập, hoàn thành bài giảng và nhận chứng chỉ chính quy.
             </p>
           </div>
@@ -139,14 +139,14 @@ export default function MyLearningPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/certificates"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
             >
               <Award className="h-4 w-4 text-amber-500" />
               <span>Chứng chỉ của tôi</span>
             </Link>
             <Link
               href="/courses"
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
             >
               <Sparkles className="h-4 w-4" />
               <span>Khám phá thêm khóa</span>
@@ -156,12 +156,12 @@ export default function MyLearningPage() {
 
         {/* Thanh công cụ: Tabs lọc & Tìm kiếm */}
         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-1 rounded-xl bg-muted p-1 text-xs font-medium w-full sm:w-auto">
+          <div className="flex items-center gap-1.5 rounded-full bg-slate-100 p-1.5 text-xs font-semibold w-full sm:w-auto border border-slate-200/60">
             <button
               type="button"
               onClick={() => setFilterTab("all")}
-              className={`flex-1 sm:flex-initial rounded-lg px-3.5 py-1.5 transition-colors ${
-                filterTab === "all" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              className={`flex-1 sm:flex-initial rounded-full px-4 py-1.5 transition-all ${
+                filterTab === "all" ? "bg-blue-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Tất cả ({courses.length})
@@ -169,8 +169,8 @@ export default function MyLearningPage() {
             <button
               type="button"
               onClick={() => setFilterTab("in_progress")}
-              className={`flex-1 sm:flex-initial rounded-lg px-3.5 py-1.5 transition-colors ${
-                filterTab === "in_progress" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              className={`flex-1 sm:flex-initial rounded-full px-4 py-1.5 transition-all ${
+                filterTab === "in_progress" ? "bg-blue-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Đang học ({courses.filter((c) => c.progressPercent < 100).length})
@@ -178,22 +178,22 @@ export default function MyLearningPage() {
             <button
               type="button"
               onClick={() => setFilterTab("completed")}
-              className={`flex-1 sm:flex-initial rounded-lg px-3.5 py-1.5 transition-colors ${
-                filterTab === "completed" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              className={`flex-1 sm:flex-initial rounded-full px-4 py-1.5 transition-all ${
+                filterTab === "completed" ? "bg-blue-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
               }`}
             >
               Đã hoàn thành ({courses.filter((c) => c.progressPercent === 100).length})
             </button>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm kiếm khóa học..."
-              className="w-full rounded-xl border border-border bg-card py-1.5 pl-9 pr-3 text-xs placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-full border border-slate-200 bg-white py-2 pl-9 pr-4 text-xs font-medium placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-xs"
             />
           </div>
         </div>
@@ -201,16 +201,16 @@ export default function MyLearningPage() {
         {/* Danh sách khóa học */}
         <div className="mt-8">
           {isLoading ? (
-            <div className="py-20 text-center text-xs text-muted-foreground">
+            <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách khóa học của bạn...
             </div>
           ) : filteredCourses.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border p-12 text-center">
-              <BookOpen className="mx-auto h-12 w-12 text-muted-foreground/40" />
-              <h3 className="mt-4 text-base font-semibold text-foreground">
+            <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
+              <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
+              <h3 className="mt-4 text-base font-bold text-slate-900">
                 {searchQuery ? "Không tìm thấy khóa học phù hợp" : "Chưa có khóa học nào"}
               </h3>
-              <p className="mt-1.5 text-xs text-muted-foreground">
+              <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                 {searchQuery
                   ? "Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc."
                   : "Bạn chưa đăng ký khóa học nào trong danh mục này. Hãy bắt đầu nâng cao kiến thức ngay hôm nay!"}
@@ -218,7 +218,7 @@ export default function MyLearningPage() {
               <div className="mt-6">
                 <Link
                   href="/courses"
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                  className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
                 >
                   <Search className="h-3.5 w-3.5" />
                   <span>Duyệt danh mục khóa học</span>
@@ -230,24 +230,30 @@ export default function MyLearningPage() {
               {filteredCourses.map((course) => (
                 <div
                   key={course.courseId}
-                  className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+                  className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs transition-all hover:border-blue-300 hover:shadow-md"
                 >
                   <div>
                     {/* Header card */}
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
-                        <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        <span
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                            course.progressPercent === 100
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200/60"
+                              : "bg-blue-50 text-blue-700 border border-blue-200/60"
+                          }`}
+                        >
                           {course.progressPercent === 100 ? "Hoàn thành 100%" : "Đang học"}
                         </span>
-                        <h3 className="mt-2 text-sm font-bold leading-snug text-foreground line-clamp-2">
+                        <h3 className="mt-2 text-base font-black leading-snug text-slate-900 line-clamp-2">
                           {course.title}
                         </h3>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Giảng viên: {course.instructorName}
+                        <p className="mt-1 text-xs text-slate-500 font-medium">
+                          Giảng viên: <span className="text-slate-800">{course.instructorName}</span>
                         </p>
                       </div>
 
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 border border-blue-100">
                         <BookOpen className="h-6 w-6" />
                       </div>
                     </div>
@@ -255,15 +261,17 @@ export default function MyLearningPage() {
                     {/* Thanh tiến độ */}
                     <div className="mt-5 space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Tiến độ bài giảng</span>
-                        <span className="font-bold text-foreground">
+                        <span className="text-slate-500 font-medium">Tiến độ bài giảng</span>
+                        <span className="font-bold text-blue-600 font-mono">
                           {course.completedLessons}/{course.totalLessons} bài ({course.progressPercent}%)
                         </span>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
                         <div
                           className={`h-full transition-all duration-500 ${
-                            course.progressPercent === 100 ? "bg-emerald-500" : "bg-primary"
+                            course.progressPercent === 100
+                              ? "bg-emerald-500"
+                              : "bg-gradient-to-r from-blue-600 to-indigo-600"
                           }`}
                           style={{ width: `${course.progressPercent}%` }}
                         />
@@ -271,32 +279,32 @@ export default function MyLearningPage() {
                     </div>
 
                     {course.lastStudiedLessonTitle && (
-                      <div className="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                        <Clock className="h-3 w-3 shrink-0" />
+                      <div className="mt-3 flex items-center gap-1.5 text-[11px] text-slate-400 font-medium">
+                        <Clock className="h-3 w-3 shrink-0 text-slate-400" />
                         <span className="truncate">Học gần nhất: {course.lastStudiedLessonTitle}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Hành động dưới cùng */}
-                  <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-4">
+                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
                     {course.progressPercent === 100 ? (
                       <Link
                         href="/certificates"
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700"
                       >
                         <Award className="h-4 w-4" />
                         <span>Xem chứng chỉ</span>
                       </Link>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-slate-400 font-medium">
                         {course.totalLessons - course.completedLessons} bài còn lại
                       </span>
                     )}
 
                     <Link
                       href={`/learn/${course.slug}`}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:gap-2"
+                      className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition-all hover:bg-blue-700 hover:gap-2 active:scale-95"
                     >
                       <PlayCircle className="h-4 w-4" />
                       <span>{course.progressPercent === 100 ? "Ôn tập lại" : "Tiếp tục học"}</span>

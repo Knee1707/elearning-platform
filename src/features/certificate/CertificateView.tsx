@@ -53,25 +53,25 @@ export function CertificateView({
     <div className="space-y-6">
       {/* THANH CÔNG CỤ XUẤT VÀ CHIA SẺ (ẨN KHI IN) */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <ShieldCheck className="h-4 w-4 text-emerald-500" />
-          <span>Mã chứng chỉ chính thức: <strong className="text-foreground">{code}</strong></span>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <ShieldCheck className="h-4 w-4 text-emerald-600" />
+          <span>Mã chứng chỉ chính thức: <strong className="text-slate-900 font-mono">{code}</strong></span>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleCopyLink}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-colors hover:bg-muted"
+            className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs transition-all hover:bg-slate-50 active:scale-95"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Share2 className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Share2 className="h-3.5 w-3.5" />}
             <span>{copied ? "Đã sao chép liên kết!" : "Sao chép link tra cứu"}</span>
           </button>
 
           <button
             type="button"
             onClick={handlePrint}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/25 transition-all hover:bg-blue-700 active:scale-95"
           >
             <Printer className="h-3.5 w-3.5" />
             <span>In / Lưu file PDF</span>

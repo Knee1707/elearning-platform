@@ -206,44 +206,44 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
       <Navbar />
 
       <main className="flex-1 pb-16">
         {/* HEADER & BREADCRUMB */}
-        <div className="border-b border-border/50 bg-muted/20 py-8">
-          <div className="mx-auto max-w-6xl px-4 sm:px-6">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-              <Link href="/" className="hover:text-foreground transition-colors">
+        <div className="border-b border-slate-200 bg-white py-8 shadow-xs">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3">
+              <Link href="/" className="hover:text-blue-600 transition-colors">
                 Trang chủ
               </Link>
               <ChevronRight className="h-3.5 w-3.5" />
-              <span className="text-foreground font-medium">Khám phá khóa học</span>
+              <span className="text-slate-800 font-semibold">Khám phá khóa học</span>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-                  Tất cả khóa học
+                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+                  Thư viện Khóa học Thực chiến
                 </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Khám phá các chương trình đào tạo chất lượng cao với giảng viên hàng đầu
+                <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                  Hơn 50+ khóa học công nghệ chuẩn đầu ra với giáo trình tương tác thực chiến
                 </p>
               </div>
 
-              {/* SEARCH BAR */}
-              <form action="/courses" method="GET" className="relative w-full md:w-80">
+              {/* SEARCH BAR (Pill shape) */}
+              <form action="/courses" method="GET" className="relative w-full md:w-84">
                 {levelParam !== "all" && <input type="hidden" name="level" value={levelParam} />}
                 {priceParam !== "all" && <input type="hidden" name="price" value={priceParam} />}
                 {ratingParam > 0 && <input type="hidden" name="rating" value={ratingParam} />}
 
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   name="q"
                   defaultValue={keyword}
-                  placeholder="Tìm tên khóa học, giảng viên..."
-                  className="w-full rounded-lg border border-border bg-card py-2 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+                  placeholder="Tìm khóa học, kỹ năng, giảng viên..."
+                  className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                 />
               </form>
             </div>
@@ -251,127 +251,129 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
         </div>
 
         {/* CONTENT LAYOUT: SIDEBAR FILTERS + COURSES GRID */}
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* SIDEBAR BỘ LỌC */}
             <aside className="space-y-6">
-              <div className="flex items-center justify-between pb-3 border-b border-border/60">
-                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  <SlidersHorizontal className="h-4 w-4 text-primary" />
-                  <span>Bộ lọc tìm kiếm</span>
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm space-y-6">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2 text-xs font-black text-slate-900 uppercase tracking-wider">
+                    <SlidersHorizontal className="h-4 w-4 text-blue-600" />
+                    <span>Bộ lọc tìm kiếm</span>
+                  </div>
+                  {(keyword || levelParam !== "all" || priceParam !== "all" || ratingParam > 0) && (
+                    <Link
+                      href="/courses"
+                      className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      <span>Đặt lại</span>
+                    </Link>
+                  )}
                 </div>
-                {(keyword || levelParam !== "all" || priceParam !== "all" || ratingParam > 0) && (
-                  <Link
-                    href="/courses"
-                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <RotateCcw className="h-3 w-3" />
-                    <span>Đặt lại</span>
-                  </Link>
-                )}
-              </div>
 
-              {/* LỌC THEO CẤP ĐỘ */}
-              <div className="space-y-2.5">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Trình độ
-                </h3>
-                <div className="flex flex-col gap-1.5 text-sm">
-                  {[
-                    { id: "all", label: "Tất cả trình độ" },
-                    { id: "beginner", label: "Cơ bản (Người mới)" },
-                    { id: "intermediate", label: "Trung cấp" },
-                    { id: "advanced", label: "Nâng cao" },
-                  ].map((lvl) => {
-                    const isSelected = levelParam === lvl.id;
-                    return (
-                      <Link
-                        key={lvl.id}
-                        href={getFilterUrl({ level: lvl.id })}
-                        className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {lvl.label}
-                      </Link>
-                    );
-                  })}
+                {/* LỌC THEO CẤP ĐỘ */}
+                <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Trình độ học
+                  </h3>
+                  <div className="flex flex-col gap-1 text-xs">
+                    {[
+                      { id: "all", label: "Tất cả trình độ" },
+                      { id: "beginner", label: "Cơ bản (Cho người mới)" },
+                      { id: "intermediate", label: "Trung cấp (Đã có nền tảng)" },
+                      { id: "advanced", label: "Nâng cao (Chuyên sâu)" },
+                    ].map((lvl) => {
+                      const isSelected = levelParam === lvl.id;
+                      return (
+                        <Link
+                          key={lvl.id}
+                          href={getFilterUrl({ level: lvl.id })}
+                          className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-600 shadow-xs"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {lvl.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* LỌC THEO GIÁ */}
-              <div className="space-y-2.5 pt-4 border-t border-border/60">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Học phí
-                </h3>
-                <div className="flex flex-col gap-1.5 text-sm">
-                  {[
-                    { id: "all", label: "Tất cả mức giá" },
-                    { id: "free", label: "Miễn phí" },
-                    { id: "under500", label: "Dưới 500.000₫" },
-                    { id: "above500", label: "Từ 500.000₫ trở lên" },
-                  ].map((p) => {
-                    const isSelected = priceParam === p.id;
-                    return (
-                      <Link
-                        key={p.id}
-                        href={getFilterUrl({ price: p.id })}
-                        className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {p.label}
-                      </Link>
-                    );
-                  })}
+                {/* LỌC THEO GIÁ */}
+                <div className="space-y-2.5 pt-4 border-t border-slate-100">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Mức học phí
+                  </h3>
+                  <div className="flex flex-col gap-1 text-xs">
+                    {[
+                      { id: "all", label: "Tất cả mức giá" },
+                      { id: "free", label: "Khóa học Miễn phí" },
+                      { id: "under500", label: "Dưới 500.000₫" },
+                      { id: "above500", label: "Từ 500.000₫ trở lên" },
+                    ].map((p) => {
+                      const isSelected = priceParam === p.id;
+                      return (
+                        <Link
+                          key={p.id}
+                          href={getFilterUrl({ price: p.id })}
+                          className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-600 shadow-xs"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {p.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
 
-              {/* LỌC THEO ĐÁNH GIÁ */}
-              <div className="space-y-2.5 pt-4 border-t border-border/60">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Đánh giá sao
-                </h3>
-                <div className="flex flex-col gap-1.5 text-sm">
-                  {[
-                    { id: 0, label: "Tất cả đánh giá" },
-                    { id: 4.5, label: "Từ 4.5 sao trở lên" },
-                    { id: 4.0, label: "Từ 4.0 sao trở lên" },
-                  ].map((r) => {
-                    const isSelected = ratingParam === r.id;
-                    return (
-                      <Link
-                        key={r.id}
-                        href={getFilterUrl({ rating: r.id })}
-                        className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-                          isSelected
-                            ? "bg-primary text-primary-foreground font-semibold"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {r.label}
-                      </Link>
-                    );
-                  })}
+                {/* LỌC THEO ĐÁNH GIÁ */}
+                <div className="space-y-2.5 pt-4 border-t border-slate-100">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Đánh giá sao
+                  </h3>
+                  <div className="flex flex-col gap-1 text-xs">
+                    {[
+                      { id: 0, label: "Tất cả đánh giá" },
+                      { id: 4.5, label: "★ Từ 4.5 sao trở lên" },
+                      { id: 4.0, label: "★ Từ 4.0 sao trở lên" },
+                    ].map((r) => {
+                      const isSelected = ratingParam === r.id;
+                      return (
+                        <Link
+                          key={r.id}
+                          href={getFilterUrl({ rating: r.id })}
+                          className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-600 shadow-xs"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {r.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </aside>
 
             {/* DANH SÁCH KHÓA HỌC */}
             <div className="lg:col-span-3">
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-border/40 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200/80 text-xs text-slate-500">
                 <span>
-                  Tìm thấy <strong className="text-foreground">{courses.length}</strong> khóa học
+                  Tìm thấy <strong className="text-slate-900 font-bold">{courses.length}</strong> khóa học
                   phù hợp
                 </span>
 
                 {keyword && (
                   <span>
-                    Từ khóa: <strong className="text-primary">&quot;{keyword}&quot;</strong>
+                    Từ khóa: <strong className="text-blue-600 font-bold">&quot;{keyword}&quot;</strong>
                   </span>
                 )}
               </div>
@@ -384,24 +386,24 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                 </div>
               ) : (
                 /* EMPTY STATE */
-                <div className="rounded-xl border border-dashed border-border p-12 text-center space-y-4">
-                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                    <BookOpen className="h-6 w-6 opacity-60" />
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-4 shadow-sm">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                    <BookOpen className="h-7 w-7" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-semibold text-foreground">
-                      Không tìm thấy khóa học nào
+                    <h3 className="text-base font-bold text-slate-900">
+                      Không tìm thấy khóa học nào phù hợp
                     </h3>
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-                      Hãy thử đổi từ khóa tìm kiếm hoặc bấm đặt lại bộ lọc để xem các khóa học khác.
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Hãy thử đổi từ khóa tìm kiếm hoặc bấm đặt lại bộ lọc để xem danh sách toàn bộ khóa học.
                     </p>
                   </div>
                   <Link
                     href="/courses"
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
-                    <span>Xem lại toàn bộ khóa học</span>
+                    <span>Xem lại tất cả khóa học</span>
                   </Link>
                 </div>
               )}

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Star, User, Sparkles, BookOpen } from "lucide-react";
+import { Star, Sparkles, BookOpen, GraduationCap } from "lucide-react";
 import type { Course } from "@/types/domain";
 import type { CourseCatalog } from "@/lib/queries/courses";
 import { formatPrice } from "@/lib/utils";
 
-// Chủ: M3 · Thẻ khóa học (dùng ở trang chủ, duyệt, tìm kiếm).
+// Chủ: M3 · Thẻ khóa học phong cách PrepEdu (dùng ở trang chủ, duyệt, tìm kiếm).
 interface CourseCardProps {
   course: Course | CourseCatalog;
 }
@@ -26,81 +26,108 @@ export function CourseCard({ course }: CourseCardProps) {
   return (
     <Link
       href={`/courses/${course.slug}`}
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-md"
+      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/80 hover:shadow-xl"
     >
-      {/* THUMBNAIL CONTAINER */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        {course.thumbnailUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={course.thumbnailUrl}
-            alt={course.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/10 via-muted to-accent/20 text-muted-foreground transition-transform duration-300 group-hover:scale-105">
-            <BookOpen className="h-10 w-10 opacity-40 text-primary" />
-          </div>
-        )}
-
-        {/* BADGES ON THUMBNAIL */}
-        <div className="absolute inset-x-2.5 top-2.5 flex items-center justify-between pointer-events-none">
-          {course.isFeatured ? (
-            <span className="flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm">
-              <Sparkles className="h-3 w-3" />
-              <span>Nổi bật</span>
-            </span>
+      <div>
+        {/* THUMBNAIL CONTAINER */}
+        <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
+          {course.thumbnailUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={course.thumbnailUrl}
+              alt={course.title}
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
           ) : (
-            <span />
+            <div className="relative flex h-full w-full flex-col justify-between bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-800 p-4 text-white transition-transform duration-500 group-hover:scale-105">
+              <div className="flex items-center justify-between">
+                <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md text-white">
+                  <BookOpen className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] font-bold tracking-widest uppercase text-blue-200">
+                  E7 ACADEMY
+                </span>
+              </div>
+              <div>
+                <span className="text-xl font-black tracking-tight text-white line-clamp-1">
+                  {course.title}
+                </span>
+              </div>
+            </div>
           )}
 
-          <span className="rounded-md bg-background/80 px-2 py-0.5 text-[11px] font-medium text-foreground backdrop-blur-sm shadow-xs">
-            {displayLevel}
-          </span>
-        </div>
-      </div>
+          {/* BADGES ON THUMBNAIL */}
+          <div className="pointer-events-none absolute inset-x-3 top-3 flex items-center justify-between">
+            {course.isFeatured ? (
+              <span className="flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-blue-950 shadow-sm">
+                <Sparkles className="h-3 w-3" />
+                <span>Nổi bật</span>
+              </span>
+            ) : (
+              <span />
+            )}
 
-      {/* CARD CONTENT */}
-      <div className="flex flex-1 flex-col justify-between p-4">
-        <div className="space-y-2">
+            <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-bold text-slate-800 backdrop-blur-md shadow-xs">
+              {displayLevel}
+            </span>
+          </div>
+        </div>
+
+        {/* CARD CONTENT */}
+        <div className="p-5 space-y-3">
+          {/* RATING & REVIEWS */}
+          <div className="flex items-center gap-2 text-xs">
+            <span className="flex items-center gap-1 font-black text-amber-500">
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+              <span>{avgRating > 0 ? avgRating.toFixed(1) : "5.0"}</span>
+            </span>
+            <span className="font-medium text-slate-400">
+              {ratingCount > 0 ? `(${ratingCount} đánh giá)` : "(Mới cập nhật)"}
+            </span>
+          </div>
+
           {/* TIÊU ĐỀ KHÓA HỌC */}
-          <h3 className="line-clamp-2 text-base font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary">
+          <h3 className="line-clamp-2 text-sm sm:text-base font-bold leading-snug text-slate-900 transition-colors group-hover:text-blue-600">
             {course.title}
           </h3>
 
-          {/* TÊN GIẢNG VIÊN */}
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <User className="h-3.5 w-3.5" />
-            <span className="truncate">{instructorName}</span>
+          {/* MÔ TẢ NGẮN (NẾU CÓ) */}
+          {course.description && (
+            <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">
+              {course.description}
+            </p>
+          )}
+
+          {/* GIẢNG VIÊN */}
+          <div className="flex items-center gap-2 pt-1 text-xs text-slate-600">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
+              <GraduationCap className="h-3 w-3" />
+            </div>
+            <span className="truncate font-medium">{instructorName}</span>
           </div>
         </div>
+      </div>
 
-        <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between">
-          {/* SAO ĐÁNH GIÁ */}
-          <div className="flex items-center gap-1 text-xs">
-            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            <span className="font-semibold text-foreground">
-              {avgRating > 0 ? avgRating.toFixed(1) : "5.0"}
-            </span>
-            <span className="text-muted-foreground text-[11px]">
-              {ratingCount > 0 ? `(${ratingCount})` : "(Mới)"}
-            </span>
-          </div>
-
-          {/* GIÁ TIỀN */}
-          <div className="text-right">
-            {course.price > 0 ? (
-              <span className="text-sm font-bold text-foreground">
+      {/* PRICE & BUTTON FOOTER */}
+      <div className="flex items-center justify-between border-t border-slate-100 p-5 pt-3">
+        <div>
+          {course.price > 0 ? (
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-mono text-base font-black text-blue-600">
                 {formatPrice(course.price)}
               </span>
-            ) : (
-              <span className="rounded bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                Miễn phí
-              </span>
-            )}
-          </div>
+            </div>
+          ) : (
+            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600">
+              Miễn phí
+            </span>
+          )}
         </div>
+
+        <span className="rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white transition-all group-hover:bg-blue-600 shadow-xs">
+          Chi tiết
+        </span>
       </div>
     </Link>
   );

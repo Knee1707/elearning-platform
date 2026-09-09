@@ -48,13 +48,23 @@ export function CourseDetailActions({
   async function handleAddToCart(redirectAfter = false) {
     setIsLoading(true);
     try {
+      // Lưu vào localStorage demo_cart_items để Navbar và Cart cập nhật số lượng
+      try {
+        const items: string[] = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+        if (!items.includes(courseId)) {
+          items.push(courseId);
+          localStorage.setItem("demo_cart_items", JSON.stringify(items));
+        }
+      } catch {
+        // Bỏ qua lỗi parse
+      }
+
       const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
-        // Chưa đăng nhập thì lưu tạm vào localStorage hoặc chuyển login
         showToast("Đã thêm khóa học vào giỏ hàng!");
         window.dispatchEvent(new Event("cart-updated"));
         if (redirectAfter) {
@@ -67,13 +77,11 @@ export function CourseDetailActions({
       // Gọi RPC fn_add_to_cart trong DB
       const { error } = await supabase.rpc("fn_add_to_cart", { p_course: courseId });
       if (error) {
-        // Nếu đã có trong giỏ hoặc lỗi
         showToast("Khóa học đã có trong giỏ hàng của bạn!");
       } else {
         showToast("Đã thêm khóa học vào giỏ hàng thành công!");
       }
 
-      // Phát sự kiện để Navbar cập nhật badge giỏ hàng tức thì
       window.dispatchEvent(new Event("cart-updated"));
 
       if (redirectAfter) {
@@ -128,99 +136,107 @@ export function CourseDetailActions({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-5 sticky top-24">
+    <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm space-y-5 sticky top-24">
       {/* TOAST THÔNG BÁO TẠI CHỖ (KHÔNG CHUYỂN TRANG) */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 rounded-lg bg-foreground px-4 py-3 text-sm font-medium text-background shadow-xl animate-in fade-in slide-in-from-bottom-5">
-          <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 rounded-2xl bg-slate-900 px-5 py-3.5 text-xs font-bold text-white shadow-2xl animate-in fade-in slide-in-from-bottom-5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* GIÁ TIỀN */}
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground uppercase font-semibold tracking-wider">
+      {/* GIÁ TIỀN (PrepEdu Style) */}
+      <div className="space-y-1.5 pb-2 border-b border-slate-100">
+        <p className="text-[11px] text-slate-400 uppercase font-black tracking-wider">
           Học phí toàn khóa
         </p>
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-3">
           {price > 0 ? (
-            <span className="text-3xl font-extrabold text-foreground tracking-tight">
-              {formatPrice(price)}
-            </span>
+            <>
+              <span className="text-3xl font-black text-blue-600 font-mono tracking-tight">
+                {formatPrice(price)}
+              </span>
+              <span className="text-sm font-medium text-slate-400 line-through font-mono">
+                {formatPrice(Math.round(price * 1.5))}
+              </span>
+              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                Giảm 33%
+              </span>
+            </>
           ) : (
-            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+            <span className="text-3xl font-black text-emerald-600 font-mono">
               Miễn phí
             </span>
           )}
         </div>
       </div>
 
-      {/* CÁC NÚT HÀNH ĐỘNG */}
+      {/* CÁC NÚT HÀNH ĐỘNG (Pill shapes) */}
       {isEnrolled ? (
         <Link
           href={`/learn/${courseSlug}`}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-500/20 transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95"
         >
           <PlayCircle className="h-5 w-5" />
-          <span>Vào học ngay</span>
+          <span>Vào không gian học ngay</span>
         </Link>
       ) : (
         <div className="space-y-2.5">
-          {/* NÚT THÊM VÀO GIỎ HÀNG (Hiển thị Toast + Cập nhật Navbar) */}
+          {/* NÚT THÊM VÀO GIỎ HÀNG */}
           <button
             onClick={() => handleAddToCart(false)}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-blue-500/25 transition-all hover:bg-blue-700 hover:shadow-lg active:scale-95 disabled:opacity-50"
           >
             <ShoppingCart className="h-4 w-4" />
             <span>Thêm vào giỏ hàng</span>
           </button>
 
-          {/* NÚT MUA NGAY (Thêm và chuyển sang giỏ hàng) */}
+          {/* NÚT MUA NGAY */}
           <button
             onClick={() => handleAddToCart(true)}
             disabled={isLoading}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:bg-slate-100 hover:border-slate-300 active:scale-95"
           >
-            <span>Mua ngay</span>
-            <ArrowRight className="h-4 w-4" />
+            <span>Đăng ký ngay</span>
+            <ArrowRight className="h-4 w-4 text-blue-600" />
           </button>
 
           {/* NÚT YÊU THÍCH */}
           <button
             onClick={handleToggleWishlist}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border border-border/80 px-4 py-2 text-xs font-medium transition-colors ${
+            className={`flex w-full items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${
               isWishlisted
-                ? "bg-rose-50 border-rose-200 text-rose-600 dark:bg-rose-950/30 dark:border-rose-900"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-rose-50 border-rose-200 text-rose-600"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
             }`}
           >
             <Heart className={`h-3.5 w-3.5 ${isWishlisted ? "fill-rose-600" : ""}`} />
-            <span>{isWishlisted ? "Đã lưu vào Yêu thích" : "Thêm vào danh sách yêu thích"}</span>
+            <span>{isWishlisted ? "Đã lưu vào Yêu thích" : "Lưu vào danh sách yêu thích"}</span>
           </button>
         </div>
       )}
 
       {/* ĐẶC QUYỀN KHÓA HỌC */}
-      <div className="border-t border-border/60 pt-4 space-y-2.5 text-xs text-muted-foreground">
-        <p className="font-semibold text-foreground text-xs uppercase tracking-wider">
+      <div className="rounded-2xl bg-blue-50/60 border border-blue-100 p-4 space-y-2.5 text-xs text-slate-600">
+        <p className="font-bold text-slate-900 text-xs uppercase tracking-wider">
           Khóa học bao gồm:
         </p>
         <div className="flex items-center gap-2">
-          <Video className="h-4 w-4 text-primary shrink-0" />
-          <span>Video bài giảng chất lượng cao, lưu tiến độ thông minh</span>
+          <Video className="h-4 w-4 text-blue-600 shrink-0" />
+          <span>Bài giảng thực chiến, tự lưu vị trí xem</span>
         </div>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-primary shrink-0" />
+          <Sparkles className="h-4 w-4 text-blue-600 shrink-0" />
           <span>Tự động điểm danh chuyên cần khi xem đạt 95%</span>
         </div>
         <div className="flex items-center gap-2">
-          <Award className="h-4 w-4 text-primary shrink-0" />
-          <span>Chứng chỉ tốt nghiệp xác thực công khai</span>
+          <Award className="h-4 w-4 text-amber-500 shrink-0" />
+          <span>Chứng chỉ tốt nghiệp xác thực mã QR</span>
         </div>
         <div className="flex items-center gap-2">
-          <ShieldCheck className="h-4 w-4 text-primary shrink-0" />
-          <span>Quyền truy cập trọn đời, học mọi lúc mọi nơi</span>
+          <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span>Quyền truy cập vĩnh viễn không giới hạn</span>
         </div>
       </div>
     </div>
