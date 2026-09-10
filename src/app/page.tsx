@@ -354,7 +354,7 @@ export default async function HomePage() {
             <span className="font-bold text-slate-900">Nhom7Edu</span>
             <span>— Hệ thống Quản lý Học tập LMS Trực tuyến</span>
           </div>
-          <p>© 2026 Nhóm 7 — Trường ĐH Sư phạm Kỹ thuật TP.HCM (HCMUTE).</p>
+          <p>© 2026 Nhóm 7 — Trường ĐH Công nghệ Kỹ thuật TP.HCM (HCM-UTE).</p>
         </div>
       </footer>
     </div>
