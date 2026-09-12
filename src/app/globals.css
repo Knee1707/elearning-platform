@@ -4,6 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
+<<<<<<< HEAD
 /* Design tokens theo chuẩn EdTech hiện đại (PrepEdu Style: Royal Blue, Nền sáng dịu, Card bo góc mềm mại). */
 @layer base {
   :root {
@@ -25,6 +26,29 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 1rem;
+=======
+/* Một hệ token dùng chung cho toàn bộ học viên, giảng viên và quản trị. */
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 214 32% 91%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 214 32% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 213 94% 94%;
+    --accent-foreground: 221 83% 36%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214 32% 88%;
+    --input: 214 32% 86%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+>>>>>>> 265da53 (Lưu code)
   }
 
   .dark {
@@ -53,10 +77,87 @@
     @apply border-border;
   }
   html {
+<<<<<<< HEAD
     scroll-behavior: smooth;
   }
   body {
     @apply bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+=======
+    @apply scroll-smooth;
+  }
+  body {
+    @apply min-h-screen bg-background text-foreground;
+    background-image: radial-gradient(circle at top, hsl(213 94% 96%), transparent 34rem);
+  }
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
+  h1 {
+    @apply tracking-tight;
+  }
+  h2, h3 {
+    @apply tracking-tight;
+  }
+  a {
+    @apply transition-colors;
+  }
+  button, select, input, textarea {
+    @apply transition-colors duration-150;
+  }
+  textarea {
+    @apply resize-y;
+  }
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea {
+    @apply outline-none focus:border-primary focus:ring-2 focus:ring-primary/15;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply accent-primary;
+  }
+  table {
+    @apply border-collapse;
+  }
+  th {
+    @apply whitespace-nowrap font-semibold text-foreground;
+  }
+}
+
+@layer components {
+  main {
+    animation: page-enter 220ms ease-out both;
+  }
+
+  /* Các form/bảng dùng HTML gốc trong những màn M4 vẫn có cùng cảm giác shadcn. */
+  form input:not([type="checkbox"]):not([type="radio"]),
+  form select,
+  form textarea {
+    @apply shadow-sm;
+  }
+
+  table tbody tr {
+    @apply transition-colors hover:bg-muted/45;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+>>>>>>> 265da53 (Lưu code)
   }
 }
 
