@@ -52,6 +52,11 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-playfair)", "Playfair Display", "Times New Roman", "Georgia", "serif"],
+        signature: ["var(--font-dancing)", "Dancing Script", "Alex Brush", "cursive"],
+      },
     },
   },
   plugins: [],
