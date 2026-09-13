@@ -56,10 +56,12 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+    @apply min-h-screen bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+    background-image: radial-gradient(circle at top, hsl(213 94% 96%), transparent 34rem);
   }
-
-  /* --- Khôi phục từ commit "Lưu code" (265da53), bị mất khi dán đè bản PrepEdu --- */
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
   h1 {
     @apply tracking-tight;
   }

@@ -34,8 +34,9 @@ export async function updateSession(request: NextRequest) {
     "/cart", "/checkout", "/payout", "/certificates", "/notifications", "/profile",
   ];
   const path = request.nextUrl.pathname;
+  const isDemo = request.cookies.get("demo_logged_in")?.value === "true";
 
-  if (!user && PROTECTED.some((p) => path.startsWith(p))) {
+  if (!user && !isDemo && PROTECTED.some((p) => path.startsWith(p))) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
     redirect.searchParams.set("next", path);
