@@ -96,3 +96,54 @@ export async function submitForReview(formData: FormData) {
   revalidatePath(editorPath(courseId));
   revalidatePath("/studio");
 }
+export async function updateChapterTitle(chapterId: string, courseId: string, title: string) {
+  await requireRole(["instructor", "admin"]);
+  const supabase = createClient();
+  const { error } = await supabase.from("chapters").update({ title: title.trim() }).eq("id", chapterId);
+  if (error) throw error;
+  revalidatePath(editorPath(courseId));
+}
+
+export async function deleteChapter(chapterId: string, courseId: string) {
+  await requireRole(["instructor", "admin"]);
+  const supabase = createClient();
+
+  // Xóa bài học con trước (chưa có ON DELETE CASCADE xác nhận) — an toàn dù có cascade hay không.
+  const { error: lessonsError } = await supabase.from("lessons").delete().eq("chapter_id", chapterId);
+  if (lessonsError) throw lessonsError;
+
+  const { error: chapterError } = await supabase.from("chapters").delete().eq("id", chapterId);
+  if (chapterError) throw chapterError;
+
+  revalidatePath(editorPath(courseId));
+}
+
+export async function updateLesson(
+  lessonId: string,
+  courseId: string,
+  input: { title: string; videoUrl: string | null; durationSeconds: number; isFree: boolean },
+) {
+  await requireRole(["instructor", "admin"]);
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({
+      title: input.title.trim(),
+      video_url: input.videoUrl,
+      duration_seconds: input.durationSeconds,
+      is_free: input.isFree,
+    })
+    .eq("id", lessonId);
+  if (error) throw error;
+  revalidatePath(editorPath(courseId));
+}
+
+export async function deleteLesson(lessonId: string, courseId: string) {
+  await requireRole(["instructor", "admin"]);
+  const supabase = createClient();
+  // TODO: chưa xóa file video trong Storage lẫn quiz/questions liên kết (nếu có) — chỉ xóa dòng lessons.
+  // Nếu DB báo lỗi ràng buộc khóa ngoại (questions.lesson_id → lessons.id), cần hỏi M2 cách xử lý.
+  const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+  if (error) throw error;
+  revalidatePath(editorPath(courseId));
+}
