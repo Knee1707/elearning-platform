@@ -28,9 +28,14 @@ import {
   deleteLesson,
 } from "./courseActions";
 import { reorderChapters, reorderLessons } from "./reorderActions";
-import { uploadLessonVideo } from "./uploadActions";
+import { uploadLessonVideo, uploadLessonAttachment, deleteAttachment } from "./uploadActions";
 import { QuizAuthor } from "@/features/quiz/author/QuizAuthor";
 
+interface Attachment {
+  id: string;
+  name: string;
+  file_url: string;
+}
 interface Lesson {
   id: string;
   title: string;
@@ -38,6 +43,7 @@ interface Lesson {
   duration_seconds: number;
   is_free: boolean;
   position: number;
+  attachments: Attachment[];
 }
 interface Chapter {
   id: string;
@@ -51,6 +57,57 @@ function DragHandle() {
     <span aria-hidden className="cursor-grab select-none px-1 text-muted-foreground active:cursor-grabbing">
       ⠿
     </span>
+  );
+}
+
+function AttachmentList({ courseId, lessonId, attachments }: { courseId: string; lessonId: string; attachments: Attachment[] }) {
+  const [items, setItems] = useState(attachments);
+  useEffect(() => setItems(attachments), [attachments]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleDelete(attachmentId: string) {
+    if (!window.confirm("Xóa tài liệu này?")) return;
+    setDeletingId(attachmentId);
+    setError(null);
+    try {
+      await deleteAttachment(attachmentId, courseId);
+      setItems((prev) => prev.filter((a) => a.id !== attachmentId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Không thể xóa tài liệu.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      {items.length > 0 && (
+        <ul className="space-y-1">
+          {items.map((att) => (
+            <li key={att.id} className="flex items-center justify-between gap-2 rounded bg-background px-2 py-1 text-sm">
+              <span className="truncate">📄 {att.name}</span>
+              <button
+                type="button"
+                onClick={() => handleDelete(att.id)}
+                disabled={deletingId === att.id}
+                className="text-xs text-destructive underline"
+              >
+                {deletingId === att.id ? "Đang xóa..." : "Xóa"}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form action={uploadLessonAttachment} className="mt-2 flex flex-wrap items-center gap-2">
+        <input type="hidden" name="courseId" value={courseId} />
+        <input type="hidden" name="lessonId" value={lessonId} />
+        <input type="file" name="file" accept="application/pdf" required className="text-sm" />
+        <button className="rounded border px-3 py-1.5 text-sm" type="submit">Tải tài liệu PDF</button>
+      </form>
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
+    </div>
   );
 }
 
@@ -198,6 +255,8 @@ function SortableLesson({
         <button className="rounded border px-3 py-1.5 text-sm" type="submit">Tải video lên</button>
         {lesson.video_url && <span className="text-xs text-muted-foreground">Đã có video</span>}
       </form>
+
+      <AttachmentList courseId={courseId} lessonId={lesson.id} attachments={lesson.attachments} />
 
       <details className="mt-3">
         <summary className="cursor-pointer text-sm underline">Soạn quiz</summary>

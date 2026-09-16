@@ -23,13 +23,14 @@ export async function toggleWishlist(courseId: string): Promise<boolean> {
   return Boolean(data);
 }
 
-export async function mockPurchase(courseIds: string[], couponCode?: string) {
+export async function mockPurchase(courseIds: string[], couponCode?: string): Promise<string[]> {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_mock_purchase", {
+  const { data, error } = await supabase.rpc("fn_mock_purchase", {
     p_course_ids: courseIds,
     p_coupon_code: couponCode ?? null,
   });
   if (error) throw error;
+  return Array.isArray(data) ? data.map(String) : [];
 }
 
 export async function requestRefund(paymentId: string, reason: string) {

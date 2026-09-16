@@ -3,6 +3,50 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
+import type { CourseInput } from "./schema";
+
+export type CategoryOption = { id: string; name: string };
+
+export async function getCategories(): Promise<CategoryOption[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name")
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+const slugify = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "khoa-hoc";
+
+export async function createCourse(input: CourseInput): Promise<{ id: string }> {
+  const profile = await requireRole(["instructor", "admin"]);
+  const supabase = createClient();
+  const slug = `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
+
+  const { data, error } = await supabase
+    .from("courses")
+    .insert({
+      instructor_id: profile.id,
+      category_id: input.categoryId,
+      title: input.title.trim(),
+      slug,
+      description: input.description.trim(),
+      level: input.level,
+      price: input.price,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return { id: data.id };
+}
 
 const editorPath = (courseId: string) => `/studio/${courseId}`;
 
