@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design tokens theo chuẩn EdTech hiện đại (PrepEdu Style: Royal Blue, Nền sáng dịu, Card bo góc mềm mại). */
+/* Design tokens theo chuẩn EdTech hiện đại (PrepEdu Style: Royal Blue, nền sáng dịu, card bo góc mềm mại). */
 @layer base {
   :root {
     --background: 210 40% 98%; /* #F8FAFC */
@@ -56,7 +56,77 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+    @apply min-h-screen bg-background text-foreground antialiased selection:bg-blue-100 selection:text-blue-900;
+    background-image: radial-gradient(circle at top, hsl(213 94% 96%), transparent 34rem);
+  }
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
+  h1 {
+    @apply tracking-tight;
+  }
+  h2, h3 {
+    @apply tracking-tight;
+  }
+  a {
+    @apply transition-colors;
+  }
+  button, select, input, textarea {
+    @apply transition-colors duration-150;
+  }
+  textarea {
+    @apply resize-y;
+  }
+  select,
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea {
+    @apply outline-none focus:border-primary focus:ring-2 focus:ring-primary/15;
+  }
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply accent-primary;
+  }
+  table {
+    @apply border-collapse;
+  }
+  th {
+    @apply whitespace-nowrap font-semibold text-foreground;
+  }
+}
+
+@layer components {
+  main {
+    animation: page-enter 220ms ease-out both;
+  }
+
+  /* Các form/bảng dùng HTML gốc trong những màn M4 vẫn có cùng cảm giác shadcn. */
+  form input:not([type="checkbox"]):not([type="radio"]),
+  form select,
+  form textarea {
+    @apply shadow-sm;
+  }
+
+  table tbody tr {
+    @apply transition-colors hover:bg-muted/45;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
