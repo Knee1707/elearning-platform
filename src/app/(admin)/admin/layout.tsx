@@ -1,6 +1,7 @@
+// src/app/(admin)/layout.tsx
 import Link from "next/link";
 import { requireRole } from "@/lib/queries/auth";
-import { LayoutDashboard, BookCheck, Users, Tag, Flag } from "lucide-react";
+import { GraduationCap, LayoutDashboard, BookCheck, Users, Tag, Flag } from "lucide-react";
 import { AdminThemeProvider } from "@/features/admin/theme/AdminThemeProvider";
 import { ThemeToggleButton } from "@/features/admin/theme/ThemeToggleButton";
 
@@ -19,9 +20,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <AdminThemeProvider>
       <div className="flex min-h-screen bg-background text-foreground">
         <aside className="hidden w-56 shrink-0 flex-col border-r border-border bg-muted/20 p-4 md:flex">
-          <p className="mb-4 px-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Quản trị
-          </p>
+          {/* --- Logo, sao chép chính xác từ Navbar.tsx (M3) --- */}
+          <Link href="/admin" className="mb-6 flex items-center gap-2.5 px-1">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-base font-black tracking-tight leading-tight text-slate-900 dark:text-slate-100">
+                Nhom7<span className="text-blue-600 dark:text-blue-400">Edu</span>
+              </span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                Quản trị
+              </span>
+            </div>
+          </Link>
+
           <nav className="flex-1 space-y-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
