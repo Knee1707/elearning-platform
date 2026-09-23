@@ -3,8 +3,21 @@
 import { Moon, Sun } from "lucide-react";
 import { useAdminTheme } from "./AdminThemeProvider";
 
-export function ThemeToggleButton() {
+export function ThemeToggleButton({ variant = "sidebar" }: { variant?: "sidebar" | "icon" }) {
   const { theme, toggle } = useAdminTheme();
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        aria-label="Đổi giao diện sáng/tối"
+        className="flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-all hover:bg-blue-50 hover:text-blue-600 dark:text-slate-300 dark:hover:bg-slate-800"
+      >
+        {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-amber-400" />}
+      </button>
+    );
+  }
 
   return (
     <button
