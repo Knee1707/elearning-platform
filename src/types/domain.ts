@@ -2,7 +2,7 @@
 // Sau khi có schema thật, chạy `pnpm db:types` để sinh src/types/database.types.ts
 // rồi ép kiểu chặt hơn nếu cần.
 
-export type UserRole = "student" | "instructor" | "admin";
+export type UserRole = "student" | "instructor" | "admin" | "super_admin";
 export type CourseStatus = "draft" | "pending" | "published" | "rejected" | "hidden";
 export type EnrollmentStatus = "active" | "refunded";
 export type PaymentStatus = "pending" | "paid" | "refunded";

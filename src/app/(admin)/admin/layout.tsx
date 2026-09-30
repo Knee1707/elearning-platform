@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/queries/auth";
+import { ADMIN_ROLES } from "@/lib/utils";
 import { GraduationCap, Home } from "lucide-react";
 import { AdminThemeProvider } from "@/features/admin/theme/AdminThemeProvider";
 import { ThemeToggleButton } from "@/features/admin/theme/ThemeToggleButton";
 import { AdminNavLinks } from "@/features/admin/AdminNavLinks";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const profile = await requireRole(["admin"]);
+  const profile = await requireRole(ADMIN_ROLES);
 
   return (
     <AdminThemeProvider>
