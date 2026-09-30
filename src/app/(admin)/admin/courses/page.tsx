@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
+import { ADMIN_ROLES } from "@/lib/utils";
 import { moderateCourse } from "@/lib/queries/admin";
 
 async function reviewCourse(formData: FormData) {
@@ -15,7 +16,7 @@ async function reviewCourse(formData: FormData) {
 }
 
 export default async function AdminCoursesPage() {
-  await requireRole(["admin"]);
+  await requireRole(ADMIN_ROLES);
   const supabase = createClient();
   const { data: courses } = await supabase
     .from("courses")

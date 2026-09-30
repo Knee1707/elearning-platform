@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
+import { ADMIN_ROLES } from "@/lib/utils";
 
 // LƯU Ý: chưa có fn_reorder (RPC) — update từng dòng position, workaround tạm.
 // Cần đổi sang RPC 1 lệnh khi M1/L viết xong, để đảm bảo tính nguyên tử (atomic).
@@ -16,13 +17,13 @@ async function applyPositions(table: "chapters" | "lessons", orderedIds: string[
 }
 
 export async function reorderChapters(courseId: string, orderedChapterIds: string[]) {
-  await requireRole(["instructor", "admin"]);
+  await requireRole(["instructor", ...ADMIN_ROLES]);
   await applyPositions("chapters", orderedChapterIds);
   revalidatePath(`/studio/${courseId}`);
 }
 
 export async function reorderLessons(courseId: string, orderedLessonIds: string[]) {
-  await requireRole(["instructor", "admin"]);
+  await requireRole(["instructor", ...ADMIN_ROLES]);
   await applyPositions("lessons", orderedLessonIds);
   revalidatePath(`/studio/${courseId}`);
 }
