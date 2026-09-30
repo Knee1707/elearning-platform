@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -256,16 +256,28 @@ export function FreeLessonPreviewModal({
   const [currentSrc, setCurrentSrc] = useState(() => {
     // Nếu URL là link placeholder từ seed (example.com), dùng ngay video mẫu chuẩn của MDN
     if (!videoUrl || videoUrl.includes("example.com")) {
-      return "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+      return "https://media.w3.org/2010/05/sintel/trailer.mp4";
     }
     return videoUrl;
   });
   const [hasError, setHasError] = useState(false);
 
+  // Cập nhật lại nguồn video khi URL thật đã tải xong từ API
+  // (tránh kẹt ở video mẫu do useState khởi tạo lúc videoUrl còn rỗng/đang loading).
+  useEffect(() => {
+    if (!videoUrl) return;
+    setHasError(false);
+    setCurrentSrc(
+      videoUrl.includes("example.com")
+        ? "https://media.w3.org/2010/05/sintel/trailer.mp4"
+        : videoUrl,
+    );
+  }, [videoUrl]);
+
   function handleVideoError() {
     setHasError(true);
     // Khi URL bị lỗi định dạng hoặc chặn mạng, chuyển sang video mẫu chuẩn
-    setCurrentSrc("https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4");
+    setCurrentSrc("https://media.w3.org/2010/05/sintel/trailer.mp4");
   }
 
   return (
@@ -367,12 +379,12 @@ export function CourseSyllabus({ chapters }: { chapters: ChapterItem[] }) {
       setPreviewUrl(
         data.url ||
           lesson.videoUrl ||
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "https://media.w3.org/2010/05/sintel/trailer.mp4",
       );
     } catch {
       setPreviewUrl(
         lesson.videoUrl ||
-          "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+          "https://media.w3.org/2010/05/sintel/trailer.mp4",
       );
     } finally {
       setLoadingPreview(false);
@@ -388,7 +400,7 @@ export function CourseSyllabus({ chapters }: { chapters: ChapterItem[] }) {
             loadingPreview
               ? ""
               : previewUrl ||
-                "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                "https://media.w3.org/2010/05/sintel/trailer.mp4"
           }
           onClose={() => {
             setPreviewLesson(null);
