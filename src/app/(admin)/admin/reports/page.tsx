@@ -1,7 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES } from "@/lib/utils";
 import { moderateReview, resolveReport } from "@/lib/queries/admin";
 
 async function handleReport(formData: FormData) {
@@ -13,7 +12,7 @@ async function handleReport(formData: FormData) {
 }
 
 export default async function AdminReportsPage() {
-  await requireRole(ADMIN_ROLES);
+  await requireRole(["admin"]);
   const supabase = createClient();
   const [{ data: reports }, { data: reviews }] = await Promise.all([
     supabase.from("report").select("id, entity, reason, created_at").eq("status", "open").order("created_at", { ascending: false }),

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES, isAdminRole } from "@/lib/utils";
 import type { CourseInput } from "./schema";
 
 export type CategoryOption = { id: string; name: string };
@@ -27,7 +26,7 @@ const slugify = (value: string) =>
     .replace(/^-+|-+$/g, "") || "khoa-hoc";
 
 export async function createCourse(input: CourseInput): Promise<{ id: string }> {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const slug = `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
 
@@ -109,7 +108,7 @@ export async function updateCourse(formData: FormData) {
 
 export async function submitForReview(formData: FormData) {
   const courseId = String(formData.get("courseId"));
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
 
   const { data: course, error: courseError } = await supabase
@@ -118,7 +117,7 @@ export async function submitForReview(formData: FormData) {
     .eq("id", courseId)
     .single();
   if (courseError) throw courseError;
-  if (!course || (course.instructor_id !== profile.id && !isAdminRole(profile.role))) {
+  if (!course || (course.instructor_id !== profile.id && profile.role !== "admin")) {
     throw new Error("Không có quyền thực hiện.");
   }
   if (!["draft", "rejected"].includes(String(course.status))) {
@@ -142,7 +141,7 @@ export async function submitForReview(formData: FormData) {
   revalidatePath("/studio");
 }
 export async function updateChapterTitle(chapterId: string, courseId: string, title: string) {
-  await requireRole(["instructor", ...ADMIN_ROLES]);
+  await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const { error } = await supabase.from("chapters").update({ title: title.trim() }).eq("id", chapterId);
   if (error) throw error;
@@ -150,7 +149,7 @@ export async function updateChapterTitle(chapterId: string, courseId: string, ti
 }
 
 export async function deleteChapter(chapterId: string, courseId: string) {
-  await requireRole(["instructor", ...ADMIN_ROLES]);
+  await requireRole(["instructor", "admin"]);
   const supabase = createClient();
 
   // Xóa bài học con trước (chưa có ON DELETE CASCADE xác nhận) — an toàn dù có cascade hay không.
@@ -168,7 +167,7 @@ export async function updateLesson(
   courseId: string,
   input: { title: string; videoUrl: string | null; durationSeconds: number; isFree: boolean },
 ) {
-  await requireRole(["instructor", ...ADMIN_ROLES]);
+  await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const { error } = await supabase
     .from("lessons")
@@ -184,7 +183,7 @@ export async function updateLesson(
 }
 
 export async function deleteLesson(lessonId: string, courseId: string) {
-  await requireRole(["instructor", ...ADMIN_ROLES]);
+  await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   // TODO: chưa xóa file video trong Storage lẫn quiz/questions liên kết (nếu có) — chỉ xóa dòng lessons.
   // Nếu DB báo lỗi ràng buộc khóa ngoại (questions.lesson_id → lessons.id), cần hỏi M2 cách xử lý.

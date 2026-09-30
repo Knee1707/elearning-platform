@@ -2,13 +2,12 @@ import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES } from "@/lib/utils";
 
 type PageProps = { params: { courseId: string } };
 
 async function adminUpdatePrice(formData: FormData) {
   "use server";
-  await requireRole(ADMIN_ROLES);
+  await requireRole(["admin"]);
   const courseId = String(formData.get("courseId"));
   const supabase = createClient();
   const { error } = await supabase
@@ -21,7 +20,7 @@ async function adminUpdatePrice(formData: FormData) {
 
 async function adminToggleLessonFree(formData: FormData) {
   "use server";
-  await requireRole(ADMIN_ROLES);
+  await requireRole(["admin"]);
   const courseId = String(formData.get("courseId"));
   const lessonId = String(formData.get("lessonId"));
   const nextValue = formData.get("nextValue") === "true";
@@ -32,7 +31,7 @@ async function adminToggleLessonFree(formData: FormData) {
 }
 
 export default async function AdminCourseDetailPage({ params }: PageProps) {
-  await requireRole(ADMIN_ROLES);
+  await requireRole(["admin"]);
   const supabase = createClient();
 
   const { data: course } = await supabase

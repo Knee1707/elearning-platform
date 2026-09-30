@@ -10,7 +10,6 @@ import { createClient } from "@/lib/supabase/client";
 import { APP_MODE } from "@/lib/appMode";
 import { loginSchema, type LoginInput } from "../schemas";
 import { Eye, EyeOff } from "lucide-react";
-import { isAdminRole } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,12 +65,12 @@ export function LoginForm() {
     }
 
     // Gác cổng: cổng admin CHỈ cho admin; cổng user KHÔNG cho admin.
-    if (APP_MODE === "admin" && !isAdminRole(role)) {
+    if (APP_MODE === "admin" && role !== "admin") {
       await supabase.auth.signOut();
       setServerError("Cổng quản trị chỉ dành cho tài khoản admin.");
       return;
     }
-    if (APP_MODE === "user" && isAdminRole(role)) {
+    if (APP_MODE === "user" && role === "admin") {
       await supabase.auth.signOut();
       setServerError("Tài khoản admin vui lòng đăng nhập ở cổng quản trị riêng.");
       return;
