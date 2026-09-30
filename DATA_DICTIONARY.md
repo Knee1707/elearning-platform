@@ -167,9 +167,10 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_is_admin` **[sửa 0010]** | () → bool. Role `admin` **hoặc** `super_admin`, và không bị khóa |
 | `fn_log_activity` | `p_action text`, `p_entity text`, `p_entity_id uuid`, `p_reason text`, `p_metadata jsonb`. Chỉ gọi từ hàm security definer (đã thu hồi EXECUTE của client) |
 | `fn_guard_profile_privilege` | trigger function cho `trg_profiles_guard_privilege`: chặn client tự đổi `role`/`is_banned` |
+| `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**.
 
 ---
 

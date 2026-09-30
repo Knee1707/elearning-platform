@@ -77,8 +77,10 @@ export function LoginForm() {
       return;
     }
 
-    // Điểm đến sau đăng nhập: cổng admin → /admin; cổng user → trang chủ (hoặc ?next=).
-    const destination = explicitNext ?? (APP_MODE === "admin" ? "/admin" : "/");
+    // Điểm đến sau đăng nhập: cổng admin → /super-admin (super admin) hoặc /admin;
+    // cổng user → trang chủ (hoặc ?next=).
+    const adminHome = role === "super_admin" ? "/super-admin" : "/admin";
+    const destination = explicitNext ?? (APP_MODE === "admin" ? adminHome : "/");
 
     router.refresh();
     router.push(destination);

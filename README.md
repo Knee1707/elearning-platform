@@ -27,9 +27,9 @@ cp .env.local.example .env.local
 # 4) Database (chọn 1 trong 2)
 #   a) Supabase local (cần Docker):
 npx supabase@latest start
-npx supabase@latest db reset          # chạy migrations 0001..0010 + seed.sql
+npx supabase@latest db reset          # chạy migrations 0001..0011 + seed.sql
 #   b) Hoặc dán nội dung supabase/migrations/*.sql vào SQL Editor trên Supabase Cloud
-#      theo đúng thứ tự 0001 → 0002 → … → 0010 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
+#      theo đúng thứ tự 0001 → 0002 → … → 0011 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
 
 # 5) Sinh kiểu TypeScript từ schema (tùy chọn, sau khi có DB)
 pnpm db:types
@@ -46,7 +46,15 @@ Có 2 cấp: `admin` (kiểm duyệt, quản lý học viên/giảng viên) và 
 1. Đăng ký 1 user (app hoặc Supabase Studio › Authentication › Add user).
 2. Tạo **super admin đầu tiên** bằng SQL (chạy trong SQL Editor, quyền postgres):
    `update profiles set role = 'super_admin' where id = '<uuid user>';`
-3. Các admin sau đó do super admin cấp ở trang **/admin/users**.
+3. Các admin sau đó do super admin cấp ở trang **/super-admin/admins**.
+
+Hai khu quản trị (cùng chạy ở cổng admin, `NEXT_PUBLIC_APP_MODE=admin`), mỗi khu có sidebar
+riêng, bấm nút ☰ để thu gọn/mở (desktop) hoặc trượt ra (mobile):
+
+| Khu | Ai vào | Chức năng |
+|---|---|---|
+| `/admin` | admin, super_admin | Dashboard, duyệt khóa học, báo cáo & review, người dùng, mã giảm giá |
+| `/super-admin` | chỉ super_admin | Dashboard hệ thống, quản lý Admin, hoàn tiền, payout, cấu hình, nhật ký hoạt động |
 
 > Client không thể tự đổi `role`/`is_banned` (trigger `trg_profiles_guard_privilege`) —
 > chỉ qua `fn_set_role` / `fn_toggle_ban` hoặc SQL Editor.
@@ -64,6 +72,7 @@ Có 2 cấp: `admin` (kiểm duyệt, quản lý học viên/giảng viên) và 
 | `0007` · `0008` | L | hotfix bảo vệ nội dung trả phí · biên nhận checkout |
 | `0009_super_admin_role.sql` | L | thêm giá trị enum `super_admin` (**chạy riêng, trước 0010**) |
 | `0010_admin_permissions.sql` | L | phân quyền Admin/Super Admin, chống leo thang quyền, audit log |
+| `0011_setting_audit.sql` | L | ghi nhật ký mỗi khi `system_setting` thay đổi |
 
 > Bảng thương mại tham chiếu `courses` nên phải tạo sau `courses` → thứ tự trên là bắt buộc.
 
