@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/domain";
-import { isAdminRole, ROLE_LABELS } from "@/lib/utils";
 
 // Chủ: M3 · Thanh điều hướng dùng chung (cả nhóm dùng).
 export function Navbar() {
@@ -306,7 +305,7 @@ export function Navbar() {
                   <div className="border-b border-slate-100 px-3 py-2.5">
                     <p className="text-sm font-bold text-slate-900 truncate">{profile.fullName}</p>
                     <p className="text-[11px] font-medium text-slate-500 capitalize">
-                      Vai trò: {ROLE_LABELS[profile.role] ?? ROLE_LABELS.student}
+                      Vai trò: {profile.role === "admin" ? "Quản trị viên" : profile.role === "instructor" ? "Giảng viên" : "Học viên"}
                     </p>
                   </div>
 
@@ -349,7 +348,7 @@ export function Navbar() {
                       </Link>
                     )}
 
-                    {isAdminRole(profile.role) && (
+                    {profile.role === "admin" && (
                       <Link
                         href="/admin"
                         onClick={() => setProfileDropdownOpen(false)}

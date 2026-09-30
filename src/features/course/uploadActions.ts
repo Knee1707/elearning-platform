@@ -3,10 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES } from "@/lib/utils";
 
 export async function uploadLessonVideo(formData: FormData) {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
 
   const courseId = String(formData.get("courseId"));
@@ -41,7 +40,7 @@ export async function uploadLessonVideo(formData: FormData) {
   revalidatePath(`/studio/${courseId}`);
 }
 export async function uploadLessonAttachment(formData: FormData) {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
 
   const courseId = String(formData.get("courseId"));
@@ -82,7 +81,7 @@ export async function uploadLessonAttachment(formData: FormData) {
 }
 
 export async function deleteAttachment(attachmentId: string, courseId: string) {
-  await requireRole(["instructor", ...ADMIN_ROLES]);
+  await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const { error } = await supabase.from("attachments").delete().eq("id", attachmentId);
   if (error) throw error;

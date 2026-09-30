@@ -16,7 +16,7 @@
 
 | Enum | Giá trị hợp lệ |
 |---|---|
-| `user_role` | `student` · `instructor` · `admin` · `super_admin` **[0009]** |
+| `user_role` | `student` · `instructor` · `admin` |
 | `course_status` | `draft` · `pending` · `published` · `rejected` · `hidden` |
 | `enrollment_status` | `active` · `refunded` |
 | `payment_status` | `pending` · `paid` · `refunded` |
@@ -41,7 +41,7 @@
 |---|---|
 | `profiles` | `id`(PK,FK→auth.users) · `full_name` · `avatar_url` · `role`(user_role) · `is_banned` · `created_at` |
 | `system_setting` | `key`(PK) · `value`(jsonb) · `updated_at` |
-| `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` · `reason` **[0010]** · `metadata`(jsonb) **[0010]** |
+| `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` |
 | `coupon` | `id` · `code`(UNIQUE) · `type`(coupon_type) · `value` · `instructor_id`(FK→profiles) · `valid_from` · `valid_to` · `usage_limit` · `used_count` · `created_at` |
 | `enrollments` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `status`(enrollment_status) · `purchased_at` |
 | `cart_item` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `added_at` |
@@ -132,7 +132,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 `idx_exams_course_id`, `idx_exam_attempts_user_id`, `idx_exam_attempts_exam_id`,
 `idx_answers_attempt_id`, `idx_certificates_user_id`, `idx_live_sessions_course_id`,
 `idx_attendance_course_id`, `idx_attendance_user_id`, `uq_attendance_once`,
-`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**.
+`idx_notification_user_unread`, `idx_report_status`.
 
 ---
 
@@ -160,16 +160,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_get_attachment` **[HOTFIX 0007]** | `p_attachment uuid` → `text` (URL tài liệu, điều kiện như trên) |
 | `fn_get_live_meet` **[HOTFIX 0007]** | `p_live uuid` → `text` (meet_url cho chủ/admin quản lý; HV vào qua `fn_join_live_session`) |
 
-**Phân quyền Super Admin + nhật ký (0009/0010):**
-| Hàm | Tham số / ghi chú |
-|---|---|
-| `fn_is_super_admin` | () → bool. Role `super_admin` và không bị khóa |
-| `fn_is_admin` **[sửa 0010]** | () → bool. Role `admin` **hoặc** `super_admin`, và không bị khóa |
-| `fn_log_activity` | `p_action text`, `p_entity text`, `p_entity_id uuid`, `p_reason text`, `p_metadata jsonb`. Chỉ gọi từ hàm security definer (đã thu hồi EXECUTE của client) |
-| `fn_guard_profile_privilege` | trigger function cho `trg_profiles_guard_privilege`: chặn client tự đổi `role`/`is_banned` |
-
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses).
 
 ---
 
