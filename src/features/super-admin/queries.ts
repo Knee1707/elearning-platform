@@ -27,7 +27,8 @@ export async function getActivityLog({
   pageSize = AUDIT_PAGE_SIZE,
   action,
   entity,
-}: { page?: number; pageSize?: number; action?: string; entity?: string } = {}) {
+  entityId,
+}: { page?: number; pageSize?: number; action?: string; entity?: string; entityId?: string } = {}) {
   const supabase = createClient();
   let query = supabase
     .from("activity_log")
@@ -37,6 +38,7 @@ export async function getActivityLog({
   // like 'x%' để khớp cả log cũ dạng 'moderate_course:published' (trước 0010).
   if (action) query = query.like("action", `${action}%`);
   if (entity) query = query.eq("entity", entity);
+  if (entityId) query = query.eq("entity_id", entityId);
 
   const { data, count, error } = await query;
   if (error) throw error;

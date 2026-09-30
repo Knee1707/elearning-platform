@@ -1,6 +1,7 @@
 import { getPayouts, getSettings } from "@/features/super-admin/queries";
-import { generatePayoutAction } from "@/features/super-admin/actions";
-import { FlashMessage, PageHeader, money, param, type SearchParams } from "@/features/super-admin/ui";
+import { Download } from "lucide-react";
+import { generatePayoutAction, markPayoutPaidAction } from "@/features/super-admin/actions";
+import { FlashMessage, PageHeader, money, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function SuperAdminPayoutsPage({ searchParams }: { searchParams: SearchParams }) {
   const requested = param(searchParams, "period");
@@ -19,7 +20,7 @@ export default async function SuperAdminPayoutsPage({ searchParams }: { searchPa
     <main className="mx-auto max-w-5xl p-8">
       <PageHeader
         title="Payout giảng viên"
-        description="Gom doanh thu đã thanh toán theo kỳ (tháng) và trừ phí nền tảng. Tạo lại một kỳ chỉ cập nhật các dòng còn ở trạng thái nháp."
+        description="Gom doanh thu đã thanh toán theo kỳ (tháng) và trừ phí nền tảng. Tạo lại một kỳ chỉ cập nhật các dòng còn nháp; đánh dấu đã chi trả sẽ báo cho giảng viên."
       />
       <FlashMessage searchParams={searchParams} />
 
@@ -35,9 +36,16 @@ export default async function SuperAdminPayoutsPage({ searchParams }: { searchPa
 
         <section className="rounded-lg border border-border p-5">
           <h2 className="font-semibold">Lọc theo kỳ</h2>
-          <form className="mt-4 flex gap-3">
+          <form className="mt-4 flex flex-wrap gap-3">
             <input name="period" type="month" defaultValue={period} aria-label="Kỳ cần xem" className="rounded border border-border bg-background px-3 py-2" />
             <button className="rounded border border-border px-3 py-2 text-sm hover:bg-muted">Xem</button>
+            <a
+              href={`/super-admin/payouts/export${period ? `?period=${period}` : ""}`}
+              className="inline-flex items-center gap-1.5 rounded border border-border px-3 py-2 text-sm hover:bg-muted"
+            >
+              <Download className="h-4 w-4" />
+              Xuất CSV
+            </a>
           </form>
         </section>
       </div>
@@ -52,6 +60,7 @@ export default async function SuperAdminPayoutsPage({ searchParams }: { searchPa
               <th className="p-3 text-right">Phí nền tảng</th>
               <th className="p-3 text-right">Thực nhận</th>
               <th className="p-3">Trạng thái</th>
+              <th className="p-3">Thao tác</th>
             </tr>
           </thead>
           <tbody>
@@ -70,11 +79,22 @@ export default async function SuperAdminPayoutsPage({ searchParams }: { searchPa
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300">Nháp</span>
                     )}
                   </td>
+                  <td className="p-3">
+                    {p.status === "draft" ? (
+                      <form action={markPayoutPaidAction}>
+                        <input type="hidden" name="payoutId" value={p.id} />
+                        <input type="hidden" name="returnTo" value={`/super-admin/payouts${period ? `?period=${period}` : ""}`} />
+                        <button type="submit" className="rounded border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted">Đánh dấu đã chi trả</button>
+                      </form>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="p-4 text-muted-foreground">Chưa có payout{period ? ` cho kỳ ${period}` : ""}.</td>
+                <td colSpan={7} className="p-4 text-muted-foreground">Chưa có payout{period ? ` cho kỳ ${period}` : ""}.</td>
               </tr>
             )}
           </tbody>
@@ -85,7 +105,7 @@ export default async function SuperAdminPayoutsPage({ searchParams }: { searchPa
                 <td className="p-3 text-right tabular-nums">{money.format(totals.gross)}</td>
                 <td className="p-3 text-right tabular-nums">{money.format(totals.fee)}</td>
                 <td className="p-3 text-right tabular-nums">{money.format(totals.net)}</td>
-                <td className="p-3" />
+                <td className="p-3" colSpan={2} />
               </tr>
             </tfoot>
           )}

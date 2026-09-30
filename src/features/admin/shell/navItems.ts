@@ -1,7 +1,10 @@
 import {
   Banknote,
+  Bell,
   BookCheck,
+  CreditCard,
   Flag,
+  FolderTree,
   LayoutDashboard,
   ScrollText,
   Settings,
@@ -45,12 +48,20 @@ export const NAV_GROUPS: Record<AdminArea, NavGroup[]> = {
       ],
     },
     {
-      title: "Vận hành",
+      title: "Người dùng & nội dung",
       items: [
         { href: "/admin/users", label: "Người dùng", icon: Users },
+        { href: "/admin/categories", label: "Danh mục & tag", icon: FolderTree },
+      ],
+    },
+    {
+      title: "Kinh doanh",
+      items: [
+        { href: "/admin/payments", label: "Giao dịch", icon: CreditCard },
         { href: "/admin/coupons", label: "Mã giảm giá", icon: Tag },
       ],
     },
+    { title: "Truyền thông", items: [{ href: "/admin/notifications", label: "Gửi thông báo", icon: Bell }] },
   ],
   super_admin: [
     { title: "Tổng quan", items: [{ href: "/super-admin", label: "Dashboard hệ thống", icon: LayoutDashboard }] },

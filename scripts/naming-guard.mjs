@@ -42,6 +42,8 @@ const ALLOWED = {
     "fn_resolve_report", "fn_get_lesson_video", "fn_get_attachment", "fn_get_live_meet",
     // L — phân quyền super admin + nhật ký (0010)
     "fn_is_super_admin", "fn_log_activity", "fn_guard_profile_privilege", "fn_log_setting_change",
+    // L — chức năng quản trị bổ sung (0012)
+    "fn_reject_refund", "fn_mark_payout_paid", "fn_broadcast_notification",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

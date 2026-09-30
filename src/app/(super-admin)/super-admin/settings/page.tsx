@@ -1,7 +1,7 @@
 import { getSettings } from "@/features/super-admin/queries";
 import { saveSettingsAction } from "@/features/super-admin/actions";
 import { SETTING_DEFS } from "@/features/super-admin/settings";
-import { FlashMessage, PageHeader, dateTime, type SearchParams } from "@/features/super-admin/ui";
+import { FlashMessage, PageHeader, dateTime, type SearchParams } from "@/features/admin/ui";
 
 export default async function SuperAdminSettingsPage({ searchParams }: { searchParams: SearchParams }) {
   const settings = await getSettings();

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { RefundStatus } from "@/types/domain";
 import { getRefunds } from "@/features/super-admin/queries";
-import { approveRefundAction } from "@/features/super-admin/actions";
-import { FlashMessage, PageHeader, dateTime, money, param, type SearchParams } from "@/features/super-admin/ui";
+import { approveRefundAction, rejectRefundAction } from "@/features/super-admin/actions";
+import { FlashMessage, PageHeader, ReasonAction, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
 
 const TABS: { status: RefundStatus; label: string }[] = [
   { status: "pending", label: "Chờ duyệt" },
@@ -19,7 +19,7 @@ export default async function SuperAdminRefundsPage({ searchParams }: { searchPa
     <main className="mx-auto max-w-5xl p-8">
       <PageHeader
         title="Hoàn tiền"
-        description="Duyệt yêu cầu hoàn tiền: giao dịch chuyển sang 'refunded' và học viên mất quyền truy cập khóa học."
+        description="Duyệt: giao dịch chuyển sang 'refunded' và học viên mất quyền truy cập khóa học. Từ chối: bắt buộc ghi lý do. Học viên nhận thông báo trong cả hai trường hợp; lý do từ chối lưu ở Nhật ký hoạt động."
       />
       <FlashMessage searchParams={searchParams} />
 
@@ -55,10 +55,19 @@ export default async function SuperAdminRefundsPage({ searchParams }: { searchPa
                 <p className="mt-1 text-sm">Lý do: {refund.reason || <span className="text-muted-foreground">không ghi</span>}</p>
               </div>
               {status === "pending" && (
-                <form action={approveRefundAction}>
-                  <input type="hidden" name="refundId" value={refund.id} />
-                  <button type="submit" className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Duyệt hoàn tiền</button>
-                </form>
+                <div className="flex items-start gap-2">
+                  <form action={approveRefundAction}>
+                    <input type="hidden" name="refundId" value={refund.id} />
+                    <input type="hidden" name="returnTo" value="/super-admin/refunds?status=pending" />
+                    <button type="submit" className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Duyệt hoàn tiền</button>
+                  </form>
+                  <ReasonAction
+                    action={rejectRefundAction}
+                    label="Từ chối"
+                    submitLabel="Xác nhận từ chối"
+                    hidden={{ refundId: refund.id, returnTo: "/super-admin/refunds?status=pending" }}
+                  />
+                </div>
               )}
             </article>
           ))

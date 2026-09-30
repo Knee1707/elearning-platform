@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AUDIT_PAGE_SIZE, getActivityLog } from "@/features/super-admin/queries";
-import { ACTION_LABELS, ENTITY_LABELS, PageHeader, dateTime, describeActivity, param, type SearchParams } from "@/features/super-admin/ui";
+import { ACTION_LABELS, ENTITY_LABELS, PageHeader, dateTime, describeActivity, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function SuperAdminAuditLogPage({ searchParams }: { searchParams: SearchParams }) {
   const action = param(searchParams, "action");

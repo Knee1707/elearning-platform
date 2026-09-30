@@ -4,7 +4,7 @@ import { ROLE_LABELS } from "@/lib/utils";
 import type { UserRole } from "@/types/domain";
 import { getAdminTeam, searchGrantCandidates } from "@/features/super-admin/queries";
 import { setUserRoleAction, toggleBanAction } from "@/features/super-admin/actions";
-import { FlashMessage, PageHeader, RoleBadge, dateTime, param, type SearchParams } from "@/features/super-admin/ui";
+import { FlashMessage, PageHeader, ReasonAction, RoleBadge, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
 const ALL_ROLES: UserRole[] = ["super_admin", "admin", "instructor", "student"];
 
@@ -61,11 +61,13 @@ export default async function SuperAdminTeamPage({ searchParams }: { searchParam
                   <td className="p-3">
                     {isSelf || member.role === "super_admin" ? (
                       <span className="text-muted-foreground">—</span>
-                    ) : (
+                    ) : member.isBanned ? (
                       <form action={toggleBanAction}>
                         <input type="hidden" name="userId" value={member.id} />
-                        <button type="submit" className="underline">{member.isBanned ? "Mở khóa" : "Khóa"}</button>
+                        <button type="submit" className="underline">Mở khóa</button>
                       </form>
+                    ) : (
+                      <ReasonAction action={toggleBanAction} label="Khóa" submitLabel="Xác nhận khóa" hidden={{ userId: member.id }} />
                     )}
                   </td>
                 </tr>

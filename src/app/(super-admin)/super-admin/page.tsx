@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Banknote, Crown, Percent, ShieldCheck, Undo2, Users, Wallet } from "lucide-react";
 import { getAdminDashboard } from "@/lib/queries/admin";
 import { getActivityLog, getSuperAdminOverview } from "@/features/super-admin/queries";
-import { PageHeader, dateTime, describeActivity, money } from "@/features/super-admin/ui";
+import { PageHeader, dateTime, describeActivity, money } from "@/features/admin/ui";
 
 export default async function SuperAdminDashboardPage() {
   const [overview, dashboard, recent] = await Promise.all([

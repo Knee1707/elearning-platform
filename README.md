@@ -27,9 +27,9 @@ cp .env.local.example .env.local
 # 4) Database (chọn 1 trong 2)
 #   a) Supabase local (cần Docker):
 npx supabase@latest start
-npx supabase@latest db reset          # chạy migrations 0001..0011 + seed.sql
+npx supabase@latest db reset          # chạy migrations 0001..0012 + seed.sql
 #   b) Hoặc dán nội dung supabase/migrations/*.sql vào SQL Editor trên Supabase Cloud
-#      theo đúng thứ tự 0001 → 0002 → … → 0011 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
+#      theo đúng thứ tự 0001 → 0002 → … → 0012 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
 
 # 5) Sinh kiểu TypeScript từ schema (tùy chọn, sau khi có DB)
 pnpm db:types
@@ -53,8 +53,8 @@ riêng, bấm nút ☰ để thu gọn/mở (desktop) hoặc trượt ra (mobile
 
 | Khu | Ai vào | Chức năng |
 |---|---|---|
-| `/admin` | admin, super_admin | Dashboard, duyệt khóa học, báo cáo & review, người dùng, mã giảm giá |
-| `/super-admin` | chỉ super_admin | Dashboard hệ thống, quản lý Admin, hoàn tiền, payout, cấu hình, nhật ký hoạt động |
+| `/admin` | admin, super_admin | Dashboard + việc cần xử lý, duyệt khóa học (lý do khi từ chối/ẩn), báo cáo & review, người dùng (tìm/lọc/chi tiết, lý do khi khóa), danh mục & tag, giao dịch, mã giảm giá, gửi thông báo |
+| `/super-admin` | chỉ super_admin | Dashboard hệ thống, quản lý Admin, hoàn tiền (duyệt/từ chối), payout (tạo/chi trả/xuất CSV), cấu hình, nhật ký hoạt động |
 
 > Client không thể tự đổi `role`/`is_banned` (trigger `trg_profiles_guard_privilege`) —
 > chỉ qua `fn_set_role` / `fn_toggle_ban` hoặc SQL Editor.
@@ -73,6 +73,7 @@ riêng, bấm nút ☰ để thu gọn/mở (desktop) hoặc trượt ra (mobile
 | `0009_super_admin_role.sql` | L | thêm giá trị enum `super_admin` (**chạy riêng, trước 0010**) |
 | `0010_admin_permissions.sql` | L | phân quyền Admin/Super Admin, chống leo thang quyền, audit log |
 | `0011_setting_audit.sql` | L | ghi nhật ký mỗi khi `system_setting` thay đổi |
+| `0012_admin_features.sql` | L | lý do từ chối/ẩn khóa & khóa tài khoản, từ chối hoàn tiền, chi trả payout, gửi thông báo hàng loạt |
 
 > Bảng thương mại tham chiếu `courses` nên phải tạo sau `courses` → thứ tự trên là bắt buộc.
 

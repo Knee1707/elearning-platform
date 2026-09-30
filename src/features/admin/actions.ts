@@ -1,0 +1,211 @@
+"use server";
+
+import { createClient } from "@/lib/supabase/server";
+import {
+  broadcastNotification,
+  moderateCourse,
+  moderateReview,
+  resolveReport,
+  setRole,
+  toggleBan,
+} from "@/lib/queries/admin";
+import { ADMIN_ROLES, slugify } from "@/lib/utils";
+import type { CourseStatus, ReportStatus, ReviewStatus, UserRole } from "@/types/domain";
+import { runAction } from "./runAction";
+
+// Server action của khu Admin (admin + super_admin). DB kiểm quyền lại trong
+// mọi hàm definer / policy RLS; ở đây chỉ gom kết quả thành ?ok= / ?error=.
+
+const text = (formData: FormData, key: string) => String(formData.get(key) ?? "").trim();
+
+// ------------------------------------------------------------------ //
+// Khóa học
+// ------------------------------------------------------------------ //
+export async function moderateCourseAction(formData: FormData) {
+  const status = text(formData, "status") as CourseStatus;
+  const messages: Partial<Record<CourseStatus, string>> = {
+    published: "Đã duyệt / hiển thị lại khóa học.",
+    rejected: "Đã từ chối khóa học và báo cho giảng viên.",
+    hidden: "Đã ẩn khóa học và báo cho giảng viên.",
+  };
+  await runAction({
+    path: "/admin/courses",
+    roles: ADMIN_ROLES,
+    success: messages[status] ?? "Đã cập nhật trạng thái.",
+    task: () => moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Người dùng
+// ------------------------------------------------------------------ //
+export async function setUserRoleAction(formData: FormData) {
+  await runAction({
+    path: "/admin/users",
+    roles: ADMIN_ROLES,
+    success: "Đã cập nhật vai trò.",
+    task: () => setRole(text(formData, "userId"), text(formData, "role") as UserRole),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+export async function toggleBanAction(formData: FormData) {
+  await runAction({
+    path: "/admin/users",
+    roles: ADMIN_ROLES,
+    success: (banned) => (banned ? "Đã khóa tài khoản." : "Đã mở khóa tài khoản."),
+    task: () => toggleBan(text(formData, "userId"), text(formData, "reason") || undefined),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Danh mục & tag (ghi thẳng bảng qua RLS categories_admin_all / tag_admin_all)
+// ------------------------------------------------------------------ //
+type TaxonomyTable = "categories" | "tag";
+const taxonomyTable = (formData: FormData): TaxonomyTable => (text(formData, "kind") === "tag" ? "tag" : "categories");
+const taxonomyLabel = (table: TaxonomyTable) => (table === "tag" ? "tag" : "danh mục");
+
+// Lỗi trùng slug (unique) → thông báo dễ hiểu.
+function friendlyDbError(error: { code?: string; message: string }): Error {
+  return new Error(error.code === "23505" ? "Slug đã tồn tại, hãy đặt tên/slug khác." : error.message);
+}
+
+export async function saveTaxonomyAction(formData: FormData) {
+  const table = taxonomyTable(formData);
+  const id = text(formData, "id");
+  const name = text(formData, "name");
+  const slug = slugify(text(formData, "slug") || name);
+  await runAction({
+    path: "/admin/categories",
+    roles: ADMIN_ROLES,
+    success: `Đã lưu ${taxonomyLabel(table)} "${name}".`,
+    task: async () => {
+      if (!name) throw new Error("Tên không được để trống.");
+      if (!slug) throw new Error("Không tạo được slug từ tên này, hãy nhập slug.");
+      const supabase = createClient();
+      const { error } = id
+        ? await supabase.from(table).update({ name, slug }).eq("id", id)
+        : await supabase.from(table).insert({ name, slug });
+      if (error) throw friendlyDbError(error);
+    },
+  });
+}
+
+export async function deleteTaxonomyAction(formData: FormData) {
+  const table = taxonomyTable(formData);
+  await runAction({
+    path: "/admin/categories",
+    roles: ADMIN_ROLES,
+    success: `Đã xóa ${taxonomyLabel(table)}.`,
+    task: async () => {
+      const supabase = createClient();
+      // courses.category_id → set null; course_tag → cascade (theo 0002).
+      const { error } = await supabase.from(table).delete().eq("id", text(formData, "id"));
+      if (error) throw friendlyDbError(error);
+    },
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Báo cáo & review
+// ------------------------------------------------------------------ //
+export async function resolveReportAction(formData: FormData) {
+  const status = text(formData, "status") as ReportStatus;
+  await runAction({
+    path: "/admin/reports",
+    roles: ADMIN_ROLES,
+    success: status === "resolved" ? "Đã đánh dấu báo cáo là đã xử lý." : "Đã bỏ qua báo cáo.",
+    task: () => resolveReport(text(formData, "id"), status),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+export async function moderateReviewAction(formData: FormData) {
+  const status = text(formData, "status") as ReviewStatus;
+  await runAction({
+    path: "/admin/reports",
+    roles: ADMIN_ROLES,
+    success: status === "visible" ? "Đã hiển thị review." : "Đã ẩn review.",
+    task: () => moderateReview(text(formData, "id"), status),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Thông báo hệ thống
+// ------------------------------------------------------------------ //
+export async function broadcastAction(formData: FormData) {
+  const target = text(formData, "target"); // all | student | instructor | course
+  await runAction({
+    path: "/admin/notifications",
+    roles: ADMIN_ROLES,
+    success: (count) => `Đã gửi thông báo tới ${count} người.`,
+    task: async () => {
+      const courseId = text(formData, "courseId");
+      if (target === "course" && !courseId) throw new Error("Hãy chọn khóa học.");
+      return broadcastNotification({
+        title: text(formData, "title"),
+        body: text(formData, "body") || undefined,
+        role: target === "student" || target === "instructor" ? target : undefined,
+        courseId: target === "course" ? courseId : undefined,
+      });
+    },
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Mã giảm giá (ghi qua RLS coupon_admin_all)
+// ------------------------------------------------------------------ //
+export async function createCouponAction(formData: FormData) {
+  await runAction({
+    path: "/admin/coupons",
+    roles: ADMIN_ROLES,
+    success: "Đã tạo mã giảm giá.",
+    task: async () => {
+      const code = text(formData, "code").toUpperCase();
+      const type = text(formData, "type");
+      const value = Number(formData.get("value"));
+      const validFrom = text(formData, "validFrom");
+      const validTo = text(formData, "validTo");
+      const usageLimit = text(formData, "usageLimit");
+
+      if (!/^[A-Z0-9_-]{3,32}$/.test(code)) throw new Error("Mã gồm 3–32 ký tự chữ, số, '-' hoặc '_'.");
+      if (type !== "percent" && type !== "fixed") throw new Error("Loại giảm giá không hợp lệ.");
+      if (!(value > 0) || (type === "percent" && value > 100)) throw new Error("Giá trị phải > 0 (phần trăm tối đa 100).");
+      if (validTo && validFrom && validTo < validFrom) throw new Error("Ngày kết thúc phải sau ngày bắt đầu.");
+
+      const supabase = createClient();
+      const { error } = await supabase.from("coupon").insert({
+        code,
+        type,
+        value,
+        valid_from: validFrom ? new Date(validFrom).toISOString() : new Date().toISOString(),
+        // Hết hạn vào cuối ngày kết thúc.
+        valid_to: validTo ? new Date(`${validTo}T23:59:59`).toISOString() : null,
+        usage_limit: usageLimit ? Number(usageLimit) : null,
+      });
+      if (error) throw error.code === "23505" ? new Error(`Mã "${code}" đã tồn tại.`) : error;
+    },
+  });
+}
+
+export async function disableCouponAction(formData: FormData) {
+  await runAction({
+    path: "/admin/coupons",
+    roles: ADMIN_ROLES,
+    success: "Đã vô hiệu hóa mã giảm giá.",
+    task: async () => {
+      const supabase = createClient();
+      const id = text(formData, "id");
+      const { data: coupon, error: readError } = await supabase.from("coupon").select("valid_from").eq("id", id).single();
+      if (readError) throw readError;
+      // Kết thúc ngay; mã chưa bắt đầu thì kéo ngày bắt đầu về hiện tại để khoảng hiệu lực không bị ngược.
+      const now = new Date().toISOString();
+      const update = new Date(String(coupon.valid_from)) > new Date(now) ? { valid_from: now, valid_to: now } : { valid_to: now };
+      const { error } = await supabase.from("coupon").update(update).eq("id", id);
+      if (error) throw error;
+    },
+  });
+}
