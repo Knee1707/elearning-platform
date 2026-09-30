@@ -40,8 +40,11 @@ const ALLOWED = {
     "fn_mock_purchase", "fn_request_refund", "fn_approve_refund", "fn_generate_payout",
     "fn_set_role", "fn_toggle_ban", "fn_moderate_course", "fn_moderate_review",
     "fn_resolve_report", "fn_get_lesson_video", "fn_get_attachment", "fn_get_live_meet",
+
     // L — phân quyền super admin + nhật ký (0010)
     "fn_is_super_admin", "fn_log_activity", "fn_guard_profile_privilege", "fn_log_setting_change",
+
+
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2
@@ -56,7 +59,11 @@ const ALLOWED = {
     "view_course_progress", "view_attendance", "view_certificate",
   ]),
   triggers: new Set([
+
     "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate", "trg_profiles_guard_privilege", "trg_system_setting_audit",
+
+    "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate",
+
     "trg_attendance_on_video", "trg_notify_on_answer",
   ]),
 };

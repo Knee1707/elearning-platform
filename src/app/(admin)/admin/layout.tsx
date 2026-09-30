@@ -1,12 +1,16 @@
 import { cookies } from "next/headers";
 import { requireRole } from "@/lib/queries/auth";
+
 import { ADMIN_ROLES, ROLE_LABELS } from "@/lib/utils";
+
+import { GraduationCap, Home } from "lucide-react";
+
 import { AdminThemeProvider } from "@/features/admin/theme/AdminThemeProvider";
 import { AdminShell } from "@/features/admin/shell/AdminShell";
 import { SIDEBAR_COOKIE } from "@/features/admin/shell/navItems";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const profile = await requireRole(ADMIN_ROLES);
+  const profile = await requireRole(["admin"]);
 
   return (
     <AdminThemeProvider>

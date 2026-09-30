@@ -1,11 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES } from "@/lib/utils";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 export default async function PayoutPage() {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const { data } = await supabase.from("view_instructor_payout").select("period, gross, platform_fee, net, status").eq("instructor_id", profile.id).order("period", { ascending: false });
   return (

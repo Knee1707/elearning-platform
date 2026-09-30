@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES, isAdminRole } from "@/lib/utils";
 import { updateCourse, submitForReview } from "@/features/course/courseActions";
 import { ChapterManager } from "@/features/course/ChapterManager";
 
@@ -19,14 +18,14 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default async function EditCoursePage({ params }: PageProps) {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
   const { data: course } = await supabase
     .from("courses")
     .select("id, instructor_id, title, description, price, status, chapters(id, title, position, lessons(id, title, video_url, duration_seconds, is_free, position, attachments(id, name, file_url)))")
     .eq("id", params.courseId)
     .single();
-  if (!course || (course.instructor_id !== profile.id && !isAdminRole(profile.role))) notFound();
+  if (!course || (course.instructor_id !== profile.id && profile.role !== "admin")) notFound();
 
   const chapters = (course.chapters ?? [])
     .map((c) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a, b) => a.position - b.position) }))

@@ -2,11 +2,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
+
 import { ADMIN_ROLES } from "@/lib/utils";
+
+import { generatePayout } from "@/lib/queries/admin";
 
 async function createCoupon(formData: FormData) {
   "use server";
-  await requireRole(ADMIN_ROLES);
+  await requireRole(["admin"]);
   const supabase = createClient();
 
   const validFrom = String(formData.get("validFrom"));
@@ -42,7 +45,11 @@ function getCouponStatus(validFrom: string, validTo: string | null): { label: st
 const dateFmt = new Intl.DateTimeFormat("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
 
 export default async function AdminCouponsPage() {
+
   await requireRole(ADMIN_ROLES);
+
+  await requireRole(["admin"]);
+
   const supabase = createClient();
   const { data: coupons } = await supabase
     .from("coupon")
@@ -150,6 +157,16 @@ export default async function AdminCouponsPage() {
             </div>
 
             <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Tạo mã</button>
+          </form>
+        </section>
+
+
+
+        <section className="rounded-lg border p-5">
+          <h2 className="font-semibold">Tạo payout theo kỳ</h2>
+          <form action={runPayout} className="mt-4 flex gap-3">
+            <input name="period" type="month" required className="rounded border bg-background px-3 py-2" />
+            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Tạo payout</button>
           </form>
         </section>
 

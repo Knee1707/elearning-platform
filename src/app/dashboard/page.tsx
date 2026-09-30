@@ -1,13 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
-import { ADMIN_ROLES } from "@/lib/utils";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
 
 // Route: /dashboard · Chủ: M4 · Tổng quan doanh thu + học viên cho giảng viên.
 export default async function InstructorDashboardPage() {
-  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const profile = await requireRole(["instructor", "admin"]);
   const supabase = createClient();
 
   const { data: stats } = await supabase

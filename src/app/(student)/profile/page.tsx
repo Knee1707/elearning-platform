@@ -17,7 +17,6 @@ import {
 import { Navbar } from "@/components/shared/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/domain";
-import { isAdminRole, ROLE_LABELS } from "@/lib/utils";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -219,8 +218,8 @@ export default function ProfilePage() {
               <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-blue-50 border border-blue-200/60 px-3 py-1 text-xs font-bold text-blue-700">
                 <Shield className="h-3.5 w-3.5" />
                 <span>
-                  {profile && isAdminRole(profile.role)
-                    ? ROLE_LABELS[profile.role]
+                  {profile?.role === "admin"
+                    ? "Quản trị viên"
                     : profile?.role === "instructor"
                     ? "Giảng viên"
                     : "Học viên chính thức"}
