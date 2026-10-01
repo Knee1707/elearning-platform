@@ -56,6 +56,21 @@ export function CartView() {
   const [applyingCoupon, setApplyingCoupon] = useState<boolean>(false);
   const [purchasing, setPurchasing] = useState<boolean>(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState<boolean>(false);
+  const [flash, setFlash] = useState<string | null>(null);
+  // Chọn từng khóa để thanh toán (không bắt buộc trả hết giỏ). Mặc định chọn tất cả.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelect = (courseId: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(courseId)) next.delete(courseId);
+      else next.add(courseId);
+      return next;
+    });
+  const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.courseId));
+  const toggleSelectAll = () =>
+    setSelectedIds(allSelected ? new Set() : new Set(items.map((i) => i.courseId)));
+  const selectedItems = items.filter((i) => selectedIds.has(i.courseId));
 
   // Tải danh sách khóa học trong giỏ hàng
   useEffect(() => {
@@ -118,6 +133,12 @@ export function CartView() {
     fetchCart();
   }, []);
 
+  // Khi giỏ tải xong: mặc định chọn tất cả khóa để thanh toán.
+  useEffect(() => {
+    if (!loading) setSelectedIds(new Set(items.map((i) => i.courseId)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
   // Xóa khóa học khỏi giỏ
   async function handleRemoveItem(courseId: string, itemId: string) {
     try {
@@ -169,9 +190,9 @@ export function CartView() {
 
     try {
       const supabase = createClient();
-      const courseIds = items.map((i) => i.courseId);
+      const courseIds = selectedItems.map((i) => i.courseId);
 
-      // Gọi RPC fn_apply_coupon trong DB
+      // Gọi RPC fn_apply_coupon trong DB (chỉ trên các khóa đang chọn)
       const { data, error } = await supabase.rpc("fn_apply_coupon", {
         p_code: code,
         p_course_ids: courseIds,
@@ -180,13 +201,13 @@ export function CartView() {
       if (error || data === null) {
         // Fallback kiểm tra các mã mẫu trong seed nếu DB chưa chạy RPC
         if (code === "WELCOME10") {
-          const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+          const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
           const disc = Math.round(subtotal * 0.1);
           setDiscountAmount(disc);
           setAppliedCoupon("WELCOME10 (Giảm 10%)");
           setCouponCode("");
         } else if (code === "SAVE100K") {
-          const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+          const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
           const disc = Math.min(subtotal, 100000);
           setDiscountAmount(disc);
           setAppliedCoupon("SAVE100K (Giảm 100.000₫)");
@@ -196,7 +217,7 @@ export function CartView() {
         }
       } else {
         const finalPrice = Number(data);
-        const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+        const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
         const calculatedDiscount = Math.max(0, subtotal - finalPrice);
         setDiscountAmount(calculatedDiscount);
         setAppliedCoupon(code);
@@ -205,7 +226,7 @@ export function CartView() {
     } catch {
       // Fallback cho mã mẫu
       if (code === "WELCOME10") {
-        const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+        const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
         setDiscountAmount(Math.round(subtotal * 0.1));
         setAppliedCoupon("WELCOME10 (Giảm 10%)");
         setCouponCode("");
@@ -226,39 +247,43 @@ export function CartView() {
     setDiscountAmount(0);
   }
 
-  // Thanh toán mô phỏng (Mock Purchase)
+  // Thanh toán mô phỏng (Mock Purchase) — CHỈ các khóa đang chọn.
   async function handleMockPurchase() {
+    const paidIds = selectedItems.map((i) => i.courseId);
+    if (paidIds.length === 0) return;
     setPurchasing(true);
     try {
       const supabase = createClient();
-      const courseIds = items.map((i) => i.courseId);
-
-      // Gọi RPC fn_mock_purchase trong DB
       await supabase.rpc("fn_mock_purchase", {
-        p_course_ids: courseIds,
+        p_course_ids: paidIds,
         p_coupon_code: appliedCoupon ? appliedCoupon.split(" ")[0] : null,
       });
-
-      setPurchaseSuccess(true);
-      setItems([]);
-      try {
-        localStorage.removeItem("demo_cart_items");
-      } catch {}
-      window.dispatchEvent(new Event("cart-updated"));
     } catch {
-      // Cho phép hoàn tất mô phỏng ngay cả trong môi trường test
-      setPurchaseSuccess(true);
-      setItems([]);
+      // Cho phép hoàn tất mô phỏng ngay cả khi RPC chưa sẵn sàng (môi trường test).
+    } finally {
+      // Gỡ các khóa đã mua khỏi giỏ, giữ lại phần còn lại.
+      const paid = new Set(paidIds);
+      const remaining = items.filter((i) => !paid.has(i.courseId));
+      setItems(remaining);
+      setSelectedIds(new Set(remaining.map((i) => i.courseId)));
+      setAppliedCoupon(null);
+      setDiscountAmount(0);
       try {
-        localStorage.removeItem("demo_cart_items");
+        const stored = localStorage.getItem("demo_cart_items");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const filtered = Array.isArray(parsed) ? parsed.filter((id: string) => !paid.has(id)) : [];
+          localStorage.setItem("demo_cart_items", JSON.stringify(filtered));
+        }
       } catch {}
       window.dispatchEvent(new Event("cart-updated"));
-    } finally {
+      if (remaining.length === 0) setPurchaseSuccess(true);
+      else setFlash(`Đã thanh toán ${paidIds.length} khóa. Còn ${remaining.length} khóa trong giỏ.`);
       setPurchasing(false);
     }
   }
 
-  const subtotal = items.reduce((sum, item) => sum + item.price, 0);
+  const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
   const total = Math.max(0, subtotal - discountAmount);
 
   // MÀN HÌNH THANH TOÁN THÀNH CÔNG
@@ -338,10 +363,20 @@ export function CartView() {
           <h2 className="text-base font-black text-slate-900">
             Khóa học trong giỏ ({items.length})
           </h2>
-          <span className="text-xs text-slate-400 font-medium">
-            ✓ Quyền sở hữu trọn đời
-          </span>
+          {items.length > 0 && (
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600">
+              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 accent-blue-600" />
+              <span>Chọn tất cả</span>
+            </label>
+          )}
         </div>
+
+        {flash && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <span>{flash}</span>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex py-12 items-center justify-center text-slate-400 text-xs">
@@ -353,10 +388,19 @@ export function CartView() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm transition-all hover:border-blue-300"
+                className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border bg-white p-5 shadow-sm transition-all ${
+                  selectedIds.has(item.courseId) ? "border-blue-300 ring-1 ring-blue-200" : "border-slate-200/90 hover:border-blue-300"
+                }`}
               >
                 {/* THUMBNAIL & INFO */}
                 <div className="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(item.courseId)}
+                    onChange={() => toggleSelect(item.courseId)}
+                    aria-label={`Chọn thanh toán khóa ${item.title}`}
+                    className="mt-1 h-4 w-4 shrink-0 accent-blue-600"
+                  />
                   <div className="h-16 w-24 shrink-0 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-800 flex items-center justify-center overflow-hidden text-white">
                     <BookOpen className="h-6 w-6 text-blue-200" />
                   </div>
@@ -478,7 +522,7 @@ export function CartView() {
           {/* BẢNG GIÁ */}
           <div className="border-t border-slate-100 pt-4 space-y-2 text-xs">
             <div className="flex justify-between text-slate-500 font-medium">
-              <span>Tạm tính ({items.length} khóa)</span>
+              <span>Tạm tính ({selectedItems.length} khóa đã chọn)</span>
               <span className="font-bold text-slate-800 font-mono">{formatPrice(subtotal)}</span>
             </div>
 
@@ -500,7 +544,7 @@ export function CartView() {
           {/* NÚT THANH TOÁN */}
           <button
             onClick={handleMockPurchase}
-            disabled={purchasing || items.length === 0}
+            disabled={purchasing || selectedItems.length === 0}
             className="flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 py-3.5 text-xs font-bold text-white shadow-md shadow-blue-500/25 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95"
           >
             {purchasing ? (
@@ -511,7 +555,11 @@ export function CartView() {
             ) : (
               <>
                 <CreditCard className="h-4 w-4" />
-                <span>Thanh toán ngay (Mô phỏng)</span>
+                <span>
+                  {selectedItems.length === 0
+                    ? "Chọn khóa để thanh toán"
+                    : `Thanh toán ${selectedItems.length} khóa đã chọn (Mô phỏng)`}
+                </span>
               </>
             )}
           </button>

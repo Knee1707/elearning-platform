@@ -9,7 +9,6 @@ import {
   ArrowRight,
   Sparkles,
   Users,
-  GraduationCap,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { CourseCard } from "@/components/shared/CourseCard";
@@ -309,39 +308,6 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ROLE SHORTCUTS SECTION (Dành cho thầy cô / bạn cùng nhóm trải nghiệm nhanh) */}
-        <section className="py-10 bg-white border-t border-slate-200/80">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl border border-dashed border-slate-300 p-6 bg-slate-50/60">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4 text-blue-600" />
-                    Lối tắt truy cập các phân hệ khác (Dành cho Giảng viên & Quản trị)
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Truy cập nhanh các màn hình chức năng thuộc các phân hệ M1, M2 và M4
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <Link
-                    href="/studio"
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all shadow-xs"
-                  >
-                    Studio Giảng viên (M2/M4) →
-                  </Link>
-                  <Link
-                    href="/admin"
-                    className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 transition-all shadow-xs"
-                  >
-                    Quản trị Admin (M1/M4) →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* FOOTER */}
