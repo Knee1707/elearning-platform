@@ -91,9 +91,10 @@ export function LoginForm() {
       return;
     }
 
-    // Điểm đến sau đăng nhập: cổng admin → /super-admin (super admin) hoặc /admin;
+    // Điểm đến sau đăng nhập: super admin → Dashboard /super-admin;
+    // admin → thẳng vào thao tác quản trị (/admin/users, admin không còn Dashboard);
     // cổng user → trang chủ (hoặc ?next=).
-    const adminHome = role === "super_admin" ? "/super-admin" : "/admin";
+    const adminHome = role === "super_admin" ? "/super-admin" : "/admin/users";
     const destination = explicitNext ?? (APP_MODE === "admin" ? adminHome : "/");
 
     router.refresh();

@@ -11,10 +11,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AdminThemeProvider>
       <AdminShell
-        area="admin"
+        area={profile.role === "super_admin" ? "super_admin" : "admin"}
         userName={profile.fullName}
         roleLabel={ROLE_LABELS[profile.role]}
-        canSwitchArea={profile.role === "super_admin"}
         initialCollapsed={cookies().get(SIDEBAR_COOKIE)?.value === "1"}
       >
         {children}

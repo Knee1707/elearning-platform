@@ -166,6 +166,40 @@ export function ReasonAction({
 }
 
 // ------------------------------------------------------------------ //
+// Nút xác nhận hành động nguy hiểm (không cần lý do) — dùng cho Xóa.
+// ------------------------------------------------------------------ //
+export function ConfirmAction({
+  action,
+  label,
+  message,
+  submitLabel,
+  hidden,
+}: {
+  action: (formData: FormData) => Promise<void>;
+  label: string;
+  message: string;
+  submitLabel?: string;
+  hidden: Record<string, string>;
+}) {
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-sm font-medium text-red-600 underline hover:text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">
+        {label}
+      </summary>
+      <form action={action} className="mt-2 w-64 max-w-[calc(100vw-3rem)] space-y-2 rounded-lg border border-border bg-background p-3 shadow-sm">
+        {Object.entries(hidden).map(([name, value]) => (
+          <input key={name} type="hidden" name={name} value={value} />
+        ))}
+        <p className="text-sm text-muted-foreground">{message}</p>
+        <button type="submit" className="w-full rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+          {submitLabel ?? label}
+        </button>
+      </form>
+    </details>
+  );
+}
+
+// ------------------------------------------------------------------ //
 // Tab lọc dạng link (giữ trạng thái trên URL, không cần JS).
 // ------------------------------------------------------------------ //
 export function FilterTabs({

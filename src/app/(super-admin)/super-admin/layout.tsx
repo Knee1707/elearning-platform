@@ -21,7 +21,6 @@ export default async function SuperAdminLayout({ children }: { children: React.R
         area="super_admin"
         userName={profile.fullName}
         roleLabel={ROLE_LABELS[profile.role]}
-        canSwitchArea
         initialCollapsed={cookies().get(SIDEBAR_COOKIE)?.value === "1"}
       >
         {children}

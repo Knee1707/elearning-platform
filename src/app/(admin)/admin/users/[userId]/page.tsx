@@ -6,8 +6,8 @@ import { ADMIN_ROLES, ROLE_LABELS, isAdminRole } from "@/lib/utils";
 import type { UserRole } from "@/types/domain";
 import { getUserDetail } from "@/features/admin/queries";
 import { getActivityLog } from "@/features/super-admin/queries";
-import { setUserRoleAction, toggleBanAction } from "@/features/admin/actions";
-import { FlashMessage, ReasonAction, RoleBadge, dateTime, describeActivity, money, type SearchParams } from "@/features/admin/ui";
+import { deleteUserAction, setUserRoleAction, toggleBanAction, updateUserNameAction } from "@/features/admin/actions";
+import { ConfirmAction, FlashMessage, ReasonAction, RoleBadge, dateTime, describeActivity, money, type SearchParams } from "@/features/admin/ui";
 
 const PAYMENT_LABEL = { paid: "Đã thanh toán", pending: "Chờ thanh toán", refunded: "Đã hoàn tiền" } as const;
 const REPORT_LABEL = { open: "Đang mở", resolved: "Đã xử lý", dismissed: "Bỏ qua" } as const;
@@ -67,8 +67,29 @@ export default async function AdminUserDetailPage({ params, searchParams }: { pa
             ) : (
               <ReasonAction action={toggleBanAction} label="Khóa tài khoản" submitLabel="Xác nhận khóa" hidden={{ userId: user.id, returnTo: here }} />
             ))}
+          {canBan && (
+            <ConfirmAction
+              action={deleteUserAction}
+              label="Xóa tài khoản"
+              message={`Xóa vĩnh viễn "${user.fullName || "Chưa đặt tên"}"? Mọi dữ liệu liên quan sẽ bị xóa và không thể hoàn tác.`}
+              submitLabel="Xác nhận xóa"
+              hidden={{ userId: user.id, returnTo: "/admin/users" }}
+            />
+          )}
         </div>
       </div>
+
+      {canManage && (
+        <form action={updateUserNameAction} className="mt-4 flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            <span className="mb-1 block text-muted-foreground">Sửa họ tên</span>
+            <input name="fullName" defaultValue={user.fullName} required className="w-64 rounded border border-border bg-background px-2 py-2 text-sm" />
+          </label>
+          <input type="hidden" name="userId" value={user.id} />
+          <input type="hidden" name="returnTo" value={here} />
+          <button type="submit" className="rounded border border-border px-3 py-2 text-sm hover:bg-muted">Lưu tên</button>
+        </form>
+      )}
       <FlashMessage searchParams={searchParams} />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">

@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getMyProfile } from "@/lib/queries/auth";
 import {
   broadcastNotification,
   moderateCourse,
@@ -11,7 +13,7 @@ import {
   setRole,
   toggleBan,
 } from "@/lib/queries/admin";
-import { ADMIN_ROLES, slugify } from "@/lib/utils";
+import { ADMIN_ROLES, isAdminRole, slugify } from "@/lib/utils";
 import type { CourseStatus, ReportStatus, ReviewStatus, UserRole } from "@/types/domain";
 import { runAction } from "./runAction";
 
@@ -58,6 +60,99 @@ export async function toggleBanAction(formData: FormData) {
     roles: ADMIN_ROLES,
     success: (banned) => (banned ? "Đã khóa tài khoản." : "Đã mở khóa tài khoản."),
     task: () => toggleBan(text(formData, "userId"), text(formData, "reason") || undefined),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Tạo tài khoản mới (dùng service role để tạo auth user). Quyền được kiểm ở đây
+// VÀ ở DB (fn_set_role khi gán vai trò admin/super_admin).
+export async function createUserAction(formData: FormData) {
+  await runAction({
+    path: "/admin/users",
+    roles: ADMIN_ROLES,
+    success: "Đã tạo tài khoản mới.",
+    task: async () => {
+      const me = await getMyProfile();
+      const email = text(formData, "email").toLowerCase();
+      const password = String(formData.get("password") ?? "");
+      const fullName = text(formData, "fullName");
+      const role = (text(formData, "role") || "student") as UserRole;
+
+      if (!EMAIL_RE.test(email)) throw new Error("Email không hợp lệ.");
+      if (password.length < 6) throw new Error("Mật khẩu tối thiểu 6 ký tự.");
+      if (!fullName) throw new Error("Vui lòng nhập họ tên.");
+      // Chỉ super admin được tạo thẳng tài khoản quản trị.
+      if (isAdminRole(role) && me?.role !== "super_admin") {
+        throw new Error("Chỉ super admin mới được tạo tài khoản quản trị.");
+      }
+
+      const admin = createAdminClient();
+      const { data, error } = await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+      if (error) {
+        throw new Error(/already|exist|registered/i.test(error.message) ? "Email này đã được đăng ký." : error.message);
+      }
+
+      // Trigger DB tạo profile mặc định role=student. Gán vai trò khác qua
+      // fn_set_role (chạy dưới quyền người đăng nhập → DB kiểm quyền lại).
+      if (role !== "student" && data.user) {
+        await setRole(data.user.id, role);
+      }
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// Xóa tài khoản (service role → xóa auth user, profile cascade theo FK 0001).
+export async function deleteUserAction(formData: FormData) {
+  await runAction({
+    path: "/admin/users",
+    roles: ADMIN_ROLES,
+    success: "Đã xóa tài khoản.",
+    task: async () => {
+      const me = await getMyProfile();
+      const userId = text(formData, "userId");
+      if (!userId) throw new Error("Thiếu thông tin tài khoản.");
+      if (userId === me?.id) throw new Error("Không thể tự xóa chính mình.");
+
+      // Lấy vai trò hiện tại của tài khoản bị xóa để áp luật quyền.
+      const supabase = createClient();
+      const { data: target, error: readError } = await supabase.from("profiles").select("role").eq("id", userId).single();
+      if (readError || !target) throw new Error("Không tìm thấy tài khoản.");
+      const targetRole = target.role as UserRole;
+      if (targetRole === "super_admin") throw new Error("Không thể xóa super admin — hãy hạ quyền trước.");
+      if (isAdminRole(targetRole) && me?.role !== "super_admin") {
+        throw new Error("Chỉ super admin mới được xóa tài khoản quản trị.");
+      }
+
+      const admin = createAdminClient();
+      const { error } = await admin.auth.admin.deleteUser(userId);
+      if (error) throw new Error(error.message);
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// Sửa họ tên (ghi profiles qua RLS profiles_update_admin — DB kiểm quyền).
+export async function updateUserNameAction(formData: FormData) {
+  await runAction({
+    path: "/admin/users",
+    roles: ADMIN_ROLES,
+    success: "Đã cập nhật họ tên.",
+    task: async () => {
+      const userId = text(formData, "userId");
+      const fullName = text(formData, "fullName");
+      if (!fullName) throw new Error("Họ tên không được để trống.");
+      const supabase = createClient();
+      const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", userId);
+      if (error) throw new Error(error.message);
+    },
     returnTo: formData.get("returnTo"),
   });
 }
