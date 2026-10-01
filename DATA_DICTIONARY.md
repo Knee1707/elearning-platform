@@ -191,6 +191,12 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 **Bảng [0018]:** `student_feedback` (id, course_id, student_id, instructor_id, content, created_at) — GV nhận xét học viên; RLS `student_feedback_select` (học viên nhận / GV gửi / admin).
 
+| `fn_request_certificate` **[0019]** | `p_course uuid`. Học viên xin cấp chứng chỉ khi đã ĐẠT bài thi → `certificates.status='pending'` |
+| `fn_review_certificate` **[0019]** | `p_certificate uuid`, `p_approve boolean`. Admin duyệt (`pending→approved`, cấp) hoặc từ chối (xóa), báo học viên |
+| `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
+
+**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.

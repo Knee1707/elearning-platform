@@ -19,6 +19,32 @@ const cleanKeyword = (keyword: string) => keyword.replace(/[%_,()*\\]/g, " ").tr
 
 export const ADMIN_PAGE_SIZE = 25;
 
+// Yêu cầu cấp chứng chỉ đang chờ admin duyệt (status='pending').
+export type PendingCertificate = {
+  id: string;
+  code: string;
+  createdAt: string;
+  studentName: string | null;
+  courseTitle: string | null;
+};
+
+export async function getPendingCertificates(): Promise<PendingCertificate[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("certificates")
+    .select("id, code, issued_at, profiles(full_name), courses(title)")
+    .eq("status", "pending")
+    .order("issued_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r: Row) => ({
+    id: String(r.id),
+    code: String(r.code),
+    createdAt: String(r.issued_at),
+    studentName: nameOf(r.profiles),
+    courseTitle: titleOf(r.courses),
+  }));
+}
+
 // ------------------------------------------------------------------ //
 // Duyệt video: các bài học đang chờ duyệt video (video_review = 'pending')
 // ------------------------------------------------------------------ //

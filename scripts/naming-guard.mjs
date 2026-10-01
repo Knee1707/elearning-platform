@@ -55,6 +55,8 @@ const ALLOWED = {
     "fn_request_enroll", "fn_review_enroll",
     // L — nhận xét quá trình học (0018)
     "fn_send_feedback",
+    // L — chứng chỉ xin/duyệt (0019)
+    "fn_request_certificate", "fn_review_certificate",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

@@ -158,6 +158,27 @@ export async function updateUserNameAction(formData: FormData) {
 }
 
 // ------------------------------------------------------------------ //
+// Duyệt yêu cầu cấp chứng chỉ (rpc fn_review_certificate — chỉ admin)
+// ------------------------------------------------------------------ //
+export async function reviewCertificateAction(formData: FormData) {
+  const approve = text(formData, "approve") === "true";
+  await runAction({
+    path: "/admin/certificates",
+    roles: ADMIN_ROLES,
+    success: approve ? "Đã duyệt cấp chứng chỉ." : "Đã từ chối yêu cầu.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("fn_review_certificate", {
+        p_certificate: text(formData, "certificateId"),
+        p_approve: approve,
+      });
+      if (error) throw error;
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
 // Duyệt video bài giảng (rpc fn_review_lesson_video — DB kiểm quyền admin)
 // ------------------------------------------------------------------ //
 export async function reviewVideoAction(formData: FormData) {

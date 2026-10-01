@@ -2,15 +2,18 @@ import Link from "next/link";
 import { ExternalLink, Search } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { getCertificates } from "@/features/admin/queries";
-import { restoreCertificateAction, revokeCertificateAction } from "@/features/admin/actions";
+import { getCertificates, getPendingCertificates } from "@/features/admin/queries";
+import { restoreCertificateAction, revokeCertificateAction, reviewCertificateAction } from "@/features/admin/actions";
 import { FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function AdminCertificatesPage({ searchParams }: { searchParams: SearchParams }) {
   await requireRole(ADMIN_ROLES);
   const keyword = param(searchParams, "q") ?? "";
   const revokedOnly = param(searchParams, "status") === "revoked";
-  const certificates = await getCertificates({ keyword, revokedOnly });
+  const [certificates, pending] = await Promise.all([
+    getCertificates({ keyword, revokedOnly }),
+    getPendingCertificates(),
+  ]);
   const here = buildHref("/admin/certificates", { q: keyword, status: revokedOnly ? "revoked" : undefined });
 
   return (
@@ -21,7 +24,60 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
       />
       <FlashMessage searchParams={searchParams} />
 
-      <form className="mt-6 flex flex-wrap items-end gap-3" role="search">
+      {/* Yêu cầu cấp chứng chỉ chờ duyệt */}
+      <section className="mt-6">
+        <h2 className="flex items-center gap-2 font-semibold">
+          Yêu cầu cấp chứng chỉ chờ duyệt
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+            {pending.length}
+          </span>
+        </h2>
+        <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40 text-left">
+              <tr>
+                <th className="p-3">Học viên</th>
+                <th className="p-3">Khóa học</th>
+                <th className="p-3">Ngày xin</th>
+                <th className="p-3">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pending.length ? (
+                pending.map((c) => (
+                  <tr key={c.id} className="border-b last:border-0">
+                    <td className="p-3 font-medium">{c.studentName ?? "—"}</td>
+                    <td className="p-3">{c.courseTitle ?? "—"}</td>
+                    <td className="p-3">{dateTime.format(new Date(c.createdAt))}</td>
+                    <td className="p-3">
+                      <div className="flex gap-2">
+                        <form action={reviewCertificateAction}>
+                          <input type="hidden" name="certificateId" value={c.id} />
+                          <input type="hidden" name="approve" value="true" />
+                          <input type="hidden" name="returnTo" value={here} />
+                          <button className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700">Duyệt cấp</button>
+                        </form>
+                        <form action={reviewCertificateAction}>
+                          <input type="hidden" name="certificateId" value={c.id} />
+                          <input type="hidden" name="approve" value="false" />
+                          <input type="hidden" name="returnTo" value={here} />
+                          <button className="rounded border px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50">Từ chối</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4} className="p-4 text-center text-muted-foreground">Không có yêu cầu nào đang chờ.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <form className="mt-8 flex flex-wrap items-end gap-3" role="search">
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Mã hoặc tên học viên</span>
           <span className="relative block">

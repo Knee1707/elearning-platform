@@ -207,29 +207,22 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
  */
 export async function getMyCertificates(): Promise<Certificate[]> {
   const supabase = createClient();
+  // Chỉ chứng chỉ ĐÃ DUYỆT (status='approved'); yêu cầu 'pending' không tính là đã có.
   const { data, error } = await supabase
-    .from("view_certificate")
-    .select("*");
+    .from("certificates")
+    .select("id, code, issued_at, revoked_at, course_id, courses(title, profiles!courses_instructor_id_fkey(full_name))")
+    .eq("status", "approved")
+    .order("issued_at", { ascending: false });
 
-  if (error) throw new Error(`view_certificate: ${error.message}`);
+  if (error) throw new Error(`certificates: ${error.message}`);
 
-  return (
-    (data ?? []) as Array<{
-      id: string;
-      code: string;
-      issued_at: string;
-      course_id: string;
-      course_title: string;
-      instructor_name: string;
-      revoked_at: string | null;
-    }>
-  ).map((row) => ({
+  return (data ?? []).map((row: any) => ({
     id: row.id,
     code: row.code,
     issuedAt: row.issued_at,
     courseId: row.course_id,
-    courseTitle: row.course_title,
-    instructorName: row.instructor_name,
+    courseTitle: row.courses?.title ?? "",
+    instructorName: row.courses?.profiles?.full_name ?? "Giảng viên",
     revokedAt: row.revoked_at ?? null,
   }));
 }
