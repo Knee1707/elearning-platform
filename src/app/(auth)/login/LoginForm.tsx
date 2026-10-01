@@ -16,9 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const BANNED_MESSAGE = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
+
 function mapAuthError(message: string): string {
   if (message.includes("Invalid login credentials")) {
     return "Email hoặc mật khẩu không đúng.";
+  }
+  if (message.toLowerCase().includes("banned")) {
+    return BANNED_MESSAGE;
   }
   if (message.includes("Email not confirmed")) {
     return "Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.";
@@ -31,7 +36,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const explicitNext = searchParams.get("next");
 
-  const [serverError, setServerError] = useState<string | null>(null);
+  // Middleware chuyển về /login?banned=1 khi phiên của tài khoản bị khóa bị đăng xuất.
+  const [serverError, setServerError] = useState<string | null>(
+    searchParams.get("banned") === "1" ? BANNED_MESSAGE : null,
+  );
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -59,10 +67,16 @@ export function LoginForm() {
     if (signInData.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, is_banned")
         .eq("id", signInData.user.id)
         .maybeSingle();
       role = (profile?.role as string | undefined) ?? null;
+      // Phòng khi Auth chưa đồng bộ banned_until: vẫn không cho tài khoản bị khóa vào.
+      if (profile?.is_banned) {
+        await supabase.auth.signOut();
+        setServerError(BANNED_MESSAGE);
+        return;
+      }
     }
 
     // Gác cổng: cổng admin CHỈ cho admin; cổng user KHÔNG cho admin.

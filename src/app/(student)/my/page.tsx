@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Sparkles,
   Search,
+  ReceiptText,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { createClient } from "@/lib/supabase/client";
@@ -136,7 +137,14 @@ export default function MyLearningPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/my/purchases"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
+            >
+              <ReceiptText className="h-4 w-4 text-slate-500" />
+              <span>Lịch sử mua &amp; hoàn tiền</span>
+            </Link>
             <Link
               href="/certificates"
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"

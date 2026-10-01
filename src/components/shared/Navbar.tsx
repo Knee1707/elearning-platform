@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ChevronDown,
+  ReceiptText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/domain";
@@ -327,6 +328,15 @@ export function Navbar() {
                     >
                       <Award className="h-4 w-4 text-amber-500" />
                       <span>Chứng chỉ đã đạt</span>
+                    </Link>
+
+                    <Link
+                      href="/my/purchases"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <ReceiptText className="h-4 w-4 text-slate-400" />
+                      <span>Lịch sử mua &amp; hoàn tiền</span>
                     </Link>
 
                     <Link

@@ -44,6 +44,8 @@ const ALLOWED = {
     "fn_is_super_admin", "fn_log_activity", "fn_guard_profile_privilege", "fn_log_setting_change",
     // L — chức năng quản trị bổ sung (0012)
     "fn_reject_refund", "fn_mark_payout_paid", "fn_broadcast_notification",
+    // L — khóa tài khoản có hiệu lực, báo cáo vi phạm (0013)
+    "fn_block_banned_user", "fn_sync_auth_ban", "fn_submit_report",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2
@@ -58,7 +60,8 @@ const ALLOWED = {
     "view_course_progress", "view_attendance", "view_certificate",
   ]),
   triggers: new Set([
-    "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate", "trg_profiles_guard_privilege", "trg_system_setting_audit",
+    "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate", "trg_profiles_guard_privilege", "trg_system_setting_audit", "trg_profiles_sync_auth_ban",
+    "trg_payments_block_banned", "trg_enrollments_block_banned", "trg_cart_item_block_banned", "trg_wishlist_block_banned", "trg_reviews_block_banned", "trg_qa_question_block_banned", "trg_qa_answer_block_banned", "trg_lesson_note_block_banned", "trg_lesson_progress_block_banned", "trg_exam_attempts_block_banned", "trg_report_block_banned", "trg_refund_block_banned", "trg_courses_block_banned", "trg_live_sessions_block_banned", "trg_coupon_block_banned",
     "trg_attendance_on_video", "trg_notify_on_answer",
   ]),
 };
