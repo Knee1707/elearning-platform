@@ -56,6 +56,12 @@ export default async function StudioPage() {
                 >
                   {STATUS_LABEL[course.status] ?? course.status}
                 </span>
+                {(course.status === "rejected" || course.status === "hidden") && course.moderationNote && (
+                  <p className="mt-2 max-w-xl rounded-md bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                    <strong>Lý do từ quản trị viên:</strong> {course.moderationNote}
+                    {course.status === "rejected" && " — chỉnh sửa rồi gửi duyệt lại."}
+                  </p>
+                )}
               </div>
               <Link href={`/studio/${course.id}`} className="text-sm underline">
                 Chỉnh sửa

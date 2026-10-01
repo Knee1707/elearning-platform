@@ -377,3 +377,109 @@ export async function getPublishedCourseOptions() {
   if (error) throw error;
   return (data ?? []).map((row: Row) => ({ id: String(row.id), title: String(row.title) }));
 }
+
+// ------------------------------------------------------------------ //
+// Hỏi đáp (Q&A)
+// ------------------------------------------------------------------ //
+export interface QaAnswerRow {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorName: string | null;
+}
+
+export interface QaThreadRow {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorName: string | null;
+  lessonTitle: string | null;
+  courseTitle: string | null;
+  answers: QaAnswerRow[];
+}
+
+export const QA_PAGE_SIZE = 20;
+
+export async function getQaThreads(filters: { keyword?: string; page?: number }) {
+  const supabase = createClient();
+  const page = filters.page ?? 1;
+  let query = supabase
+    .from("qa_question")
+    .select(
+      "id, content, created_at, profiles(full_name), lessons(title, chapters(courses(title))), qa_answer(id, content, created_at, profiles(full_name))",
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range((page - 1) * QA_PAGE_SIZE, page * QA_PAGE_SIZE - 1);
+  const cleaned = cleanKeyword(filters.keyword ?? "");
+  if (cleaned) query = query.ilike("content", `%${cleaned}%`);
+  const { data, count, error } = await query;
+  if (error) throw error;
+  const threads = (data ?? []).map((row: Row): QaThreadRow => {
+    const lesson = row.lessons as { title?: string; chapters?: { courses?: { title?: string } | null } | null } | null;
+    return {
+      id: String(row.id),
+      content: String(row.content),
+      createdAt: String(row.created_at),
+      authorName: nameOf(row.profiles),
+      lessonTitle: lesson?.title ?? null,
+      courseTitle: lesson?.chapters?.courses?.title ?? null,
+      answers: ((row.qa_answer as Row[] | null) ?? [])
+        .map((a) => ({ id: String(a.id), content: String(a.content), createdAt: String(a.created_at), authorName: nameOf(a.profiles) }))
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+    };
+  });
+  return { threads, total: count ?? 0 };
+}
+
+// ------------------------------------------------------------------ //
+// Chứng chỉ
+// ------------------------------------------------------------------ //
+export interface CertificateRow {
+  id: string;
+  code: string;
+  issuedAt: string;
+  revokedAt: string | null;
+  revokedReason: string | null;
+  studentId: string;
+  studentName: string | null;
+  courseTitle: string | null;
+}
+
+const CERT_SELECT = "id, code, issued_at, revoked_at, revoked_reason, user_id, profiles!inner(full_name), courses(title)";
+
+const toCertificate = (row: Row): CertificateRow => ({
+  id: String(row.id),
+  code: String(row.code),
+  issuedAt: String(row.issued_at),
+  revokedAt: (row.revoked_at as string | null) ?? null,
+  revokedReason: (row.revoked_reason as string | null) ?? null,
+  studentId: String(row.user_id),
+  studentName: nameOf(row.profiles),
+  courseTitle: titleOf(row.courses),
+});
+
+// Tìm theo mã chứng chỉ HOẶC tên học viên; lọc đã thu hồi.
+export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean }) {
+  const supabase = createClient();
+  const cleaned = cleanKeyword(filters.keyword ?? "");
+  const base = () => {
+    let q = supabase.from("certificates").select(CERT_SELECT).order("issued_at", { ascending: false }).limit(50);
+    if (filters.revokedOnly) q = q.not("revoked_at", "is", null);
+    return q;
+  };
+  if (!cleaned) {
+    const { data, error } = await base();
+    if (error) throw error;
+    return (data ?? []).map(toCertificate);
+  }
+  const [byCode, byName] = await Promise.all([
+    base().ilike("code", `%${cleaned}%`),
+    base().ilike("profiles.full_name", `%${cleaned}%`),
+  ]);
+  if (byCode.error) throw byCode.error;
+  if (byName.error) throw byName.error;
+  const merged = new Map<string, CertificateRow>();
+  for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) merged.set(String(row.id), toCertificate(row));
+  return [...merged.values()].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+}

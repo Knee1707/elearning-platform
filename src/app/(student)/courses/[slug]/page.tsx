@@ -19,6 +19,8 @@ import { CourseDetailActions, CourseSyllabus } from "./CourseDetailActions";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/queries/auth";
 import { ReportButton } from "@/features/report/ReportButton";
+import { ReviewForm } from "@/features/review/ReviewForm";
+import type { ReviewStatus } from "@/types/domain";
 
 interface PublicReview {
   id: string;
@@ -306,6 +308,18 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     isRealCourse ? getVisibleReviews(course.id).catch(() => []) : Promise.resolve([] as PublicReview[]),
   ]);
   const isLoggedIn = Boolean(currentUser);
+
+  // Review của chính học viên (mọi trạng thái) để điền sẵn form khi sửa.
+  let myReview: { rating: number; comment: string | null; status: ReviewStatus } | null = null;
+  if (isRealCourse && currentUser && enrolled) {
+    const { data } = await createClient()
+      .from("reviews")
+      .select("rating, comment, status")
+      .eq("course_id", course.id)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (data) myReview = { rating: Number(data.rating), comment: data.comment ?? null, status: data.status as ReviewStatus };
+  }
   const coursePath = `/courses/${course.slug}`;
 
   const totalLessons = course.chapters.reduce((acc, c) => acc + c.lessons.length, 0);
@@ -474,13 +488,17 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                       <span>Đánh giá &amp; Nhận xét từ học viên</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Dựa trên {course.ratingCount > 0 ? course.ratingCount : 120} đánh giá đã được kiểm duyệt
+                      {isRealCourse
+                        ? course.ratingCount > 0
+                          ? `Dựa trên ${course.ratingCount} đánh giá đã được kiểm duyệt`
+                          : "Chưa có đánh giá nào được duyệt"
+                        : `Dựa trên ${course.ratingCount > 0 ? course.ratingCount : 120} đánh giá đã được kiểm duyệt`}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 bg-amber-50/80 border border-amber-100/80 px-4 py-2.5 rounded-2xl">
                     <div className="text-3xl font-black text-amber-600">
-                      {course.avgRating > 0 ? course.avgRating.toFixed(1) : "4.9"}
+                      {course.avgRating > 0 ? course.avgRating.toFixed(1) : isRealCourse ? "–" : "4.9"}
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-0.5">
@@ -492,6 +510,10 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                     </div>
                   </div>
                 </div>
+
+                {isRealCourse && enrolled && isLoggedIn && (
+                  <ReviewForm courseId={course.id} coursePath={coursePath} existing={myReview} />
+                )}
 
                 {isRealCourse ? (
                   reviews.length ? (

@@ -95,3 +95,21 @@ export async function broadcastNotification(input: {
   if (error) throw error;
   return Number(data ?? 0);
 }
+
+// Xóa câu hỏi/trả lời vi phạm (lý do bắt buộc, báo người viết).
+export async function moderateQa(entity: "question" | "answer", id: string, reason: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_moderate_qa", { p_entity: entity, p_id: id, p_reason: reason });
+  if (error) throw error;
+}
+
+// Thu hồi (revoke = true, cần lý do) hoặc khôi phục (revoke = false) chứng chỉ.
+export async function revokeCertificate(certificateId: string, reason: string | null, revoke = true) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_revoke_certificate", {
+    p_certificate: certificateId,
+    p_reason: reason,
+    p_revoke: revoke,
+  });
+  if (error) throw error;
+}

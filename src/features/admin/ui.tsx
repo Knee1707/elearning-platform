@@ -62,6 +62,9 @@ export const ACTION_LABELS: Record<string, string> = {
   generate_payout: "Tạo payout",
   mark_payout_paid: "Chi trả payout",
   broadcast_notification: "Gửi thông báo",
+  delete_qa: "Xóa hỏi đáp",
+  revoke_certificate: "Thu hồi chứng chỉ",
+  restore_certificate: "Khôi phục chứng chỉ",
   update_setting: "Sửa cấu hình",
   delete_setting: "Xóa cấu hình",
 };
@@ -75,6 +78,9 @@ export const ENTITY_LABELS: Record<string, string> = {
   payout: "Payout",
   setting: "Cấu hình",
   notification: "Thông báo",
+  qa_question: "Câu hỏi Q&A",
+  qa_answer: "Trả lời Q&A",
+  certificate: "Chứng chỉ",
 };
 
 const show = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "string" ? v : JSON.stringify(v));
@@ -100,6 +106,11 @@ export function describeActivity(entry: ActivityEntry): { label: string; detail:
       return { label, detail: `Kỳ ${show(m.period)} · ${money.format(Number(m.net ?? 0))}` };
     case "reject_refund":
       return { label, detail: "" };
+    case "delete_qa":
+      return { label, detail: `"${String(m.content ?? "").slice(0, 80)}"` };
+    case "revoke_certificate":
+    case "restore_certificate":
+      return { label, detail: show(m.code) };
     case "broadcast_notification":
       return { label, detail: `"${show(m.title)}" → ${show(m.recipients)} người nhận` };
     case "update_setting":
