@@ -27,9 +27,9 @@ cp .env.local.example .env.local
 # 4) Database (chọn 1 trong 2)
 #   a) Supabase local (cần Docker):
 npx supabase@latest start
-npx supabase@latest db reset          # chạy migrations 0001..0012 + seed.sql
+npx supabase@latest db reset          # chạy migrations 0001..0013 + seed.sql
 #   b) Hoặc dán nội dung supabase/migrations/*.sql vào SQL Editor trên Supabase Cloud
-#      theo đúng thứ tự 0001 → 0002 → … → 0012 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
+#      theo đúng thứ tự 0001 → 0002 → … → 0013 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
 
 # 5) Sinh kiểu TypeScript từ schema (tùy chọn, sau khi có DB)
 pnpm db:types
@@ -74,6 +74,7 @@ riêng, bấm nút ☰ để thu gọn/mở (desktop) hoặc trượt ra (mobile
 | `0010_admin_permissions.sql` | L | phân quyền Admin/Super Admin, chống leo thang quyền, audit log |
 | `0011_setting_audit.sql` | L | ghi nhật ký mỗi khi `system_setting` thay đổi |
 | `0012_admin_features.sql` | L | lý do từ chối/ẩn khóa & khóa tài khoản, từ chối hoàn tiền, chi trả payout, gửi thông báo hàng loạt |
+| `0013_ban_refund_report.sql` | L | khóa tài khoản có hiệu lực (chặn đăng nhập + chặn ghi), điều kiện yêu cầu hoàn tiền, báo cáo vi phạm |
 
 > Bảng thương mại tham chiếu `courses` nên phải tạo sau `courses` → thứ tự trên là bắt buộc.
 

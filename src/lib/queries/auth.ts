@@ -36,5 +36,8 @@ export async function requireRole(roles: Profile["role"][]): Promise<Profile> {
   if (!profile || !roles.includes(profile.role)) {
     throw new Error("Không đủ quyền truy cập");
   }
+  if (profile.isBanned) {
+    throw new Error("Tài khoản của bạn đã bị khóa");
+  }
   return profile;
 }

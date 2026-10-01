@@ -170,10 +170,14 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_reject_refund` **[0012]** | `p_refund uuid`, `p_reason text`. Chỉ super admin; gửi thông báo cho học viên |
 | `fn_mark_payout_paid` **[0012]** | `p_payout uuid`. Chỉ super admin; `draft → paid`, gửi thông báo cho giảng viên |
 | `fn_broadcast_notification` **[0012]** | `p_title text`, `p_body text`, `p_role user_role`, `p_course uuid` → `integer` (số người nhận). Admin gửi thông báo `system` |
+| `fn_block_banned_user` **[0013]** | trigger function cho `trg_<bảng>_block_banned`: tài khoản bị khóa không ghi được dữ liệu (kể cả qua hàm definer) |
+| `fn_sync_auth_ban` **[0013]** | trigger function cho `trg_profiles_sync_auth_ban`: đồng bộ `profiles.is_banned` → `auth.users.banned_until` (chặn đăng nhập) |
+| `fn_submit_report` **[0013]** | `p_entity text`, `p_entity_id uuid`, `p_reason text` → `uuid`. Gửi báo cáo vi phạm (course/review/user), chống trùng |
+| `fn_request_refund` **[sửa 0013]** | thêm kiểm tra: lý do bắt buộc, giao dịch `paid`, chưa có yêu cầu đang chờ/đã duyệt, trong hạn `refund_window_days` |
 | `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
 
 ---
 

@@ -45,6 +45,17 @@ export const SETTING_DEFS: SettingDef[] = [
     defaultValue: 50,
   },
   {
+    key: "refund_window_days",
+    label: "Hạn yêu cầu hoàn tiền",
+    description: "Số ngày kể từ khi mua mà học viên còn được gửi yêu cầu hoàn tiền (0 = tắt hoàn tiền).",
+    type: "number",
+    min: 0,
+    max: 365,
+    step: 1,
+    defaultValue: 7,
+    unit: "ngày",
+  },
+  {
     key: "currency",
     label: "Đơn vị tiền tệ",
     description: "Mã tiền tệ ISO 4217 gồm 3 chữ in hoa, ví dụ VND.",
