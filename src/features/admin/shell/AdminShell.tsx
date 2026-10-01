@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Crown, GraduationCap, Menu, X } from "lucide-react";
+import { Crown, GraduationCap, LogOut, Menu, X } from "lucide-react";
 import { ThemeToggleButton } from "@/features/admin/theme/ThemeToggleButton";
+import { createClient } from "@/lib/supabase/client";
 import { AREA_HOME, NAV_GROUPS, SIDEBAR_COOKIE, type AdminArea } from "./navItems";
 
 // Màu nhấn riêng từng khu để admin/super admin nhận ra ngay mình đang ở đâu.
@@ -68,6 +69,15 @@ export function AdminShell({ area, userName, roleLabel, initialCollapsed, childr
     } else {
       setIsMobileOpen((open) => !open);
     }
+  }
+
+  async function handleSignOut() {
+    try {
+      await createClient().auth.signOut();
+    } catch {
+      // Bỏ qua lỗi — vẫn chuyển về trang đăng nhập.
+    }
+    window.location.href = "/login";
   }
 
   const isActive = (href: string) =>
@@ -159,6 +169,16 @@ export function AdminShell({ area, userName, roleLabel, initialCollapsed, childr
                 <span className={`mt-0.5 w-fit rounded-full px-1.5 text-[10px] font-semibold ${theme.badge}`}>{roleLabel}</span>
               </div>
             </div>
+
+            <button
+              type="button"
+              onClick={handleSignOut}
+              title="Đăng xuất"
+              className="flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Đăng xuất</span>
+            </button>
           </div>
         </div>
       </header>
