@@ -4,8 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import {
   broadcastNotification,
   moderateCourse,
+  moderateQa,
   moderateReview,
   resolveReport,
+  revokeCertificate,
   setRole,
   toggleBan,
 } from "@/lib/queries/admin";
@@ -207,5 +209,42 @@ export async function disableCouponAction(formData: FormData) {
       const { error } = await supabase.from("coupon").update(update).eq("id", id);
       if (error) throw error;
     },
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Hỏi đáp (Q&A) — xóa nội dung vi phạm (lý do bắt buộc, báo người viết)
+// ------------------------------------------------------------------ //
+export async function deleteQaAction(formData: FormData) {
+  const entity = text(formData, "entity") === "answer" ? "answer" : "question";
+  await runAction({
+    path: "/admin/qa",
+    roles: ADMIN_ROLES,
+    success: entity === "answer" ? "Đã gỡ câu trả lời." : "Đã gỡ câu hỏi (kèm các câu trả lời).",
+    task: () => moderateQa(entity, text(formData, "id"), text(formData, "reason")),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Chứng chỉ — thu hồi / khôi phục
+// ------------------------------------------------------------------ //
+export async function revokeCertificateAction(formData: FormData) {
+  await runAction({
+    path: "/admin/certificates",
+    roles: ADMIN_ROLES,
+    success: "Đã thu hồi chứng chỉ và báo cho học viên.",
+    task: () => revokeCertificate(text(formData, "id"), text(formData, "reason"), true),
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+export async function restoreCertificateAction(formData: FormData) {
+  await runAction({
+    path: "/admin/certificates",
+    roles: ADMIN_ROLES,
+    success: "Đã khôi phục chứng chỉ.",
+    task: () => revokeCertificate(text(formData, "id"), null, false),
+    returnTo: formData.get("returnTo"),
   });
 }

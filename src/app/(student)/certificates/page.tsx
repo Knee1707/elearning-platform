@@ -138,6 +138,11 @@ export default function MyCertificatesPage() {
 
                     <h3 className="mt-2 text-base font-black text-slate-900 leading-snug line-clamp-2">
                       {cert.courseTitle}
+                      {cert.revokedAt && (
+                        <span className="ml-2 inline-block rounded-full bg-rose-50 px-2 py-0.5 align-middle text-[10px] font-bold text-rose-600">
+                          Đã bị thu hồi
+                        </span>
+                      )}
                     </h3>
                     <p className="mt-1 text-xs text-slate-500 font-medium">
                       Giảng viên ký xác nhận: <strong className="text-slate-800">{cert.instructorName}</strong>

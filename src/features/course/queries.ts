@@ -27,5 +27,6 @@ export async function getMyCourses(): Promise<Course[]> {
     isFeatured: course.is_featured,
     createdAt: course.created_at,
     updatedAt: course.updated_at,
+    moderationNote: course.moderation_note ?? null,
   }));
 }

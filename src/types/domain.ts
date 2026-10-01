@@ -37,6 +37,7 @@ export interface Course {
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
+  moderationNote?: string | null; // Lý do từ chối/ẩn gần nhất (0014)
 }
 
 export interface Chapter {

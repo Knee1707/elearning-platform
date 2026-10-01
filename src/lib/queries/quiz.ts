@@ -52,6 +52,7 @@ export interface CertificateInfo {
   studentName: string;     // Họ tên học viên được cấp chứng chỉ
   courseTitle: string;     // Tên khóa học đã hoàn thành
   issuedAt: string;        // Thời điểm cấp chứng chỉ (ISO string)
+  revokedAt?: string | null; // Thời điểm bị thu hồi (null = còn hiệu lực) — 0014
 }
 
 /**
@@ -64,6 +65,7 @@ export interface Certificate {
   courseId: string;        // UUID khóa học
   courseTitle: string;     // Tên khóa học
   instructorName: string;  // Tên giảng viên phụ trách khóa học
+  revokedAt?: string | null; // Thời điểm bị thu hồi (null = còn hiệu lực) — 0014
 }
 
 /**
@@ -182,6 +184,7 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
     student_name: string;
     course_title: string;
     issued_at: string;
+    revoked_at: string | null;
   }>)[0];
 
   return {
@@ -189,6 +192,7 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
     studentName: row.student_name,
     courseTitle: row.course_title,
     issuedAt: row.issued_at,
+    revokedAt: row.revoked_at ?? null,
   };
 }
 
@@ -217,6 +221,7 @@ export async function getMyCertificates(): Promise<Certificate[]> {
       course_id: string;
       course_title: string;
       instructor_name: string;
+      revoked_at: string | null;
     }>
   ).map((row) => ({
     id: row.id,
@@ -225,5 +230,6 @@ export async function getMyCertificates(): Promise<Certificate[]> {
     courseId: row.course_id,
     courseTitle: row.course_title,
     instructorName: row.instructor_name,
+    revokedAt: row.revoked_at ?? null,
   }));
 }

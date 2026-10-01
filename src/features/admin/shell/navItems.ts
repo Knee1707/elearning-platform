@@ -1,4 +1,5 @@
 import {
+  Award,
   Banknote,
   Bell,
   BookCheck,
@@ -6,6 +7,7 @@ import {
   Flag,
   FolderTree,
   LayoutDashboard,
+  MessagesSquare,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -45,6 +47,7 @@ export const NAV_GROUPS: Record<AdminArea, NavGroup[]> = {
       items: [
         { href: "/admin/courses", label: "Duyệt khóa học", icon: BookCheck },
         { href: "/admin/reports", label: "Báo cáo & review", icon: Flag },
+        { href: "/admin/qa", label: "Hỏi đáp (Q&A)", icon: MessagesSquare },
       ],
     },
     {
@@ -52,6 +55,7 @@ export const NAV_GROUPS: Record<AdminArea, NavGroup[]> = {
       items: [
         { href: "/admin/users", label: "Người dùng", icon: Users },
         { href: "/admin/categories", label: "Danh mục & tag", icon: FolderTree },
+        { href: "/admin/certificates", label: "Chứng chỉ", icon: Award },
       ],
     },
     {
