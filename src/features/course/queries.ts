@@ -154,3 +154,41 @@ export async function getInstructorClassData(): Promise<{ pending: ClassMember[]
     students: (enrs ?? []).filter((e: any) => e.status === "active").map(mapRow),
   };
 }
+
+export type InstructorReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  courseTitle: string;
+  studentName: string;
+  createdAt: string;
+};
+
+// Lượt đánh giá (review) trên các khóa của giảng viên.
+export async function getInstructorReviews(): Promise<InstructorReview[]> {
+  const supabase = createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) return [];
+
+  const { data: courses } = await supabase.from("courses").select("id, title").eq("instructor_id", uid);
+  const courseTitle = new Map<string, string>((courses ?? []).map((c) => [c.id as string, c.title as string]));
+  const courseIds = [...courseTitle.keys()];
+  if (!courseIds.length) return [];
+
+  const { data } = await supabase
+    .from("reviews")
+    .select("id, rating, comment, course_id, created_at, profiles(full_name)")
+    .in("course_id", courseIds)
+    .eq("status", "visible")
+    .order("created_at", { ascending: false });
+
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    rating: Number(r.rating ?? 0),
+    comment: r.comment ?? null,
+    courseTitle: courseTitle.get(r.course_id) ?? "",
+    studentName: r.profiles?.full_name ?? "Học viên",
+    createdAt: r.created_at,
+  }));
+}

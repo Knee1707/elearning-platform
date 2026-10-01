@@ -1,6 +1,6 @@
 import { CheckCircle2, AlertTriangle, Users, Clock } from "lucide-react";
 import { getInstructorClassData } from "@/features/course/queries";
-import { reviewEnrollAction } from "@/features/instructor/actions";
+import { reviewEnrollAction, sendFeedbackAction } from "@/features/instructor/actions";
 
 const dt = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" });
 
@@ -93,22 +93,46 @@ export default async function StudioStudentsPage({
                 <th className="p-3">Điểm danh</th>
                 <th className="p-3">Điểm thi cao nhất</th>
                 <th className="p-3">Vào lớp từ</th>
+                <th className="p-3">Nhận xét</th>
               </tr>
             </thead>
             <tbody>
               {students.length ? (
                 students.map((m) => (
-                  <tr key={m.enrollmentId} className="border-b last:border-0">
+                  <tr key={m.enrollmentId} className="border-b align-top last:border-0">
                     <td className="p-3 font-medium">{m.studentName}</td>
                     <td className="p-3">{m.courseTitle}</td>
                     <td className="p-3">{m.attendance} buổi</td>
                     <td className="p-3">{m.bestScore === null ? "—" : `${m.bestScore}/100`}</td>
                     <td className="p-3">{dt.format(new Date(m.at))}</td>
+                    <td className="p-3">
+                      <details>
+                        <summary className="cursor-pointer list-none text-xs font-semibold text-emerald-700 underline [&::-webkit-details-marker]:hidden">
+                          Gửi nhận xét
+                        </summary>
+                        <form action={sendFeedbackAction} className="mt-2 w-64 space-y-2 rounded-lg border border-border bg-white p-3 shadow-sm">
+                          <input type="hidden" name="courseId" value={m.courseId} />
+                          <input type="hidden" name="studentId" value={m.userId} />
+                          <textarea
+                            name="content"
+                            required
+                            minLength={3}
+                            maxLength={500}
+                            rows={3}
+                            placeholder="Nhận xét quá trình học của học viên…"
+                            className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
+                          />
+                          <button className="w-full rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                            Gửi cho học viên
+                          </button>
+                        </form>
+                      </details>
+                    </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-4 text-center text-muted-foreground">Chưa có học viên nào.</td>
+                  <td colSpan={6} className="p-4 text-center text-muted-foreground">Chưa có học viên nào.</td>
                 </tr>
               )}
             </tbody>

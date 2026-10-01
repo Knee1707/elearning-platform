@@ -60,6 +60,9 @@ export default function MyLearningPage() {
   const [filterTab, setFilterTab] = useState<"all" | "in_progress" | "completed">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [feedback, setFeedback] = useState<
+    { id: string; content: string; createdAt: string; courseTitle: string; instructorName: string }[]
+  >([]);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +103,37 @@ export default function MyLearningPage() {
       }
     }
 
+    async function loadFeedback() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) return;
+        const { data } = await supabase
+          .from("student_feedback")
+          .select("id, content, created_at, courses(title), profiles!student_feedback_instructor_id_fkey(full_name)")
+          .eq("student_id", session.user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        if (isMounted && data) {
+          setFeedback(
+            (data as any[]).map((r) => ({
+              id: r.id,
+              content: r.content,
+              createdAt: r.created_at,
+              courseTitle: r.courses?.title ?? "Khóa học",
+              instructorName: r.profiles?.full_name ?? "Giảng viên",
+            })),
+          );
+        }
+      } catch {
+        /* bỏ qua */
+      }
+    }
+
     loadMyCourses();
+    loadFeedback();
 
     return () => {
       isMounted = false;
@@ -324,6 +357,29 @@ export default function MyLearningPage() {
             </div>
           )}
         </div>
+
+        {/* NHẬN XÉT TỪ GIẢNG VIÊN */}
+        {feedback.length > 0 && (
+          <div className="mt-10">
+            <h2 className="mb-3 flex items-center gap-2 text-lg font-black text-slate-900">
+              <Sparkles className="h-5 w-5 text-emerald-600" />
+              Nhận xét từ giảng viên
+            </h2>
+            <div className="space-y-3">
+              {feedback.map((f) => (
+                <div key={f.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-bold text-slate-900">{f.instructorName}</span>
+                    <span className="text-[11px] text-slate-400">
+                      {new Date(f.createdAt).toLocaleDateString("vi-VN")} · {f.courseTitle}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-sm text-slate-700">{f.content}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

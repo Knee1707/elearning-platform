@@ -24,3 +24,23 @@ export async function reviewEnrollAction(formData: FormData) {
   revalidatePath("/studio/students");
   redirect(`/studio/students?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
 }
+
+// Giảng viên gửi nhận xét quá trình học cho 1 học viên (fn_send_feedback kiểm quyền).
+export async function sendFeedbackAction(formData: FormData) {
+  let msg = "";
+  let err: string | null = null;
+  try {
+    const supabase = createClient();
+    const { error } = await supabase.rpc("fn_send_feedback", {
+      p_course: String(formData.get("courseId")),
+      p_student: String(formData.get("studentId")),
+      p_content: String(formData.get("content") ?? ""),
+    });
+    if (error) throw error;
+    msg = "Đã gửi nhận xét cho học viên.";
+  } catch (e) {
+    err = e instanceof Error ? e.message : "Có lỗi xảy ra.";
+  }
+  revalidatePath("/studio/students");
+  redirect(`/studio/students?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
+}

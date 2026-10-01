@@ -187,6 +187,10 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 **Enum [0017]:** `enrollment_status` thêm `pending` (chờ GV duyệt vào lớp). **RLS [0017]:** GV phụ trách xem được `enrollments` / `lesson_progress` / `attendance` / `exam_attempts` của khóa mình (policy `*_select_instructor`).
 
+| `fn_send_feedback` **[0018]** | `p_course uuid`, `p_student uuid`, `p_content text`. GV (chủ khóa) gửi nhận xét quá trình học cho học viên đang học; báo học viên |
+
+**Bảng [0018]:** `student_feedback` (id, course_id, student_id, instructor_id, content, created_at) — GV nhận xét học viên; RLS `student_feedback_select` (học viên nhận / GV gửi / admin).
+
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
