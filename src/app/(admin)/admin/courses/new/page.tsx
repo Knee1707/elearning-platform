@@ -18,7 +18,7 @@ export default async function AdminNewCoursePage() {
       <p className="mt-1 mb-6 text-sm text-muted-foreground">
         Khóa được tạo ở trạng thái <b>nháp</b>; bạn là người phụ trách. Sau khi tạo, thêm chương/bài rồi xuất bản ở trang chỉnh sửa.
       </p>
-      <CourseForm editPath={(id) => `/admin/courses/${id}/edit`} />
+      <CourseForm area="admin" />
     </main>
   );
 }

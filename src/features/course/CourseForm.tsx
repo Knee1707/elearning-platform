@@ -13,10 +13,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export function CourseForm({
-  // Nơi chuyển tới sau khi tạo khóa (studio cho giảng viên, /admin/courses cho quản trị).
-  editPath = (id: string) => `/studio/${id}`,
+  // Khu dùng form: "studio" (giảng viên) hoặc "admin" (quản trị) — quyết định
+  // trang chỉnh sửa sẽ chuyển tới sau khi tạo. Dùng prop chuỗi (serializable)
+  // thay vì hàm để truyền được từ Server Component.
+  area = "studio",
 }: {
-  editPath?: (id: string) => string;
+  area?: "studio" | "admin";
 } = {}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export function CourseForm({
     setServerError(null);
     try {
       const { id } = await createCourse(values);
-      router.push(editPath(id));
+      router.push(area === "admin" ? `/admin/courses/${id}/edit` : `/studio/${id}`);
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Tạo khóa thất bại.");
     }
