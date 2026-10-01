@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import type { CourseStatus } from "@/types/domain";
@@ -33,10 +33,18 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
 
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <PageHeader
-        title="Duyệt khóa học"
-        description="Duyệt khóa chờ xuất bản, ẩn khóa vi phạm. Từ chối hoặc ẩn bắt buộc ghi lý do — giảng viên nhận thông báo kèm lý do."
-      />
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <PageHeader
+          title="Khóa học"
+          description="Tạo & chỉnh sửa khóa học; duyệt khóa chờ xuất bản, ẩn khóa vi phạm. Từ chối hoặc ẩn bắt buộc ghi lý do."
+        />
+        <Link
+          href="/admin/courses/new"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+        >
+          <Plus className="h-4 w-4" /> Thêm khóa học
+        </Link>
+      </div>
       <FlashMessage searchParams={searchParams} />
 
       <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
@@ -60,9 +68,14 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {STATUS_LABEL[course.status]} · cập nhật {dateTime.format(new Date(course.updatedAt))}
                 </p>
-                <Link href={`/admin/courses/${course.id}`} className="mt-1 inline-block text-xs text-primary underline">
-                  Xem nội dung · chỉnh giá &amp; bài học thử
-                </Link>
+                <div className="mt-1 flex flex-wrap gap-3 text-xs">
+                  <Link href={`/admin/courses/${course.id}/edit`} className="font-medium text-primary underline">
+                    Chỉnh sửa (nội dung, chương/bài)
+                  </Link>
+                  <Link href={`/admin/courses/${course.id}`} className="text-muted-foreground underline">
+                    Xem · chỉnh giá &amp; bài học thử
+                  </Link>
+                </div>
               </div>
 
               <div className="flex flex-wrap items-start gap-2">

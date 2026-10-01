@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
@@ -63,10 +65,20 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <h1 className="text-2xl font-bold">{String(course.title)}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Giảng viên: {instructorName} · Trạng thái: {STATUS_LABEL[String(course.status)] ?? String(course.status)}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{String(course.title)}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Giảng viên: {instructorName} · Trạng thái: {STATUS_LABEL[String(course.status)] ?? String(course.status)}
+          </p>
+        </div>
+        <Link
+          href={`/admin/courses/${course.id}/edit`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+        >
+          <Pencil className="h-4 w-4" /> Chỉnh sửa đầy đủ
+        </Link>
+      </div>
 
       {/* Kiểm duyệt ngay sau khi xem nội dung (lý do bắt buộc khi từ chối/ẩn). */}
       <div className="mt-4 flex flex-wrap items-start gap-2">
