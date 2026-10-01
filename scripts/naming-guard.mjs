@@ -50,6 +50,8 @@ const ALLOWED = {
     "fn_guard_review_status", "fn_moderate_qa", "fn_revoke_certificate",
     // L — duyệt video bài giảng (0015)
     "fn_review_lesson_video", "fn_lesson_video_review_guard",
+    // L — duyệt học viên vào lớp (0017)
+    "fn_request_enroll", "fn_review_enroll",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

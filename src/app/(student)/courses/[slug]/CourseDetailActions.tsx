@@ -24,6 +24,8 @@ interface CourseDetailActionsProps {
   courseTitle: string;
   price: number;
   initialEnrolled?: boolean;
+  // Trạng thái ghi danh của học viên với khóa này: chưa / chờ duyệt / đã vào lớp.
+  enrollStatus?: "none" | "pending" | "active";
 }
 
 export function CourseDetailActions({
@@ -31,9 +33,33 @@ export function CourseDetailActions({
   courseSlug,
   price,
   initialEnrolled = false,
+  enrollStatus = "none",
 }: CourseDetailActionsProps) {
   const router = useRouter();
-  const [isEnrolled] = useState(initialEnrolled);
+  const free = price === 0;
+  const [isEnrolled] = useState(initialEnrolled || enrollStatus === "active");
+  const [requestState, setRequestState] = useState<"none" | "pending">(
+    enrollStatus === "pending" ? "pending" : "none",
+  );
+
+  // Khóa miễn phí: học viên xin vào lớp, chờ giảng viên duyệt.
+  async function handleRequestEnroll() {
+    setIsLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("fn_request_enroll", { p_course: courseId });
+      if (error) {
+        showToast(error.message || "Không gửi được yêu cầu. Vui lòng thử lại.");
+      } else {
+        setRequestState("pending");
+        showToast("Đã gửi yêu cầu vào lớp! Chờ giảng viên duyệt.");
+      }
+    } catch {
+      showToast("Không gửi được yêu cầu. Vui lòng đăng nhập và thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -180,9 +206,44 @@ export function CourseDetailActions({
           <PlayCircle className="h-5 w-5" />
           <span>Vào không gian học ngay</span>
         </Link>
+      ) : free ? (
+        <div className="space-y-2.5">
+          {/* KHÓA MIỄN PHÍ: XIN VÀO LỚP → CHỜ GIẢNG VIÊN DUYỆT */}
+          {requestState === "pending" ? (
+            <div className="flex w-full items-center justify-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-5 py-3.5 text-sm font-bold text-amber-700">
+              <Lock className="h-4 w-4" />
+              <span>Đang chờ giảng viên duyệt vào lớp</span>
+            </div>
+          ) : (
+            <button
+              onClick={handleRequestEnroll}
+              disabled={isLoading}
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-500/20 transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95 disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Xin vào lớp (miễn phí)</span>
+            </button>
+          )}
+          <p className="text-center text-[11px] text-slate-400">
+            Khóa miễn phí cần giảng viên duyệt trước khi vào học.
+          </p>
+
+          {/* NÚT YÊU THÍCH */}
+          <button
+            onClick={handleToggleWishlist}
+            className={`flex w-full items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${
+              isWishlisted
+                ? "bg-rose-50 border-rose-200 text-rose-600"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Heart className={`h-3.5 w-3.5 ${isWishlisted ? "fill-rose-600" : ""}`} />
+            <span>{isWishlisted ? "Đã lưu vào Yêu thích" : "Lưu vào danh sách yêu thích"}</span>
+          </button>
+        </div>
       ) : (
         <div className="space-y-2.5">
-          {/* NÚT THÊM VÀO GIỎ HÀNG */}
+          {/* KHÓA TRẢ PHÍ: GIỎ HÀNG / MUA NGAY */}
           <button
             onClick={() => handleAddToCart(false)}
             disabled={isLoading}
@@ -192,17 +253,15 @@ export function CourseDetailActions({
             <span>Thêm vào giỏ hàng</span>
           </button>
 
-          {/* NÚT MUA NGAY */}
           <button
             onClick={() => handleAddToCart(true)}
             disabled={isLoading}
             className="flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-bold text-slate-800 transition-all hover:bg-slate-100 hover:border-slate-300 active:scale-95"
           >
-            <span>Đăng ký ngay</span>
+            <span>Mua ngay</span>
             <ArrowRight className="h-4 w-4 text-blue-600" />
           </button>
 
-          {/* NÚT YÊU THÍCH */}
           <button
             onClick={handleToggleWishlist}
             className={`flex w-full items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${

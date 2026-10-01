@@ -182,6 +182,10 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_review_lesson_video` **[0015]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text` (bắt buộc khi từ chối). Admin duyệt/từ chối video bài giảng, báo giảng viên, ghi log |
 | `fn_lesson_video_review_guard` **[0015]** | trigger function cho `trg_lesson_video_review`: `video_url` đổi → `lessons.video_review = 'pending'` (hoặc `'none'` nếu gỡ video) |
 | `fn_get_lesson_video` **[sửa 0015]** | thêm điều kiện: học viên chỉ nhận URL khi `video_review = 'approved'` (chủ khóa/admin xem mọi trạng thái) |
+| `fn_request_enroll` **[0017]** | `p_course uuid`. Học viên xin vào lớp khóa MIỄN PHÍ (đã publish) → enrollment `pending`; khóa trả phí báo lỗi |
+| `fn_review_enroll` **[0017]** | `p_enrollment uuid`, `p_approve boolean`. Chủ khóa/admin duyệt (`pending→active`) hoặc từ chối (xóa), báo học viên |
+
+**Enum [0017]:** `enrollment_status` thêm `pending` (chờ GV duyệt vào lớp). **RLS [0017]:** GV phụ trách xem được `enrollments` / `lesson_progress` / `attendance` / `exam_attempts` của khóa mình (policy `*_select_instructor`).
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 

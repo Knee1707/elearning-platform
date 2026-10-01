@@ -2,20 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, LayoutDashboard, Video, Wallet, LogOut, GraduationCap } from "lucide-react";
+import { Compass, LayoutDashboard, Users, Video, Wallet, LogOut, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
-// Menu riêng của khu Giảng viên (tách khỏi luồng Học viên). Các mục sẽ được
-// bổ sung dần theo từng cụm (Học viên/Lớp, Đánh giá...).
+// Menu riêng của khu Giảng viên (tách khỏi luồng Học viên).
 const NAV = [
   { href: "/studio", label: "Khóa học", icon: LayoutDashboard },
+  { href: "/studio/students", label: "Học viên", icon: Users },
   { href: "/live", label: "Lịch Live", icon: Video },
   { href: "/payout", label: "Thu nhập", icon: Wallet },
 ];
 
 export function InstructorNav({ fullName }: { fullName: string }) {
   const pathname = usePathname();
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  // Khớp theo tiền tố DÀI NHẤT để /studio/students không làm /studio cùng sáng.
+  const activeHref = NAV.reduce<string | null>((best, it) => {
+    const match = pathname === it.href || pathname.startsWith(`${it.href}/`);
+    return match && it.href.length > (best?.length ?? 0) ? it.href : best;
+  }, null);
+  const isActive = (href: string) => href === activeHref;
 
   async function signOut() {
     try {

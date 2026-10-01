@@ -301,6 +301,27 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
     enrolled = false;
   }
 
+  // Trạng thái ghi danh (none/pending/active) cho khóa miễn phí cần duyệt.
+  let enrollStatus: "none" | "pending" | "active" = enrolled ? "active" : "none";
+  try {
+    if (!enrolled && course.id && !course.id.startsWith("demo-") && !course.id.startsWith("fallback-")) {
+      const sb = createClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: enr } = await sb
+          .from("enrollments")
+          .select("status")
+          .eq("user_id", user.id)
+          .eq("course_id", course.id)
+          .maybeSingle();
+        if (enr?.status === "pending") enrollStatus = "pending";
+        else if (enr?.status === "active") enrollStatus = "active";
+      }
+    }
+  } catch {
+    /* giữ 'none' */
+  }
+
   // Khóa demo/fallback (chưa có trong DB) không có review thật và không báo cáo được.
   const isRealCourse = Boolean(course.id) && !course.id.startsWith("demo-") && !course.id.startsWith("fallback-");
   const [currentUser, reviews] = await Promise.all([
@@ -621,6 +642,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                 courseTitle={course.title}
                 price={course.price}
                 initialEnrolled={enrolled}
+                enrollStatus={enrollStatus}
               />
               {isRealCourse && currentUser?.id !== course.instructorId && (
                 <div className="mt-3 px-1">
