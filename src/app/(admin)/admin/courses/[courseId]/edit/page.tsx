@@ -27,7 +27,7 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
   const supabase = createClient();
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, description, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, video_url, duration_seconds, is_free, position, attachments(id, name, file_url)))")
+    .select("id, title, description, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, video_url, video_review, video_review_reason, duration_seconds, is_free, position, attachments(id, name, file_url)))")
     .eq("id", params.courseId)
     .single();
   if (!course) notFound();

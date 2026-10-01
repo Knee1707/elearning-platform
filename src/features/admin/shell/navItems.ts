@@ -8,6 +8,7 @@ import {
   FolderTree,
   LayoutDashboard,
   MessagesSquare,
+  Video,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -45,6 +46,7 @@ const MODERATION_GROUPS: NavGroup[] = [
     title: "Kiểm duyệt",
     items: [
       { href: "/admin/courses", label: "Duyệt khóa học", icon: BookCheck },
+      { href: "/admin/video-reviews", label: "Duyệt video", icon: Video },
       { href: "/admin/reports", label: "Báo cáo & review", icon: Flag },
       { href: "/admin/qa", label: "Hỏi đáp (Q&A)", icon: MessagesSquare },
     ],

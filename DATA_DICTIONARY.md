@@ -179,9 +179,14 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_revoke_certificate` **[0014]** | `p_certificate uuid`, `p_reason text`, `p_revoke boolean` (mặc định true; false = khôi phục). Admin thu hồi/khôi phục chứng chỉ |
 | `fn_verify_certificate` **[sửa 0014]** | trả thêm cột `revoked_at` |
 | `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
+| `fn_review_lesson_video` **[0015]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text` (bắt buộc khi từ chối). Admin duyệt/từ chối video bài giảng, báo giảng viên, ghi log |
+| `fn_lesson_video_review_guard` **[0015]** | trigger function cho `trg_lesson_video_review`: `video_url` đổi → `lessons.video_review = 'pending'` (hoặc `'none'` nếu gỡ video) |
+| `fn_get_lesson_video` **[sửa 0015]** | thêm điều kiện: học viên chỉ nhận URL khi `video_review = 'approved'` (chủ khóa/admin xem mọi trạng thái) |
+
+**Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
 
 ---
 

@@ -48,6 +48,8 @@ const ALLOWED = {
     "fn_block_banned_user", "fn_sync_auth_ban", "fn_submit_report",
     // L — review, kiểm duyệt Q&A, thu hồi chứng chỉ (0014)
     "fn_guard_review_status", "fn_moderate_qa", "fn_revoke_certificate",
+    // L — duyệt video bài giảng (0015)
+    "fn_review_lesson_video", "fn_lesson_video_review_guard",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2
@@ -65,6 +67,7 @@ const ALLOWED = {
     "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate", "trg_profiles_guard_privilege", "trg_system_setting_audit", "trg_profiles_sync_auth_ban", "trg_reviews_guard_status",
     "trg_payments_block_banned", "trg_enrollments_block_banned", "trg_cart_item_block_banned", "trg_wishlist_block_banned", "trg_reviews_block_banned", "trg_qa_question_block_banned", "trg_qa_answer_block_banned", "trg_lesson_note_block_banned", "trg_lesson_progress_block_banned", "trg_exam_attempts_block_banned", "trg_report_block_banned", "trg_refund_block_banned", "trg_courses_block_banned", "trg_live_sessions_block_banned", "trg_coupon_block_banned",
     "trg_attendance_on_video", "trg_notify_on_answer",
+    "trg_lesson_video_review",
   ]),
 };
 

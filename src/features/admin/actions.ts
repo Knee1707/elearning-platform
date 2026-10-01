@@ -158,6 +158,28 @@ export async function updateUserNameAction(formData: FormData) {
 }
 
 // ------------------------------------------------------------------ //
+// Duyệt video bài giảng (rpc fn_review_lesson_video — DB kiểm quyền admin)
+// ------------------------------------------------------------------ //
+export async function reviewVideoAction(formData: FormData) {
+  const approve = text(formData, "approve") === "true";
+  await runAction({
+    path: "/admin/video-reviews",
+    roles: ADMIN_ROLES,
+    success: approve ? "Đã duyệt video." : "Đã từ chối video và báo giảng viên.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("fn_review_lesson_video", {
+        p_lesson: text(formData, "lessonId"),
+        p_approve: approve,
+        p_reason: text(formData, "reason") || null,
+      });
+      if (error) throw error;
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
 // Danh mục & tag (ghi thẳng bảng qua RLS categories_admin_all / tag_admin_all)
 // ------------------------------------------------------------------ //
 type TaxonomyTable = "categories" | "tag";

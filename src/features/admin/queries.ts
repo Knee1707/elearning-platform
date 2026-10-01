@@ -20,6 +20,45 @@ const cleanKeyword = (keyword: string) => keyword.replace(/[%_,()*\\]/g, " ").tr
 export const ADMIN_PAGE_SIZE = 25;
 
 // ------------------------------------------------------------------ //
+// Duyệt video: các bài học đang chờ duyệt video (video_review = 'pending')
+// ------------------------------------------------------------------ //
+export type PendingVideo = {
+  lessonId: string;
+  lessonTitle: string;
+  durationSeconds: number;
+  isFree: boolean;
+  courseId: string;
+  courseTitle: string | null;
+  instructorName: string | null;
+};
+
+export async function getPendingVideos(): Promise<PendingVideo[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("lessons")
+    .select(
+      "id, title, duration_seconds, is_free, chapters!inner(course_id, courses!inner(id, title, profiles!courses_instructor_id_fkey(full_name)))",
+    )
+    .eq("video_review", "pending")
+    .order("id", { ascending: true });
+  if (error) throw error;
+
+  return (data ?? []).map((row: Row) => {
+    const chapter = (row.chapters ?? {}) as Row;
+    const course = (chapter.courses ?? {}) as Row;
+    return {
+      lessonId: String(row.id),
+      lessonTitle: String(row.title),
+      durationSeconds: Number(row.duration_seconds ?? 0),
+      isFree: Boolean(row.is_free),
+      courseId: String(course.id ?? ""),
+      courseTitle: titleOf(course),
+      instructorName: nameOf(course.profiles),
+    };
+  });
+}
+
+// ------------------------------------------------------------------ //
 // Dashboard: việc cần làm
 // ------------------------------------------------------------------ //
 export async function getAdminTodo() {
