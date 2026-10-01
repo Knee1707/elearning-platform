@@ -230,29 +230,45 @@ export function Navbar() {
               <span>Khám phá khóa học</span>
             </Link>
 
-            <Link
-              href="/my"
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
-                isActive("/my")
-                  ? "bg-blue-50 text-blue-600 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>Góc học tập</span>
-            </Link>
+            {profile?.role === "instructor" ? (
+              <Link
+                href="/studio"
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                  isActive("/studio")
+                    ? "bg-emerald-50 text-emerald-700 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>Khu giảng viên</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/my"
+                  className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                    isActive("/my")
+                      ? "bg-blue-50 text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span>Góc học tập</span>
+                </Link>
 
-            <Link
-              href="/certificates"
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
-                isActive("/certificates")
-                  ? "bg-blue-50 text-blue-600 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Award className="h-3.5 w-3.5" />
-              <span>Chứng chỉ</span>
-            </Link>
+                <Link
+                  href="/certificates"
+                  className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                    isActive("/certificates")
+                      ? "bg-blue-50 text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <Award className="h-3.5 w-3.5" />
+                  <span>Chứng chỉ</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 

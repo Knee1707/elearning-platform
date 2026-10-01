@@ -95,7 +95,9 @@ export function LoginForm() {
     // admin → thẳng vào thao tác quản trị (/admin/users, admin không còn Dashboard);
     // cổng user → trang chủ (hoặc ?next=).
     const adminHome = role === "super_admin" ? "/super-admin" : "/admin/users";
-    const destination = explicitNext ?? (APP_MODE === "admin" ? adminHome : "/");
+    // Cổng user: giảng viên vào thẳng khu Giảng viên, học viên về trang chủ.
+    const userHome = role === "instructor" ? "/studio" : "/";
+    const destination = explicitNext ?? (APP_MODE === "admin" ? adminHome : userHome);
 
     router.refresh();
     router.push(destination);
