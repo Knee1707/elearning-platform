@@ -2,13 +2,27 @@ import Link from "next/link";
 import { Banknote, Crown, Percent, ShieldCheck, Undo2, Users, Wallet } from "lucide-react";
 import { getAdminDashboard } from "@/lib/queries/admin";
 import { getActivityLog, getSuperAdminOverview } from "@/features/super-admin/queries";
+import {
+  getCourseStatusBreakdown,
+  getUserRoleBreakdown,
+  getMonthlyRevenue,
+  getTopCoursesByEnrollment,
+} from "@/features/admin/analytics";
+import { CourseStatusChart } from "@/features/admin/charts/CourseStatusChart";
+import { UserRoleChart } from "@/features/admin/charts/UserRoleChart";
+import { RevenueTrendChart } from "@/features/admin/charts/RevenueTrendChart";
+import { TopCoursesChart } from "@/features/admin/charts/TopCoursesChart";
 import { PageHeader, dateTime, describeActivity, money } from "@/features/admin/ui";
 
 export default async function SuperAdminDashboardPage() {
-  const [overview, dashboard, recent] = await Promise.all([
+  const [overview, dashboard, recent, courseStatus, userRoles, revenue, topCourses] = await Promise.all([
     getSuperAdminOverview(),
     getAdminDashboard().catch(() => null),
     getActivityLog({ pageSize: 8 }),
+    getCourseStatusBreakdown().catch(() => []),
+    getUserRoleBreakdown().catch(() => []),
+    getMonthlyRevenue(6).catch(() => []),
+    getTopCoursesByEnrollment(5).catch(() => []),
   ]);
 
   const cards = [
@@ -38,7 +52,7 @@ export default async function SuperAdminDashboardPage() {
   ];
 
   return (
-    <main className="mx-auto max-w-5xl p-8">
+    <main className="mx-auto max-w-6xl p-8">
       <PageHeader title="Dashboard hệ thống" description="Tổng quan đội quản trị, tài chính và các thay đổi gần đây." />
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,6 +74,22 @@ export default async function SuperAdminDashboardPage() {
             </Link>
           );
         })}
+      </div>
+
+      {/* --- Biểu đồ minh họa --- */}
+      <div className="mt-8 grid gap-4 lg:grid-cols-2">
+        <ChartCard title="Doanh thu 6 tháng gần nhất" className="lg:col-span-2">
+          <RevenueTrendChart data={revenue} />
+        </ChartCard>
+        <ChartCard title="Trạng thái khóa học">
+          <CourseStatusChart data={courseStatus} />
+        </ChartCard>
+        <ChartCard title="Tỷ lệ vai trò người dùng">
+          <UserRoleChart data={userRoles} />
+        </ChartCard>
+        <ChartCard title="Top 5 khóa học nhiều học viên nhất" className="lg:col-span-2">
+          <TopCoursesChart data={topCourses} />
+        </ChartCard>
       </div>
 
       <section className="mt-8 rounded-lg border border-border">
@@ -90,5 +120,14 @@ export default async function SuperAdminDashboardPage() {
         )}
       </section>
     </main>
+  );
+}
+
+function ChartCard({ title, className, children }: { title: string; className?: string; children: React.ReactNode }) {
+  return (
+    <section className={`rounded-lg border border-border p-5 ${className ?? ""}`}>
+      <h2 className="mb-4 font-semibold">{title}</h2>
+      {children}
+    </section>
   );
 }
