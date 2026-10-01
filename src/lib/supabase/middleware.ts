@@ -30,7 +30,7 @@ export async function updateSession(request: NextRequest) {
 
   // Các nhánh cần đăng nhập. Trang công khai: /, /courses, /login, /register, /verify.
   const PROTECTED = [
-    "/my", "/learn", "/live", "/studio", "/admin",
+    "/my", "/learn", "/live", "/studio", "/admin", "/super-admin",
     "/cart", "/checkout", "/payout", "/certificates", "/notifications", "/profile",
   ];
   const path = request.nextUrl.pathname;

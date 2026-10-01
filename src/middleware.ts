@@ -3,7 +3,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 import { APP_MODE } from "@/lib/appMode";
 
 // Các đường dẫn được phép ở CỔNG ADMIN (còn lại đẩy về /admin).
-const ADMIN_ALLOWED = ["/admin", "/login", "/forgot-password", "/reset-password", "/verify", "/api", "/auth"];
+const ADMIN_ALLOWED = ["/admin", "/super-admin", "/login", "/forgot-password", "/reset-password", "/verify", "/api", "/auth"];
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -18,8 +18,8 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(r);
     }
   } else {
-    // CỔNG USER: chặn hoàn toàn trang admin.
-    if (path.startsWith("/admin")) {
+    // CỔNG USER: chặn hoàn toàn trang admin + super admin.
+    if (path.startsWith("/admin") || path.startsWith("/super-admin")) {
       const r = request.nextUrl.clone();
       r.pathname = "/";
       r.search = "";

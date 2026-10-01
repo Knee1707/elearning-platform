@@ -16,6 +16,18 @@ export function formatPrice(amount: number): string {
   }).format(amount);
 }
 
+// Tạo slug không dấu từ tiếng Việt: "Lập trình Đồ họa" → "lap-trinh-do-hoa".
+export function slugify(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // Định dạng ngày kiểu Việt.
 export function formatDate(value: string | Date): string {
   return new Intl.DateTimeFormat("vi-VN", { dateStyle: "medium" }).format(new Date(value));

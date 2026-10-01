@@ -10,44 +10,10 @@ import { CourseStatusChart } from "@/features/admin/charts/CourseStatusChart";
 import { UserRoleChart } from "@/features/admin/charts/UserRoleChart";
 import { RevenueTrendChart } from "@/features/admin/charts/RevenueTrendChart";
 import { TopCoursesChart } from "@/features/admin/charts/TopCoursesChart";
-import { Users, GraduationCap, BookOpen, Clock, Activity, Wallet, BookCheck, Tag, Flag } from "lucide-react";
+import { Users, GraduationCap, BookOpen, Clock, Activity, Wallet, BookCheck, Flag, MessageSquareWarning, Undo2 } from "lucide-react";
+import { getAdminTodo } from "@/features/admin/queries";
 
 const money = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", maximumFractionDigits: 0 });
-
-const NAV_LINKS = [
-  {
-    href: "/admin/courses",
-    label: "Duyệt khóa học",
-    desc: "Xét duyệt/ẩn khóa học chờ hoặc đã publish",
-    icon: BookCheck,
-    bg: "bg-emerald-100 dark:bg-emerald-950",
-    fg: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    href: "/admin/users",
-    label: "Quản lý người dùng",
-    desc: "Phân quyền, khóa/mở tài khoản",
-    icon: Users,
-    bg: "bg-blue-100 dark:bg-blue-950",
-    fg: "text-blue-600 dark:text-blue-400",
-  },
-  {
-    href: "/admin/coupons",
-    label: "Mã giảm giá",
-    desc: "Tạo và quản lý coupon",
-    icon: Tag,
-    bg: "bg-amber-100 dark:bg-amber-950",
-    fg: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    href: "/admin/reports",
-    label: "Báo cáo vi phạm",
-    desc: "Xử lý report từ học viên",
-    icon: Flag,
-    bg: "bg-red-100 dark:bg-red-950",
-    fg: "text-red-600 dark:text-red-400",
-  },
-];
 
 export default async function AdminPage() {
   let dashboard = null;
@@ -57,7 +23,8 @@ export default async function AdminPage() {
     dashboard = null;
   }
 
-  const [courseStatus, userRoles, revenue, topCourses] = await Promise.all([
+  const [todo, courseStatus, userRoles, revenue, topCourses] = await Promise.all([
+    getAdminTodo(),
     getCourseStatusBreakdown(),
     getUserRoleBreakdown(),
     getMonthlyRevenue(6),
@@ -65,6 +32,12 @@ export default async function AdminPage() {
   ]);
 
   const hasPending = (dashboard?.pendingCourses ?? 0) > 0;
+  const todoItems = [
+    { label: "Khóa học chờ duyệt", count: todo.pendingCourses, href: "/admin/courses?status=pending", icon: BookCheck },
+    { label: "Báo cáo vi phạm đang mở", count: todo.openReports, href: "/admin/reports", icon: Flag },
+    { label: "Review chờ kiểm duyệt", count: todo.pendingReviews, href: "/admin/reports?review=pending", icon: MessageSquareWarning },
+    { label: "Yêu cầu hoàn tiền chờ", count: todo.pendingRefunds, href: "/admin/payments", icon: Undo2 },
+  ];
 
   const statCards = dashboard
     ? [
@@ -97,16 +70,33 @@ export default async function AdminPage() {
     <main className="mx-auto max-w-5xl p-8">
       <h1 className="text-2xl font-bold">Quản trị · Dashboard</h1>
 
+      <section className="mt-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Việc cần xử lý</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {todoItems.map((item) => {
+            const Icon = item.icon;
+            const urgent = item.count > 0;
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/40 ${
+                  urgent ? "border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30" : "border-border"
+                }`}
+              >
+                <Icon className={`h-5 w-5 shrink-0 ${urgent ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`} />
+                <div>
+                  <p className="text-2xl font-bold leading-none">{item.count}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{item.label}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </section>
+
       {dashboard ? (
         <>
-          {hasPending && (
-            <p className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
-              Có {dashboard.pendingCourses} khóa học đang chờ duyệt.{" "}
-              <Link href="/admin/courses" className="underline">
-                Xem ngay
-              </Link>
-            </p>
-          )}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {statCards.map((card) => {
@@ -152,27 +142,6 @@ export default async function AdminPage() {
         </p>
       )}
 
-      <h2 className="mt-10 text-lg font-semibold">Quản lý</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        {NAV_LINKS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-start gap-3 rounded-lg border p-5 transition-colors hover:bg-muted/40"
-            >
-              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${item.bg}`}>
-                <Icon className={`h-4 w-4 ${item.fg}`} />
-              </span>
-              <div>
-                <p className="font-medium">{item.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
     </main>
   );
 }

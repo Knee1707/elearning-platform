@@ -152,8 +152,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_approve_refund` | `p_refund uuid` |
 | `fn_generate_payout` | `p_period text` |
 | `fn_set_role` | `p_user uuid`, `p_role user_role` |
-| `fn_toggle_ban` | `p_user uuid` → bool |
-| `fn_moderate_course` | `p_course uuid`, `p_status course_status` |
+| `fn_toggle_ban` | `p_user uuid`, `p_reason text` **[0012]** (bắt buộc khi khóa) → bool |
+| `fn_moderate_course` | `p_course uuid`, `p_status course_status`, `p_reason text` **[0012]** (bắt buộc khi `rejected`/`hidden`; gửi thông báo cho giảng viên) |
 | `fn_moderate_review` | `p_review uuid`, `p_status review_status` |
 | `fn_resolve_report` | `p_report uuid`, `p_status report_status` |
 | `fn_get_lesson_video` **[HOTFIX 0007]** | `p_lesson uuid` → `text` (URL video nếu is_free / đã ghi danh / chủ / admin, ngược lại `null`) |
@@ -167,9 +167,13 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_is_admin` **[sửa 0010]** | () → bool. Role `admin` **hoặc** `super_admin`, và không bị khóa |
 | `fn_log_activity` | `p_action text`, `p_entity text`, `p_entity_id uuid`, `p_reason text`, `p_metadata jsonb`. Chỉ gọi từ hàm security definer (đã thu hồi EXECUTE của client) |
 | `fn_guard_profile_privilege` | trigger function cho `trg_profiles_guard_privilege`: chặn client tự đổi `role`/`is_banned` |
+| `fn_reject_refund` **[0012]** | `p_refund uuid`, `p_reason text`. Chỉ super admin; gửi thông báo cho học viên |
+| `fn_mark_payout_paid` **[0012]** | `p_payout uuid`. Chỉ super admin; `draft → paid`, gửi thông báo cho giảng viên |
+| `fn_broadcast_notification` **[0012]** | `p_title text`, `p_body text`, `p_role user_role`, `p_course uuid` → `integer` (số người nhận). Admin gửi thông báo `system` |
+| `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**.
 
 ---
 
@@ -219,7 +223,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 |---|---|
 | `auth.ts` (L) | `getCurrentUser`, `getMyProfile`, `requireRole` |
 | `commerce.ts` (L) | `addToCart`, `removeFromCart`, `toggleWishlist`, `mockPurchase`, `requestRefund`, `isEnrolled` |
-| `admin.ts` (L) | `getAdminDashboard`, `moderateCourse`, `moderateReview`, `resolveReport`, `setRole`, `toggleBan`, `approveRefund`, `generatePayout` |
+| `admin.ts` (L) | `getAdminDashboard`, `moderateCourse`, `moderateReview`, `resolveReport`, `setRole`, `toggleBan`, `approveRefund`, `generatePayout`, `rejectRefund`, `markPayoutPaid`, `broadcastNotification` |
 | `courses.ts` (M1) | `getCourseCatalog`, `searchCourses`, `getCourseDetail`, `applyCoupon` |
 | `progress.ts` (M2) | `updateWatch`, `savePosition`, `markComplete`, `getCourseProgress` |
 | `quiz.ts` (M2) | `getQuiz`, `submitAttempt`, `verifyCertificate` |
