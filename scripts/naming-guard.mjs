@@ -51,6 +51,8 @@ const ALLOWED = {
     "fn_guard_review_status", "fn_moderate_qa", "fn_revoke_certificate",
     // L — duyệt video bài giảng (0015)
     "fn_review_lesson_video", "fn_lesson_video_review_guard",
+    // L — ràng buộc ngày buổi live (0020)
+    "fn_validate_live_session_date",
     // L — duyệt học viên vào lớp (0017)
     "fn_request_enroll", "fn_review_enroll",
     // L — nhận xét quá trình học (0018)
@@ -75,6 +77,7 @@ const ALLOWED = {
     "trg_payments_block_banned", "trg_enrollments_block_banned", "trg_cart_item_block_banned", "trg_wishlist_block_banned", "trg_reviews_block_banned", "trg_qa_question_block_banned", "trg_qa_answer_block_banned", "trg_lesson_note_block_banned", "trg_lesson_progress_block_banned", "trg_exam_attempts_block_banned", "trg_report_block_banned", "trg_refund_block_banned", "trg_courses_block_banned", "trg_live_sessions_block_banned", "trg_coupon_block_banned",
     "trg_attendance_on_video", "trg_notify_on_answer",
     "trg_lesson_video_review",
+    "trg_live_sessions_validate_date",
   ]),
 };
 

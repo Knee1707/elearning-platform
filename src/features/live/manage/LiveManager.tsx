@@ -40,21 +40,13 @@ export function LiveManager({ courseId }: { courseId: string }) {
 
   function handleScheduledAtChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
-    if (!val) {
-      setScheduledAt("");
-      return;
-    }
-    // Giới hạn năm không được vượt quá 4 chữ số khi người dùng nhập
-    const [datePart, timePart] = val.split("T");
-    const dateTokens = datePart.split("-");
-    if (dateTokens.length > 0) {
-      const cleanYear = dateTokens[0].replace(/\D/g, "");
-      if (cleanYear.length > 4) {
-        dateTokens[0] = cleanYear.slice(0, 4);
-        setScheduledAt(timePart !== undefined ? `${dateTokens.join("-")}T${timePart}` : dateTokens.join("-"));
-        return;
-      }
-    }
+    const year = val.split("T", 1)[0]?.split("-", 1)[0] ?? "";
+
+    // datetime-local không hỗ trợ maxLength. Không ghi lại giá trị đã cắt
+    // trong onChange vì sẽ làm trình duyệt và React lặp lại khi đang nhập.
+    // Bỏ qua lần nhập thứ 5 để giữ nguyên giá trị hợp lệ trước đó.
+    if (/^\d{5,}$/.test(year)) return;
+
     setScheduledAt(val);
   }
 
@@ -73,7 +65,7 @@ export function LiveManager({ courseId }: { courseId: string }) {
 
     // 1. Ràng buộc năm học: chỉ gồm đúng 4 chữ số (1000 - 9999)
     const datePart = scheduledAt.split("T")[0] || "";
-    const yearStr = datePart.split("-")[0]?.replace(/\D/g, "") || "";
+    const yearStr = datePart.split("-")[0] || "";
     const yearNum = parseInt(yearStr, 10);
     if (yearStr.length !== 4 || isNaN(yearNum) || yearNum < 1000 || yearNum > 9999) {
       setMessage("Năm học chỉ được gồm 4 chữ số (ví dụ: 2026).");
