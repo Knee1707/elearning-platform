@@ -16,9 +16,11 @@ import {
   Menu,
   X,
   ChevronDown,
+  ReceiptText,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/domain";
+import { isAdminRole, ROLE_LABELS } from "@/lib/utils";
 
 // Chủ: M3 · Thanh điều hướng dùng chung (cả nhóm dùng).
 export function Navbar() {
@@ -228,29 +230,45 @@ export function Navbar() {
               <span>Khám phá khóa học</span>
             </Link>
 
-            <Link
-              href="/my"
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
-                isActive("/my")
-                  ? "bg-blue-50 text-blue-600 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <BookOpen className="h-3.5 w-3.5" />
-              <span>Góc học tập</span>
-            </Link>
+            {profile?.role === "instructor" ? (
+              <Link
+                href="/studio"
+                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                  isActive("/studio")
+                    ? "bg-emerald-50 text-emerald-700 shadow-xs"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                }`}
+              >
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                <span>Khu giảng viên</span>
+              </Link>
+            ) : (
+              <>
+                <Link
+                  href="/my"
+                  className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                    isActive("/my")
+                      ? "bg-blue-50 text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <BookOpen className="h-3.5 w-3.5" />
+                  <span>Góc học tập</span>
+                </Link>
 
-            <Link
-              href="/certificates"
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
-                isActive("/certificates")
-                  ? "bg-blue-50 text-blue-600 shadow-xs"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-              }`}
-            >
-              <Award className="h-3.5 w-3.5" />
-              <span>Chứng chỉ</span>
-            </Link>
+                <Link
+                  href="/certificates"
+                  className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold transition-all ${
+                    isActive("/certificates")
+                      ? "bg-blue-50 text-blue-600 shadow-xs"
+                      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  }`}
+                >
+                  <Award className="h-3.5 w-3.5" />
+                  <span>Chứng chỉ</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
 
@@ -305,7 +323,7 @@ export function Navbar() {
                   <div className="border-b border-slate-100 px-3 py-2.5">
                     <p className="text-sm font-bold text-slate-900 truncate">{profile.fullName}</p>
                     <p className="text-[11px] font-medium text-slate-500 capitalize">
-                      Vai trò: {profile.role === "admin" ? "Quản trị viên" : profile.role === "instructor" ? "Giảng viên" : "Học viên"}
+                      Vai trò: {ROLE_LABELS[profile.role] ?? ROLE_LABELS.student}
                     </p>
                   </div>
 
@@ -329,6 +347,15 @@ export function Navbar() {
                     </Link>
 
                     <Link
+                      href="/my/purchases"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <ReceiptText className="h-4 w-4 text-slate-400" />
+                      <span>Lịch sử mua &amp; hoàn tiền</span>
+                    </Link>
+
+                    <Link
                       href="/profile"
                       onClick={() => setProfileDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
@@ -348,7 +375,7 @@ export function Navbar() {
                       </Link>
                     )}
 
-                    {profile.role === "admin" && (
+                    {isAdminRole(profile.role) && (
                       <Link
                         href="/admin"
                         onClick={() => setProfileDropdownOpen(false)}

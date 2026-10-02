@@ -2,7 +2,7 @@
 // Sau khi có schema thật, chạy `pnpm db:types` để sinh src/types/database.types.ts
 // rồi ép kiểu chặt hơn nếu cần.
 
-export type UserRole = "student" | "instructor" | "admin";
+export type UserRole = "student" | "instructor" | "admin" | "super_admin";
 export type CourseStatus = "draft" | "pending" | "published" | "rejected" | "hidden";
 export type EnrollmentStatus = "active" | "refunded";
 export type PaymentStatus = "pending" | "paid" | "refunded";
@@ -37,6 +37,7 @@ export interface Course {
   isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
+  moderationNote?: string | null; // Lý do từ chối/ẩn gần nhất (0014)
 }
 
 export interface Chapter {

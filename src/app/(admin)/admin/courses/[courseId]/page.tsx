@@ -1,13 +1,26 @@
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
+import { ADMIN_ROLES } from "@/lib/utils";
+import { moderateCourseAction } from "@/features/admin/actions";
+import { FlashMessage, ReasonAction, type SearchParams } from "@/features/admin/ui";
 
-type PageProps = { params: { courseId: string } };
+type PageProps = { params: { courseId: string }; searchParams: SearchParams };
+
+const STATUS_LABEL: Record<string, string> = {
+  draft: "Nháp",
+  pending: "Chờ duyệt",
+  published: "Đang bán",
+  rejected: "Bị từ chối",
+  hidden: "Đã ẩn",
+};
 
 async function adminUpdatePrice(formData: FormData) {
   "use server";
-  await requireRole(["admin"]);
+  await requireRole(ADMIN_ROLES);
   const courseId = String(formData.get("courseId"));
   const supabase = createClient();
   const { error } = await supabase
@@ -20,7 +33,7 @@ async function adminUpdatePrice(formData: FormData) {
 
 async function adminToggleLessonFree(formData: FormData) {
   "use server";
-  await requireRole(["admin"]);
+  await requireRole(ADMIN_ROLES);
   const courseId = String(formData.get("courseId"));
   const lessonId = String(formData.get("lessonId"));
   const nextValue = formData.get("nextValue") === "true";
@@ -30,8 +43,8 @@ async function adminToggleLessonFree(formData: FormData) {
   revalidatePath(`/admin/courses/${courseId}`);
 }
 
-export default async function AdminCourseDetailPage({ params }: PageProps) {
-  await requireRole(["admin"]);
+export default async function AdminCourseDetailPage({ params, searchParams }: PageProps) {
+  await requireRole(ADMIN_ROLES);
   const supabase = createClient();
 
   const { data: course } = await supabase
@@ -52,10 +65,53 @@ export default async function AdminCourseDetailPage({ params }: PageProps) {
 
   return (
     <main className="mx-auto max-w-4xl p-8">
-      <h1 className="text-2xl font-bold">{String(course.title)}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Giảng viên: {instructorName} · Trạng thái: {String(course.status)}
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">{String(course.title)}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Giảng viên: {instructorName} · Trạng thái: {STATUS_LABEL[String(course.status)] ?? String(course.status)}
+          </p>
+        </div>
+        <Link
+          href={`/admin/courses/${course.id}/edit`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-muted"
+        >
+          <Pencil className="h-4 w-4" /> Chỉnh sửa đầy đủ
+        </Link>
+      </div>
+
+      {/* Kiểm duyệt ngay sau khi xem nội dung (lý do bắt buộc khi từ chối/ẩn). */}
+      <div className="mt-4 flex flex-wrap items-start gap-2">
+        {(course.status === "pending" || course.status === "hidden") && (
+          <form action={moderateCourseAction}>
+            <input type="hidden" name="courseId" value={String(course.id)} />
+            <input type="hidden" name="status" value="published" />
+            <input type="hidden" name="returnTo" value={`/admin/courses/${course.id}`} />
+            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">
+              {course.status === "pending" ? "Duyệt xuất bản" : "Hiển thị lại"}
+            </button>
+          </form>
+        )}
+        {course.status === "pending" && (
+          <ReasonAction
+            action={moderateCourseAction}
+            label="Từ chối"
+            submitLabel="Xác nhận từ chối"
+            placeholder="Lý do từ chối (giảng viên sẽ thấy)…"
+            hidden={{ courseId: String(course.id), status: "rejected", returnTo: `/admin/courses/${course.id}` }}
+          />
+        )}
+        {course.status === "published" && (
+          <ReasonAction
+            action={moderateCourseAction}
+            label="Ẩn khóa học"
+            submitLabel="Xác nhận ẩn"
+            placeholder="Lý do ẩn (giảng viên sẽ thấy)…"
+            hidden={{ courseId: String(course.id), status: "hidden", returnTo: `/admin/courses/${course.id}` }}
+          />
+        )}
+      </div>
+      <FlashMessage searchParams={searchParams} />
 
       <section className="mt-6 rounded-lg border border-border p-5">
         <h2 className="font-semibold">Chi phí khóa học</h2>

@@ -17,9 +17,14 @@ export async function getAdminDashboard(): Promise<AdminDashboard | null> {
   };
 }
 
-export async function moderateCourse(courseId: string, status: CourseStatus) {
+// reason bắt buộc khi status = 'rejected' | 'hidden' (DB kiểm).
+export async function moderateCourse(courseId: string, status: CourseStatus, reason?: string) {
   const supabase = createClient();
-  const { error } = await supabase.rpc("fn_moderate_course", { p_course: courseId, p_status: status });
+  const { error } = await supabase.rpc("fn_moderate_course", {
+    p_course: courseId,
+    p_status: status,
+    p_reason: reason ?? null,
+  });
   if (error) throw error;
 }
 
@@ -41,9 +46,10 @@ export async function setRole(userId: string, role: UserRole) {
   if (error) throw error;
 }
 
-export async function toggleBan(userId: string): Promise<boolean> {
+// reason bắt buộc khi KHÓA (DB kiểm); mở khóa không cần.
+export async function toggleBan(userId: string, reason?: string): Promise<boolean> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("fn_toggle_ban", { p_user: userId });
+  const { data, error } = await supabase.rpc("fn_toggle_ban", { p_user: userId, p_reason: reason ?? null });
   if (error) throw error;
   return Boolean(data);
 }
@@ -57,5 +63,53 @@ export async function approveRefund(refundId: string) {
 export async function generatePayout(period: string) {
   const supabase = createClient();
   const { error } = await supabase.rpc("fn_generate_payout", { p_period: period });
+  if (error) throw error;
+}
+
+export async function rejectRefund(refundId: string, reason: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_reject_refund", { p_refund: refundId, p_reason: reason });
+  if (error) throw error;
+}
+
+export async function markPayoutPaid(payoutId: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_mark_payout_paid", { p_payout: payoutId });
+  if (error) throw error;
+}
+
+// Gửi thông báo 'system'. Ưu tiên courseId (học viên đang học khóa) › role › toàn bộ.
+export async function broadcastNotification(input: {
+  title: string;
+  body?: string;
+  role?: UserRole;
+  courseId?: string;
+}): Promise<number> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_broadcast_notification", {
+    p_title: input.title,
+    p_body: input.body ?? null,
+    p_role: input.role ?? null,
+    p_course: input.courseId ?? null,
+  });
+  if (error) throw error;
+  return Number(data ?? 0);
+}
+
+// Xóa câu hỏi/trả lời vi phạm (lý do bắt buộc, báo người viết).
+export async function moderateQa(entity: "question" | "answer", id: string, reason: string) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_moderate_qa", { p_entity: entity, p_id: id, p_reason: reason });
+  if (error) throw error;
+}
+
+// Thu hồi (revoke = true, cần lý do) hoặc khôi phục (revoke = false) chứng chỉ.
+export async function revokeCertificate(certificateId: string, reason: string | null, revoke = true) {
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_revoke_certificate", {
+    p_certificate: certificateId,
+    p_reason: reason,
+    p_revoke: revoke,
+  });
   if (error) throw error;
 }

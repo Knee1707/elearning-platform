@@ -52,6 +52,7 @@ export interface CertificateInfo {
   studentName: string;     // Họ tên học viên được cấp chứng chỉ
   courseTitle: string;     // Tên khóa học đã hoàn thành
   issuedAt: string;        // Thời điểm cấp chứng chỉ (ISO string)
+  revokedAt?: string | null; // Thời điểm bị thu hồi (null = còn hiệu lực) — 0014
 }
 
 /**
@@ -64,6 +65,7 @@ export interface Certificate {
   courseId: string;        // UUID khóa học
   courseTitle: string;     // Tên khóa học
   instructorName: string;  // Tên giảng viên phụ trách khóa học
+  revokedAt?: string | null; // Thời điểm bị thu hồi (null = còn hiệu lực) — 0014
 }
 
 /**
@@ -182,6 +184,7 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
     student_name: string;
     course_title: string;
     issued_at: string;
+    revoked_at: string | null;
   }>)[0];
 
   return {
@@ -189,6 +192,7 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
     studentName: row.student_name,
     courseTitle: row.course_title,
     issuedAt: row.issued_at,
+    revokedAt: row.revoked_at ?? null,
   };
 }
 
@@ -203,27 +207,22 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
  */
 export async function getMyCertificates(): Promise<Certificate[]> {
   const supabase = createClient();
+  // Chỉ chứng chỉ ĐÃ DUYỆT (status='approved'); yêu cầu 'pending' không tính là đã có.
   const { data, error } = await supabase
-    .from("view_certificate")
-    .select("*");
+    .from("certificates")
+    .select("id, code, issued_at, revoked_at, course_id, courses(title, profiles!courses_instructor_id_fkey(full_name))")
+    .eq("status", "approved")
+    .order("issued_at", { ascending: false });
 
-  if (error) throw new Error(`view_certificate: ${error.message}`);
+  if (error) throw new Error(`certificates: ${error.message}`);
 
-  return (
-    (data ?? []) as Array<{
-      id: string;
-      code: string;
-      issued_at: string;
-      course_id: string;
-      course_title: string;
-      instructor_name: string;
-    }>
-  ).map((row) => ({
+  return (data ?? []).map((row: any) => ({
     id: row.id,
     code: row.code,
     issuedAt: row.issued_at,
     courseId: row.course_id,
-    courseTitle: row.course_title,
-    instructorName: row.instructor_name,
+    courseTitle: row.courses?.title ?? "",
+    instructorName: row.courses?.profiles?.full_name ?? "Giảng viên",
+    revokedAt: row.revoked_at ?? null,
   }));
 }

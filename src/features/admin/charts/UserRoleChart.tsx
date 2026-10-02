@@ -7,6 +7,7 @@ const COLORS: Record<string, string> = {
   student: "#3b82f6",
   instructor: "#8b5cf6",
   admin: "#f59e0b",
+  super_admin: "#e11d48",
 };
 
 export function UserRoleChart({ data }: { data: RolePoint[] }) {

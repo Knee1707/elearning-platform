@@ -7,14 +7,23 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/client";
+import { APP_MODE } from "@/lib/appMode";
 import { loginSchema, type LoginInput } from "../schemas";
+import { Eye, EyeOff } from "lucide-react";
+import { isAdminRole } from "@/lib/utils";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+const BANNED_MESSAGE = "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.";
+
 function mapAuthError(message: string): string {
   if (message.includes("Invalid login credentials")) {
     return "Email hoặc mật khẩu không đúng.";
+  }
+  if (message.toLowerCase().includes("banned")) {
+    return BANNED_MESSAGE;
   }
   if (message.includes("Email not confirmed")) {
     return "Email chưa được xác nhận. Vui lòng kiểm tra hộp thư.";
@@ -27,7 +36,11 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const explicitNext = searchParams.get("next");
 
-  const [serverError, setServerError] = useState<string | null>(null);
+  // Middleware chuyển về /login?banned=1 khi phiên của tài khoản bị khóa bị đăng xuất.
+  const [serverError, setServerError] = useState<string | null>(
+    searchParams.get("banned") === "1" ? BANNED_MESSAGE : null,
+  );
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -49,23 +62,42 @@ export function LoginForm() {
       return;
     }
 
-    // Xác định điểm đến sau đăng nhập:
-    // 1. Nếu có ?next= tường minh (VD: bị middleware đá từ /studio) → luôn ưu tiên, tôn trọng ý định gốc.
-    // 2. Nếu không, và tài khoản là admin → vào thẳng /admin cho tiện thao tác quản trị.
-    // 3. Còn lại → trang chủ như cũ.
-    let destination = explicitNext ?? "/";
-
-    if (!explicitNext && signInData.user) {
+    // Lấy vai trò để phân luồng theo cổng (admin vs user).
+    let role: string | null = null;
+    if (signInData.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, is_banned")
         .eq("id", signInData.user.id)
         .maybeSingle();
-
-      if (profile?.role === "admin") {
-        destination = "/admin";
+      role = (profile?.role as string | undefined) ?? null;
+      // Phòng khi Auth chưa đồng bộ banned_until: vẫn không cho tài khoản bị khóa vào.
+      if (profile?.is_banned) {
+        await supabase.auth.signOut();
+        setServerError(BANNED_MESSAGE);
+        return;
       }
     }
+
+    // Gác cổng: cổng admin CHỈ cho admin; cổng user KHÔNG cho admin.
+    if (APP_MODE === "admin" && !isAdminRole(role)) {
+      await supabase.auth.signOut();
+      setServerError("Cổng quản trị chỉ dành cho tài khoản admin.");
+      return;
+    }
+    if (APP_MODE === "user" && isAdminRole(role)) {
+      await supabase.auth.signOut();
+      setServerError("Tài khoản admin vui lòng đăng nhập ở cổng quản trị riêng.");
+      return;
+    }
+
+    // Điểm đến sau đăng nhập: super admin → Dashboard /super-admin;
+    // admin → thẳng vào thao tác quản trị (/admin/users, admin không còn Dashboard);
+    // cổng user → trang chủ (hoặc ?next=).
+    const adminHome = role === "super_admin" ? "/super-admin" : "/admin/users";
+    // Cổng user: giảng viên vào thẳng khu Giảng viên, học viên về trang chủ.
+    const userHome = role === "instructor" ? "/studio" : "/";
+    const destination = explicitNext ?? (APP_MODE === "admin" ? adminHome : userHome);
 
     router.refresh();
     router.push(destination);
@@ -81,12 +113,24 @@ export function LoginForm() {
 
       <div className="space-y-2">
         <Label htmlFor="password">Mật khẩu</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          {...register("password")}
-        />
+        <div className="relative">
+          <Input
+            id="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="current-password"
+            className="pr-10"
+            {...register("password")}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+            aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
         {errors.password && (
           <p className="text-sm text-destructive">{errors.password.message}</p>
         )}

@@ -45,6 +45,7 @@ const ROLE_LABEL: Record<string, string> = {
   student: "Học viên",
   instructor: "Giảng viên",
   admin: "Quản trị",
+  super_admin: "Quản trị cấp cao",
 };
 
 export async function getUserRoleBreakdown(): Promise<RolePoint[]> {

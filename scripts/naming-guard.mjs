@@ -25,6 +25,7 @@ const ALLOWED = {
     "reviews", "lesson_progress", "lesson_note", "qa_question", "qa_answer",
     "quizzes", "questions", "options", "exams", "exam_attempts", "answers",
     "certificates", "live_sessions", "attendance", "notification", "report",
+    "student_feedback",
   ]),
   enums: new Set([
     "user_role", "course_status", "enrollment_status", "payment_status",
@@ -40,6 +41,22 @@ const ALLOWED = {
     "fn_mock_purchase", "fn_request_refund", "fn_approve_refund", "fn_generate_payout",
     "fn_set_role", "fn_toggle_ban", "fn_moderate_course", "fn_moderate_review",
     "fn_resolve_report", "fn_get_lesson_video", "fn_get_attachment", "fn_get_live_meet",
+    // L — phân quyền super admin + nhật ký (0010)
+    "fn_is_super_admin", "fn_log_activity", "fn_guard_profile_privilege", "fn_log_setting_change",
+    // L — chức năng quản trị bổ sung (0012)
+    "fn_reject_refund", "fn_mark_payout_paid", "fn_broadcast_notification",
+    // L — khóa tài khoản có hiệu lực, báo cáo vi phạm (0013)
+    "fn_block_banned_user", "fn_sync_auth_ban", "fn_submit_report",
+    // L — review, kiểm duyệt Q&A, thu hồi chứng chỉ (0014)
+    "fn_guard_review_status", "fn_moderate_qa", "fn_revoke_certificate",
+    // L — duyệt video bài giảng (0015)
+    "fn_review_lesson_video", "fn_lesson_video_review_guard",
+    // L — duyệt học viên vào lớp (0017)
+    "fn_request_enroll", "fn_review_enroll",
+    // L — nhận xét quá trình học (0018)
+    "fn_send_feedback",
+    // L — chứng chỉ xin/duyệt (0019)
+    "fn_request_certificate", "fn_review_certificate",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2
@@ -54,8 +71,10 @@ const ALLOWED = {
     "view_course_progress", "view_attendance", "view_certificate",
   ]),
   triggers: new Set([
-    "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate",
+    "trg_profile_on_signup", "trg_courses_touch", "trg_issue_certificate", "trg_profiles_guard_privilege", "trg_system_setting_audit", "trg_profiles_sync_auth_ban", "trg_reviews_guard_status",
+    "trg_payments_block_banned", "trg_enrollments_block_banned", "trg_cart_item_block_banned", "trg_wishlist_block_banned", "trg_reviews_block_banned", "trg_qa_question_block_banned", "trg_qa_answer_block_banned", "trg_lesson_note_block_banned", "trg_lesson_progress_block_banned", "trg_exam_attempts_block_banned", "trg_report_block_banned", "trg_refund_block_banned", "trg_courses_block_banned", "trg_live_sessions_block_banned", "trg_coupon_block_banned",
     "trg_attendance_on_video", "trg_notify_on_answer",
+    "trg_lesson_video_review",
   ]),
 };
 

@@ -40,10 +40,30 @@ interface Lesson {
   id: string;
   title: string;
   video_url: string | null;
+  video_review?: string | null;
+  video_review_reason?: string | null;
   duration_seconds: number;
   is_free: boolean;
   position: number;
   attachments: Attachment[];
+}
+
+// Nhãn trạng thái duyệt video hiển thị cho giảng viên.
+function VideoReviewBadge({ review, reason }: { review?: string | null; reason?: string | null }) {
+  if (!review || review === "none") return null;
+  const map: Record<string, { label: string; cls: string }> = {
+    pending: { label: "Video chờ duyệt", cls: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+    approved: { label: "Video đã duyệt", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+    rejected: { label: "Video bị từ chối", cls: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300" },
+  };
+  const m = map[review];
+  if (!m) return null;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1">
+      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${m.cls}`}>{m.label}</span>
+      {review === "rejected" && reason && <span className="text-xs text-muted-foreground">Lý do: {reason}</span>}
+    </span>
+  );
 }
 interface Chapter {
   id: string;
@@ -254,6 +274,7 @@ function SortableLesson({
         <input type="file" name="file" accept="video/mp4,video/webm,video/quicktime" required className="text-sm" />
         <button className="rounded border px-3 py-1.5 text-sm" type="submit">Tải video lên</button>
         {lesson.video_url && <span className="text-xs text-muted-foreground">Đã có video</span>}
+        <VideoReviewBadge review={lesson.video_review} reason={lesson.video_review_reason} />
       </form>
 
       <AttachmentList courseId={courseId} lessonId={lesson.id} attachments={lesson.attachments} />

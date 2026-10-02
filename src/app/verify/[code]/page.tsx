@@ -8,6 +8,7 @@ import {
   User,
   BookOpen,
   CheckCircle2,
+  ShieldX,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { verifyCertificate, type CertificateInfo } from "@/lib/queries/quiz";
@@ -26,15 +27,18 @@ const FALLBACK_VERIFY: Record<string, CertificateInfo> = {
 export default async function VerifyPage({ params }: { params: { code: string } }) {
   const normalizedCode = params.code.toUpperCase();
   let cert: CertificateInfo | null = null;
+  let isDbAvailable = true;
 
   try {
     cert = await verifyCertificate(normalizedCode);
   } catch {
     cert = null;
+    isDbAvailable = false;
   }
 
-  // Fallback nếu chưa kết nối DB thật
-  if (!cert && (FALLBACK_VERIFY[normalizedCode] || normalizedCode.startsWith("CERT-"))) {
+  // Fallback CHỈ khi chưa kết nối được DB thật (demo). Khi DB trả "không có",
+  // tuyệt đối không hiện chứng chỉ mẫu — nếu không, mã bịa bất kỳ cũng "hợp lệ".
+  if (!cert && !isDbAvailable && (FALLBACK_VERIFY[normalizedCode] || normalizedCode.startsWith("CERT-"))) {
     cert = FALLBACK_VERIFY[normalizedCode] || {
       certificateCode: normalizedCode,
       studentName: "Trần Thị Học Viên A",
@@ -58,7 +62,17 @@ export default async function VerifyPage({ params }: { params: { code: string } 
           </Link>
         </div>
 
-        {cert ? (
+        {cert?.revokedAt ? (
+          <div className="rounded-3xl border border-rose-200 bg-white p-8 text-center shadow-xs sm:p-12">
+            <ShieldX className="mx-auto h-12 w-12 text-rose-500" />
+            <h1 className="mt-4 text-xl font-black text-slate-900">Chứng chỉ đã bị thu hồi</h1>
+            <p className="mx-auto mt-1 max-w-md text-xs font-medium leading-relaxed text-slate-500">
+              Chứng chỉ <strong className="font-mono text-slate-800">{cert.certificateCode}</strong> cấp cho{" "}
+              <strong className="text-slate-800">{cert.studentName}</strong> (khóa “{cert.courseTitle}”) đã bị hệ thống thu hồi ngày{" "}
+              {new Date(cert.revokedAt).toLocaleDateString("vi-VN")} và <strong>không còn giá trị xác nhận</strong>.
+            </p>
+          </div>
+        ) : cert ? (
           <div className="space-y-8">
             {/* THÔNG BÁO XÁC THỰC THÀNH CÔNG */}
             <div className="rounded-3xl border border-emerald-200 bg-white p-6 sm:p-8 shadow-xs">

@@ -18,7 +18,7 @@ import {
 import { updateWatch, savePosition, getLastPosition, markComplete } from "@/lib/queries/progress";
 
 // Fallback video stream chuẩn phục vụ thử nghiệm mượt mà khi URL là placeholder
-const FALLBACK_STREAM_URL = "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4";
+const FALLBACK_STREAM_URL = "https://media.w3.org/2010/05/sintel/trailer.mp4";
 
 type PlayerState = "idle" | "loading" | "ready" | "locked";
 

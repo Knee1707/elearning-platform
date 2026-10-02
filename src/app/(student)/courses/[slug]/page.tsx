@@ -16,6 +16,40 @@ import { getCourseDetail, type CourseDetail } from "@/lib/queries/courses";
 import { isEnrolled } from "@/lib/queries/commerce";
 import { formatDate } from "@/lib/utils";
 import { CourseDetailActions, CourseSyllabus } from "./CourseDetailActions";
+import { createClient } from "@/lib/supabase/server";
+import { getCurrentUser } from "@/lib/queries/auth";
+import { ReportButton } from "@/features/report/ReportButton";
+import { ReviewForm } from "@/features/review/ReviewForm";
+import type { ReviewStatus } from "@/types/domain";
+
+interface PublicReview {
+  id: string;
+  userId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  authorName: string;
+}
+
+// Review đã được kiểm duyệt (status = visible) của khóa thật.
+async function getVisibleReviews(courseId: string): Promise<PublicReview[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("reviews")
+    .select("id, user_id, rating, comment, created_at, profiles(full_name)")
+    .eq("course_id", courseId)
+    .eq("status", "visible")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  return (data ?? []).map((row) => ({
+    id: String(row.id),
+    userId: String(row.user_id),
+    rating: Number(row.rating),
+    comment: (row.comment as string | null) ?? null,
+    createdAt: String(row.created_at),
+    authorName: (row.profiles as unknown as { full_name?: string } | null)?.full_name || "Học viên",
+  }));
+}
 
 // Khóa học chi tiết mẫu khi DB chưa có dữ liệu (đồng bộ 100% với Catalog)
 const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
@@ -48,7 +82,7 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             id: "les-1",
             chapterId: "chap-1",
             title: "01. Giới thiệu tổng quan & Định hướng lộ trình học",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
             videoStatus: "ready",
             durationSeconds: 480,
             isFree: true,
@@ -58,7 +92,7 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             id: "les-2",
             chapterId: "chap-1",
             title: "02. Cài đặt môi trường Node.js, pnpm và khởi tạo dự án",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
             videoStatus: "ready",
             durationSeconds: 720,
             isFree: true,
@@ -115,7 +149,7 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             id: "les-fe-1",
             chapterId: "chap-fe-1",
             title: "01. Cấu trúc một trang web và các thẻ HTML cơ bản",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
             videoStatus: "ready",
             durationSeconds: 600,
             isFree: true,
@@ -154,7 +188,7 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             id: "les-db-1",
             chapterId: "chap-db-1",
             title: "01. Khởi tạo DB và cấu hình Row Level Security (RLS)",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
             videoStatus: "ready",
             durationSeconds: 700,
             isFree: true,
@@ -193,7 +227,7 @@ const FALLBACK_COURSE_DETAILS: Record<string, CourseDetail> = {
             id: "les-be-1",
             chapterId: "chap-be-1",
             title: "01. Giới thiệu kiến trúc MVC & Routing trong Express",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
             videoStatus: "ready",
             durationSeconds: 650,
             isFree: true,
@@ -246,7 +280,7 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
               id: "demo-les-1",
               chapterId: "demo-chap-1",
               title: "01. Giới thiệu nội dung khóa học",
-              videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+              videoUrl: "https://media.w3.org/2010/05/sintel/trailer.mp4",
               videoStatus: "ready",
               durationSeconds: 420,
               isFree: true,
@@ -266,6 +300,48 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
   } catch {
     enrolled = false;
   }
+
+  // Trạng thái ghi danh (none/pending/active) cho khóa miễn phí cần duyệt.
+  let enrollStatus: "none" | "pending" | "active" = enrolled ? "active" : "none";
+  try {
+    if (!enrolled && course.id && !course.id.startsWith("demo-") && !course.id.startsWith("fallback-")) {
+      const sb = createClient();
+      const { data: { user } } = await sb.auth.getUser();
+      if (user) {
+        const { data: enr } = await sb
+          .from("enrollments")
+          .select("status")
+          .eq("user_id", user.id)
+          .eq("course_id", course.id)
+          .maybeSingle();
+        if (enr?.status === "pending") enrollStatus = "pending";
+        else if (enr?.status === "active") enrollStatus = "active";
+      }
+    }
+  } catch {
+    /* giữ 'none' */
+  }
+
+  // Khóa demo/fallback (chưa có trong DB) không có review thật và không báo cáo được.
+  const isRealCourse = Boolean(course.id) && !course.id.startsWith("demo-") && !course.id.startsWith("fallback-");
+  const [currentUser, reviews] = await Promise.all([
+    getCurrentUser().catch(() => null),
+    isRealCourse ? getVisibleReviews(course.id).catch(() => []) : Promise.resolve([] as PublicReview[]),
+  ]);
+  const isLoggedIn = Boolean(currentUser);
+
+  // Review của chính học viên (mọi trạng thái) để điền sẵn form khi sửa.
+  let myReview: { rating: number; comment: string | null; status: ReviewStatus } | null = null;
+  if (isRealCourse && currentUser && enrolled) {
+    const { data } = await createClient()
+      .from("reviews")
+      .select("rating, comment, status")
+      .eq("course_id", course.id)
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    if (data) myReview = { rating: Number(data.rating), comment: data.comment ?? null, status: data.status as ReviewStatus };
+  }
+  const coursePath = `/courses/${course.slug}`;
 
   const totalLessons = course.chapters.reduce((acc, c) => acc + c.lessons.length, 0);
   const totalDurationSeconds = course.chapters.reduce(
@@ -415,6 +491,11 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                     <p className="text-xs text-slate-500 pt-1 leading-relaxed">
                       Cam kết đồng hành cùng học viên trong suốt lộ trình, giải đáp mọi thắc mắc tại khu vực Thảo luận (Q&A) và tổ chức các buổi Live Session định kỳ.
                     </p>
+                    {isRealCourse && currentUser?.id !== course.instructorId && (
+                      <div className="pt-1">
+                        <ReportButton entity="user" entityId={course.instructorId} label="Báo cáo giảng viên" isLoggedIn={isLoggedIn} loginNext={coursePath} />
+                      </div>
+                    )}
                   </div>
                 </div>
               </section>
@@ -428,13 +509,17 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                       <span>Đánh giá &amp; Nhận xét từ học viên</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Dựa trên {course.ratingCount > 0 ? course.ratingCount : 120} đánh giá đã được kiểm duyệt
+                      {isRealCourse
+                        ? course.ratingCount > 0
+                          ? `Dựa trên ${course.ratingCount} đánh giá đã được kiểm duyệt`
+                          : "Chưa có đánh giá nào được duyệt"
+                        : `Dựa trên ${course.ratingCount > 0 ? course.ratingCount : 120} đánh giá đã được kiểm duyệt`}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 bg-amber-50/80 border border-amber-100/80 px-4 py-2.5 rounded-2xl">
                     <div className="text-3xl font-black text-amber-600">
-                      {course.avgRating > 0 ? course.avgRating.toFixed(1) : "4.9"}
+                      {course.avgRating > 0 ? course.avgRating.toFixed(1) : isRealCourse ? "–" : "4.9"}
                     </div>
                     <div className="space-y-1">
                       <div className="flex items-center gap-0.5">
@@ -447,66 +532,105 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                   </div>
                 </div>
 
-                {/* DANH SÁCH REVIEW MẪU TIÊU BIỂU */}
-                <div className="space-y-4">
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                          HV
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">Hoàng Văn Nam</span>
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                              <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành khóa
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <div className="flex text-amber-400">
-                              {[1, 2, 3, 4, 5].map((s) => (
-                                <Star key={s} className="h-3 w-3 fill-current" />
-                              ))}
-                            </div>
-                            <span>• 1 tuần trước</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <p className="text-xs leading-relaxed text-slate-600">
-                      Khóa học rất thực chiến, các bài giảng Next.js và Supabase RLS được giải thích cặn kẽ. Điểm danh tự động qua video và làm bài thi kết khóa nhận chứng chỉ rất chuyên nghiệp!
-                    </p>
-                  </div>
+                {isRealCourse && enrolled && isLoggedIn && (
+                  <ReviewForm courseId={course.id} coursePath={coursePath} existing={myReview} />
+                )}
 
-                  <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
-                          NT
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">Nguyễn Thu Thảo</span>
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                              <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành khóa
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400">
-                            <div className="flex text-amber-400">
-                              {[1, 2, 3, 4, 5].map((s) => (
-                                <Star key={s} className="h-3 w-3 fill-current" />
-                              ))}
+                {isRealCourse ? (
+                  reviews.length ? (
+                    <div className="space-y-4">
+                      {reviews.map((review) => (
+                        <div key={review.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                              {review.authorName.charAt(0).toUpperCase()}
                             </div>
-                            <span>• 2 tuần trước</span>
+                            <div>
+                              <span className="text-xs font-bold text-slate-900">{review.authorName}</span>
+                              <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                                <div className="flex text-amber-400">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <Star key={s} className={`h-3 w-3 ${s <= review.rating ? "fill-current" : "text-slate-200"}`} />
+                                  ))}
+                                </div>
+                                <span>• {formatDate(review.createdAt)}</span>
+                              </div>
+                            </div>
+                          </div>
+                          {review.comment && <p className="text-xs leading-relaxed text-slate-600">{review.comment}</p>}
+                          {currentUser?.id !== review.userId && (
+                            <ReportButton entity="review" entityId={review.id} label="Báo cáo đánh giá" isLoggedIn={isLoggedIn} loginNext={coursePath} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-500">Chưa có đánh giá nào cho khóa học này.</p>
+                  )
+                ) : (
+                  <>
+                  {/* DANH SÁCH REVIEW MẪU TIÊU BIỂU */}
+                  <div className="space-y-4">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                            HV
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900">Hoàng Văn Nam</span>
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành khóa
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                              <div className="flex text-amber-400">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className="h-3 w-3 fill-current" />
+                                ))}
+                              </div>
+                              <span>• 1 tuần trước</span>
+                            </div>
                           </div>
                         </div>
                       </div>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        Khóa học rất thực chiến, các bài giảng Next.js và Supabase RLS được giải thích cặn kẽ. Điểm danh tự động qua video và làm bài thi kết khóa nhận chứng chỉ rất chuyên nghiệp!
+                      </p>
                     </div>
-                    <p className="text-xs leading-relaxed text-slate-600">
-                      Giao diện học tập rất sáng sủa, dễ nhìn. Tính năng tạo ghi chú gắn mốc thời gian video giúp mình ôn tập lại kiến thức trước khi thi rất nhanh.
-                    </p>
+
+                    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                            NT
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-slate-900">Nguyễn Thu Thảo</span>
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành khóa
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                              <div className="flex text-amber-400">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} className="h-3 w-3 fill-current" />
+                                ))}
+                              </div>
+                              <span>• 2 tuần trước</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <p className="text-xs leading-relaxed text-slate-600">
+                        Giao diện học tập rất sáng sủa, dễ nhìn. Tính năng tạo ghi chú gắn mốc thời gian video giúp mình ôn tập lại kiến thức trước khi thi rất nhanh.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                  </>
+                )}
               </section>
             </div>
 
@@ -518,7 +642,13 @@ export default async function CourseDetailPage({ params }: { params: { slug: str
                 courseTitle={course.title}
                 price={course.price}
                 initialEnrolled={enrolled}
+                enrollStatus={enrollStatus}
               />
+              {isRealCourse && currentUser?.id !== course.instructorId && (
+                <div className="mt-3 px-1">
+                  <ReportButton entity="course" entityId={course.id} label="Báo cáo khóa học này" isLoggedIn={isLoggedIn} loginNext={coursePath} />
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -16,7 +16,7 @@
 
 | Enum | Giá trị hợp lệ |
 |---|---|
-| `user_role` | `student` · `instructor` · `admin` |
+| `user_role` | `student` · `instructor` · `admin` · `super_admin` **[0009]** |
 | `course_status` | `draft` · `pending` · `published` · `rejected` · `hidden` |
 | `enrollment_status` | `active` · `refunded` |
 | `payment_status` | `pending` · `paid` · `refunded` |
@@ -41,7 +41,7 @@
 |---|---|
 | `profiles` | `id`(PK,FK→auth.users) · `full_name` · `avatar_url` · `role`(user_role) · `is_banned` · `created_at` |
 | `system_setting` | `key`(PK) · `value`(jsonb) · `updated_at` |
-| `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` |
+| `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` · `reason` **[0010]** · `metadata`(jsonb) **[0010]** |
 | `coupon` | `id` · `code`(UNIQUE) · `type`(coupon_type) · `value` · `instructor_id`(FK→profiles) · `valid_from` · `valid_to` · `usage_limit` · `used_count` · `created_at` |
 | `enrollments` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `status`(enrollment_status) · `purchased_at` |
 | `cart_item` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `added_at` |
@@ -57,11 +57,11 @@
 | `categories` | `id` · `name` · `slug`(UNIQUE) |
 | `tag` | `id` · `name` · `slug`(UNIQUE) |
 | `course_tag` | `course_id`(FK→courses) · `tag_id`(FK→tag) — PK ghép (course_id, tag_id) |
-| `courses` | `id` · `instructor_id`(FK→profiles) · `category_id`(FK→categories) · `title` · `slug`(UNIQUE) · `description` · `level` · `price` · `status`(course_status) · `thumbnail_url` · `is_featured` · `created_at` · `updated_at` |
+| `courses` | `id` · `instructor_id`(FK→profiles) · `category_id`(FK→categories) · `title` · `slug`(UNIQUE) · `description` · `level` · `price` · `status`(course_status) · `thumbnail_url` · `is_featured` · `created_at` · `updated_at` · `moderation_note` **[0014]** (lý do từ chối/ẩn gần nhất) |
 | `chapters` | `id` · `course_id`(FK→courses) · `title` · `position` |
 | `lessons` | `id` · `chapter_id`(FK→chapters) · `title` · `video_url` · `video_status` · `duration_seconds` · `is_free` · `position` |
 | `attachments` | `id` · `lesson_id`(FK→lessons) · `name` · `file_url` · `type` |
-| `reviews` | `id` · `course_id`(FK→courses) · `user_id`(FK→profiles) · `rating` · `comment` · `status`(review_status) · `created_at` |
+| `reviews` | `id` · `course_id`(FK→courses) · `user_id`(FK→profiles) · `rating` · `comment` · `status`(review_status, mặc định `pending` từ **0014**) · `created_at` |
 
 ### Cụm M2 — Học tập · Đánh giá · Điểm danh (0003)
 
@@ -77,7 +77,7 @@
 | `exams` | `id` · `course_id`(FK→courses) · `title` · `time_limit_minutes` · `pass_score` |
 | `exam_attempts` | `id` · `exam_id`(FK→exams) · `user_id`(FK→profiles) · `score` · `started_at` · `submitted_at` |
 | `answers` | `id` · `attempt_id`(FK→exam_attempts) · `question_id`(FK→questions) · `option_id`(FK→options) |
-| `certificates` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `code`(UNIQUE) · `issued_at` |
+| `certificates` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `code`(UNIQUE) · `issued_at` · `revoked_at` **[0014]** · `revoked_reason` **[0014]** |
 | `live_sessions` | `id` · `course_id`(FK→courses) · `title` · `meet_url` · `scheduled_at` · `created_by`(FK→profiles) |
 | `attendance` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `source`(attendance_source) · `lesson_id`(FK→lessons) · `live_session_id`(FK→live_sessions) · `attended_at` |
 | `notification` | `id` · `user_id`(FK→profiles) · `type`(notif_type) · `title` · `body` · `is_read` · `created_at` |
@@ -132,7 +132,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 `idx_exams_course_id`, `idx_exam_attempts_user_id`, `idx_exam_attempts_exam_id`,
 `idx_answers_attempt_id`, `idx_certificates_user_id`, `idx_live_sessions_course_id`,
 `idx_attendance_course_id`, `idx_attendance_user_id`, `uq_attendance_once`,
-`idx_notification_user_unread`, `idx_report_status`.
+`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**.
 
 ---
 
@@ -152,16 +152,55 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_approve_refund` | `p_refund uuid` |
 | `fn_generate_payout` | `p_period text` |
 | `fn_set_role` | `p_user uuid`, `p_role user_role` |
-| `fn_toggle_ban` | `p_user uuid` → bool |
-| `fn_moderate_course` | `p_course uuid`, `p_status course_status` |
+| `fn_toggle_ban` | `p_user uuid`, `p_reason text` **[0012]** (bắt buộc khi khóa) → bool |
+| `fn_moderate_course` | `p_course uuid`, `p_status course_status`, `p_reason text` **[0012]** (bắt buộc khi `rejected`/`hidden`; gửi thông báo cho giảng viên) |
 | `fn_moderate_review` | `p_review uuid`, `p_status review_status` |
 | `fn_resolve_report` | `p_report uuid`, `p_status report_status` |
 | `fn_get_lesson_video` **[HOTFIX 0007]** | `p_lesson uuid` → `text` (URL video nếu is_free / đã ghi danh / chủ / admin, ngược lại `null`) |
 | `fn_get_attachment` **[HOTFIX 0007]** | `p_attachment uuid` → `text` (URL tài liệu, điều kiện như trên) |
 | `fn_get_live_meet` **[HOTFIX 0007]** | `p_live uuid` → `text` (meet_url cho chủ/admin quản lý; HV vào qua `fn_join_live_session`) |
 
+**Phân quyền Super Admin + nhật ký (0009/0010):**
+| Hàm | Tham số / ghi chú |
+|---|---|
+| `fn_is_super_admin` | () → bool. Role `super_admin` và không bị khóa |
+| `fn_is_admin` **[sửa 0010]** | () → bool. Role `admin` **hoặc** `super_admin`, và không bị khóa |
+| `fn_log_activity` | `p_action text`, `p_entity text`, `p_entity_id uuid`, `p_reason text`, `p_metadata jsonb`. Chỉ gọi từ hàm security definer (đã thu hồi EXECUTE của client) |
+| `fn_guard_profile_privilege` | trigger function cho `trg_profiles_guard_privilege`: chặn client tự đổi `role`/`is_banned` |
+| `fn_reject_refund` **[0012]** | `p_refund uuid`, `p_reason text`. Chỉ super admin; gửi thông báo cho học viên |
+| `fn_mark_payout_paid` **[0012]** | `p_payout uuid`. Chỉ super admin; `draft → paid`, gửi thông báo cho giảng viên |
+| `fn_broadcast_notification` **[0012]** | `p_title text`, `p_body text`, `p_role user_role`, `p_course uuid` → `integer` (số người nhận). Admin gửi thông báo `system` |
+| `fn_block_banned_user` **[0013]** | trigger function cho `trg_<bảng>_block_banned`: tài khoản bị khóa không ghi được dữ liệu (kể cả qua hàm definer) |
+| `fn_sync_auth_ban` **[0013]** | trigger function cho `trg_profiles_sync_auth_ban`: đồng bộ `profiles.is_banned` → `auth.users.banned_until` (chặn đăng nhập) |
+| `fn_submit_report` **[0013]** | `p_entity text`, `p_entity_id uuid`, `p_reason text` → `uuid`. Gửi báo cáo vi phạm (course/review/user), chống trùng |
+| `fn_request_refund` **[sửa 0013]** | thêm kiểm tra: lý do bắt buộc, giao dịch `paid`, chưa có yêu cầu đang chờ/đã duyệt, trong hạn `refund_window_days` |
+| `fn_guard_review_status` **[0014]** | trigger function cho `trg_reviews_guard_status`: học viên tạo/sửa review → `pending`; không tự đổi `status` |
+| `fn_moderate_qa` **[0014]** | `p_entity text` ('question'|'answer'), `p_id uuid`, `p_reason text`. Admin xóa câu hỏi/trả lời vi phạm, báo người viết |
+| `fn_revoke_certificate` **[0014]** | `p_certificate uuid`, `p_reason text`, `p_revoke boolean` (mặc định true; false = khôi phục). Admin thu hồi/khôi phục chứng chỉ |
+| `fn_verify_certificate` **[sửa 0014]** | trả thêm cột `revoked_at` |
+| `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
+| `fn_review_lesson_video` **[0015]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text` (bắt buộc khi từ chối). Admin duyệt/từ chối video bài giảng, báo giảng viên, ghi log |
+| `fn_lesson_video_review_guard` **[0015]** | trigger function cho `trg_lesson_video_review`: `video_url` đổi → `lessons.video_review = 'pending'` (hoặc `'none'` nếu gỡ video) |
+| `fn_get_lesson_video` **[sửa 0015]** | thêm điều kiện: học viên chỉ nhận URL khi `video_review = 'approved'` (chủ khóa/admin xem mọi trạng thái) |
+| `fn_request_enroll` **[0017]** | `p_course uuid`. Học viên xin vào lớp khóa MIỄN PHÍ (đã publish) → enrollment `pending`; khóa trả phí báo lỗi |
+| `fn_review_enroll` **[0017]** | `p_enrollment uuid`, `p_approve boolean`. Chủ khóa/admin duyệt (`pending→active`) hoặc từ chối (xóa), báo học viên |
+
+**Enum [0017]:** `enrollment_status` thêm `pending` (chờ GV duyệt vào lớp). **RLS [0017]:** GV phụ trách xem được `enrollments` / `lesson_progress` / `attendance` / `exam_attempts` của khóa mình (policy `*_select_instructor`).
+
+| `fn_send_feedback` **[0018]** | `p_course uuid`, `p_student uuid`, `p_content text`. GV (chủ khóa) gửi nhận xét quá trình học cho học viên đang học; báo học viên |
+
+**Bảng [0018]:** `student_feedback` (id, course_id, student_id, instructor_id, content, created_at) — GV nhận xét học viên; RLS `student_feedback_select` (học viên nhận / GV gửi / admin).
+
+| `fn_request_certificate` **[0019]** | `p_course uuid`. Học viên xin cấp chứng chỉ khi đã ĐẠT bài thi → `certificates.status='pending'` |
+| `fn_review_certificate` **[0019]** | `p_certificate uuid`, `p_approve boolean`. Admin duyệt (`pending→approved`, cấp) hoặc từ chối (xóa), báo học viên |
+| `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
+
+**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+
+**Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
+
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses).
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
 
 ---
 
@@ -211,7 +250,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 |---|---|
 | `auth.ts` (L) | `getCurrentUser`, `getMyProfile`, `requireRole` |
 | `commerce.ts` (L) | `addToCart`, `removeFromCart`, `toggleWishlist`, `mockPurchase`, `requestRefund`, `isEnrolled` |
-| `admin.ts` (L) | `getAdminDashboard`, `moderateCourse`, `moderateReview`, `resolveReport`, `setRole`, `toggleBan`, `approveRefund`, `generatePayout` |
+| `admin.ts` (L) | `getAdminDashboard`, `moderateCourse`, `moderateReview`, `resolveReport`, `setRole`, `toggleBan`, `approveRefund`, `generatePayout`, `rejectRefund`, `markPayoutPaid`, `broadcastNotification`, `moderateQa`, `revokeCertificate` |
 | `courses.ts` (M1) | `getCourseCatalog`, `searchCourses`, `getCourseDetail`, `applyCoupon` |
 | `progress.ts` (M2) | `updateWatch`, `savePosition`, `markComplete`, `getCourseProgress` |
 | `quiz.ts` (M2) | `getQuiz`, `submitAttempt`, `verifyCertificate` |

@@ -16,6 +16,7 @@ import {
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyCertificates, type Certificate } from "@/lib/queries/quiz";
 import { CertificateView } from "@/features/certificate/CertificateView";
+import { CertificateRequests } from "@/features/certificate/CertificateRequests";
 
 const FALLBACK_CERTIFICATES: Certificate[] = [
   {
@@ -94,8 +95,13 @@ export default function MyCertificatesPage() {
           </Link>
         </div>
 
-        {/* Danh sách chứng chỉ */}
+        {/* Xin cấp chứng chỉ (khóa đã học → xin → admin duyệt) */}
         <div className="mt-8">
+          <CertificateRequests />
+        </div>
+
+        {/* Danh sách chứng chỉ */}
+        <div className="mt-2">
           {isLoading ? (
             <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách chứng chỉ của bạn...
@@ -138,6 +144,11 @@ export default function MyCertificatesPage() {
 
                     <h3 className="mt-2 text-base font-black text-slate-900 leading-snug line-clamp-2">
                       {cert.courseTitle}
+                      {cert.revokedAt && (
+                        <span className="ml-2 inline-block rounded-full bg-rose-50 px-2 py-0.5 align-middle text-[10px] font-bold text-rose-600">
+                          Đã bị thu hồi
+                        </span>
+                      )}
                     </h3>
                     <p className="mt-1 text-xs text-slate-500 font-medium">
                       Giảng viên ký xác nhận: <strong className="text-slate-800">{cert.instructorName}</strong>

@@ -27,9 +27,9 @@ cp .env.local.example .env.local
 # 4) Database (chọn 1 trong 2)
 #   a) Supabase local (cần Docker):
 npx supabase@latest start
-npx supabase@latest db reset          # chạy migrations 0001..0006 + seed.sql
+npx supabase@latest db reset          # chạy migrations 0001..0014 + seed.sql
 #   b) Hoặc dán nội dung supabase/migrations/*.sql vào SQL Editor trên Supabase Cloud
-#      theo đúng thứ tự 0001 → 0002 → 0003 → 0004 → 0005 → 0006, rồi chạy seed.sql
+#      theo đúng thứ tự 0001 → 0002 → … → 0014 (mỗi file 1 lần chạy riêng), rồi chạy seed.sql
 
 # 5) Sinh kiểu TypeScript từ schema (tùy chọn, sau khi có DB)
 pnpm db:types
@@ -38,10 +38,26 @@ pnpm db:types
 pnpm dev                               # http://localhost:3000
 ```
 
-## Tạo tài khoản admin
+## Tạo tài khoản quản trị
+
+Có 2 cấp: `admin` (kiểm duyệt, quản lý học viên/giảng viên) và `super_admin`
+(thêm: cấp/thu hồi admin, cấu hình hệ thống, duyệt hoàn tiền, payout).
 
 1. Đăng ký 1 user (app hoặc Supabase Studio › Authentication › Add user).
-2. Chạy SQL: `update profiles set role = 'admin' where id = '<uuid user>';`
+2. Tạo **super admin đầu tiên** bằng SQL (chạy trong SQL Editor, quyền postgres):
+   `update profiles set role = 'super_admin' where id = '<uuid user>';`
+3. Các admin sau đó do super admin cấp ở trang **/super-admin/admins**.
+
+Hai khu quản trị (cùng chạy ở cổng admin, `NEXT_PUBLIC_APP_MODE=admin`), mỗi khu có sidebar
+riêng, bấm nút ☰ để thu gọn/mở (desktop) hoặc trượt ra (mobile):
+
+| Khu | Ai vào | Chức năng |
+|---|---|---|
+| `/admin` | admin, super_admin | Dashboard + việc cần xử lý, duyệt khóa học (lý do khi từ chối/ẩn), báo cáo & review, người dùng (tìm/lọc/chi tiết, lý do khi khóa), danh mục & tag, chứng chỉ (thu hồi), hỏi đáp Q&A, giao dịch, mã giảm giá, gửi thông báo |
+| `/super-admin` | chỉ super_admin | Dashboard hệ thống, quản lý Admin, hoàn tiền (duyệt/từ chối), payout (tạo/chi trả/xuất CSV), cấu hình, nhật ký hoạt động |
+
+> Client không thể tự đổi `role`/`is_banned` (trigger `trg_profiles_guard_privilege`) —
+> chỉ qua `fn_set_role` / `fn_toggle_ban` hoặc SQL Editor.
 
 ## Thứ tự migration (QUAN TRỌNG)
 
@@ -53,6 +69,13 @@ pnpm dev                               # http://localhost:3000
 | `0004_content_logic.sql` | **M1** | view/hàm nội dung (template sẵn — M1 bỏ comment & điền) |
 | `0005_learning_logic.sql` | **M2** | hàm/trigger học tập, chấm điểm, điểm danh (template sẵn — M2 điền) |
 | `0006_spine_logic.sql` | L | fn_mock_purchase, payout, refund, moderation, dashboard, trigger signup |
+| `0007` · `0008` | L | hotfix bảo vệ nội dung trả phí · biên nhận checkout |
+| `0009_super_admin_role.sql` | L | thêm giá trị enum `super_admin` (**chạy riêng, trước 0010**) |
+| `0010_admin_permissions.sql` | L | phân quyền Admin/Super Admin, chống leo thang quyền, audit log |
+| `0011_setting_audit.sql` | L | ghi nhật ký mỗi khi `system_setting` thay đổi |
+| `0012_admin_features.sql` | L | lý do từ chối/ẩn khóa & khóa tài khoản, từ chối hoàn tiền, chi trả payout, gửi thông báo hàng loạt |
+| `0013_ban_refund_report.sql` | L | khóa tài khoản có hiệu lực (chặn đăng nhập + chặn ghi), điều kiện yêu cầu hoàn tiền, báo cáo vi phạm |
+| `0014_reviews_qa_certificates.sql` | L | review chờ duyệt, kiểm duyệt Q&A, thu hồi chứng chỉ, lý do từ chối khóa cho giảng viên |
 
 > Bảng thương mại tham chiếu `courses` nên phải tạo sau `courses` → thứ tự trên là bắt buộc.
 
