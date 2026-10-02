@@ -1,22 +1,23 @@
 import Link from "next/link";
-import { AUDIT_PAGE_SIZE, getActivityLog } from "@/features/super-admin/queries";
+import { AUDIT_PAGE_SIZE, getActivityLog, getAuditCourseOptions } from "@/features/super-admin/queries";
 import { ACTION_LABELS, ENTITY_LABELS, PageHeader, dateTime, describeActivity, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function SuperAdminAuditLogPage({ searchParams }: { searchParams: SearchParams }) {
   const action = param(searchParams, "action");
   const entity = param(searchParams, "entity");
+  const courseId = param(searchParams, "courseId");
   const page = Math.max(1, Number(param(searchParams, "page")) || 1);
-  const { entries, total } = await getActivityLog({
-    page,
-    action: action && action in ACTION_LABELS ? action : undefined,
-    entity: entity && entity in ENTITY_LABELS ? entity : undefined,
-  });
+  const [{ entries, total }, courses] = await Promise.all([
+    getActivityLog({ page, action: action && action in ACTION_LABELS ? action : undefined, entity: entity && entity in ENTITY_LABELS ? entity : undefined, courseId }),
+    getAuditCourseOptions(),
+  ]);
   const pageCount = Math.max(1, Math.ceil(total / AUDIT_PAGE_SIZE));
 
   const pageHref = (p: number) => {
     const qs = new URLSearchParams();
     if (action) qs.set("action", action);
     if (entity) qs.set("entity", entity);
+    if (courseId) qs.set("courseId", courseId);
     qs.set("page", String(p));
     return `/super-admin/audit-log?${qs}`;
   };
@@ -34,6 +35,13 @@ export default async function SuperAdminAuditLogPage({ searchParams }: { searchP
           </select>
         </label>
         <label className="text-sm">
+          <span className="mb-1 block text-muted-foreground">Khóa học</span>
+          <select name="courseId" defaultValue={courseId ?? ""} className="min-w-56 rounded border border-border bg-background px-3 py-2">
+            <option value="">Tất cả khóa học</option>
+            {courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}
+          </select>
+        </label>
+        <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Đối tượng</span>
           <select name="entity" defaultValue={entity ?? ""} className="rounded border border-border bg-background px-3 py-2">
             <option value="">Tất cả</option>
@@ -41,7 +49,7 @@ export default async function SuperAdminAuditLogPage({ searchParams }: { searchP
           </select>
         </label>
         <button type="submit" className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Lọc</button>
-        {(action || entity) && <Link href="/super-admin/audit-log" className="px-2 py-2 text-sm underline">Bỏ lọc</Link>}
+        {(action || entity || courseId) && <Link href="/super-admin/audit-log" className="px-2 py-2 text-sm underline">Bỏ lọc</Link>}
       </form>
 
       <section className="mt-6 overflow-x-auto rounded-lg border border-border">

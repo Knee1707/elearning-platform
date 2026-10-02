@@ -194,9 +194,13 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 | `fn_request_certificate` **[0019]** | `p_course uuid`. Học viên xin cấp chứng chỉ khi đã ĐẠT bài thi → `certificates.status='pending'` |
 | `fn_review_certificate` **[0019]** | `p_certificate uuid`, `p_approve boolean`. Admin duyệt (`pending→approved`, cấp) hoặc từ chối (xóa), báo học viên |
+| `fn_create_final_exam` **[0021]** | `p_course uuid`, `p_title text`, `p_time_limit integer`, `p_pass_score integer` → `exam_id`, `quiz_id`; GV tạo kỳ thi cuối khóa |
+| `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
+| `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
 | `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
 
-**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`/`rejected`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+**Cột [0021]:** `quizzes.course_id`, `quizzes.is_final`, `exams.quiz_id`, `exams.is_final` — kỳ thi cuối khóa và bộ câu hỏi độc lập với bài học.
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 

@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES, isAdminRole } from "@/lib/utils";
 import { updateCourse, submitForReview } from "@/features/course/courseActions";
 import { ChapterManager } from "@/features/course/ChapterManager";
+import { FinalExamAuthor } from "@/features/quiz/author/FinalExamAuthor";
 
 type PageProps = { params: { courseId: string } };
 
@@ -80,6 +81,7 @@ export default async function EditCoursePage({ params }: PageProps) {
       </form>
 
       <ChapterManager courseId={String(course.id)} initialChapters={chapters} />
+      <FinalExamAuthor courseId={String(course.id)} />
     </main>
   );
 }

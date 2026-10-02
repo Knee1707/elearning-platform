@@ -4,7 +4,7 @@
 
 export type UserRole = "student" | "instructor" | "admin" | "super_admin";
 export type CourseStatus = "draft" | "pending" | "published" | "rejected" | "hidden";
-export type EnrollmentStatus = "active" | "refunded";
+export type EnrollmentStatus = "active" | "pending" | "refunded" | "suspended" | "expelled";
 export type PaymentStatus = "pending" | "paid" | "refunded";
 export type AttendanceSource = "video" | "live";
 export type CouponType = "percent" | "fixed";

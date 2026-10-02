@@ -61,10 +61,11 @@ const FALLBACK_QUIZ: QuizData = {
 
 export interface QuizRunnerProps {
   quizId: string;
+  examId?: string;
   courseSlug?: string;
 }
 
-export function QuizRunner({ quizId, courseSlug = "nextjs-co-ban-nang-cao" }: QuizRunnerProps) {
+export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-cao" }: QuizRunnerProps) {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -115,7 +116,7 @@ export function QuizRunner({ quizId, courseSlug = "nextjs-co-ban-nang-cao" }: Qu
     setIsSubmitting(true);
 
     try {
-      const score = await submitAttempt(quiz.quizId, answers);
+      const score = await submitAttempt(examId ?? quiz.quizId, answers);
       setResult({
         score,
         passed: score >= quiz.passScore,

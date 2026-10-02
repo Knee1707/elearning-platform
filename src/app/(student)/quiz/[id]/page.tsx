@@ -3,7 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { QuizRunner } from "@/features/quiz/take/QuizRunner";
 
-export default function QuizPage({ params }: { params: { id: string } }) {
+export default function QuizPage({ params, searchParams }: { params: { id: string }; searchParams: { exam?: string } }) {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
       <Navbar />
@@ -19,7 +19,7 @@ export default function QuizPage({ params }: { params: { id: string } }) {
           </Link>
         </div>
 
-        <QuizRunner quizId={params.id} />
+        <QuizRunner quizId={params.id} examId={searchParams.exam} />
       </main>
     </div>
   );

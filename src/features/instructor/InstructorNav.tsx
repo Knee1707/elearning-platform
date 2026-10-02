@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, LayoutDashboard, Users, Star, Video, Wallet, LogOut, GraduationCap } from "lucide-react";
+import { Award, Compass, LayoutDashboard, Users, Star, Video, Wallet, LogOut, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // Menu riêng của khu Giảng viên (tách khỏi luồng Học viên).
 const NAV = [
   { href: "/studio", label: "Khóa học", icon: LayoutDashboard },
   { href: "/studio/students", label: "Học viên", icon: Users },
+  { href: "/studio/certificates", label: "Chứng nhận", icon: Award },
   { href: "/studio/reviews", label: "Đánh giá", icon: Star },
   { href: "/live", label: "Lịch Live", icon: Video },
   { href: "/payout", label: "Thu nhập", icon: Wallet },
