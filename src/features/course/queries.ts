@@ -87,6 +87,13 @@ export type ClassMember = {
   at: string;
   attendance: number;
   bestScore: number | null;
+  feedbackHistory: FeedbackLog[];
+};
+
+export type FeedbackLog = {
+  id: string;
+  content: string;
+  createdAt: string;
 };
 
 // Dữ liệu quản lý lớp cho giảng viên: yêu cầu chờ duyệt + học viên đang học
@@ -114,6 +121,21 @@ export async function getInstructorClassData(): Promise<{ pending: ClassMember[]
   (att ?? []).forEach((a: any) => {
     const k = `${a.user_id}|${a.course_id}`;
     attCount.set(k, (attCount.get(k) ?? 0) + 1);
+  });
+
+  // Lịch sử nhận xét do chính giảng viên gửi, theo từng học viên và khóa học.
+  const { data: feedbackRows } = await supabase
+    .from("student_feedback")
+    .select("id, course_id, student_id, content, created_at")
+    .in("course_id", courseIds)
+    .eq("instructor_id", uid)
+    .order("created_at", { ascending: false });
+  const feedbackHistory = new Map<string, FeedbackLog[]>();
+  (feedbackRows ?? []).forEach((feedback: any) => {
+    const key = `${feedback.student_id}|${feedback.course_id}`;
+    const history = feedbackHistory.get(key) ?? [];
+    history.push({ id: feedback.id, content: feedback.content, createdAt: feedback.created_at });
+    feedbackHistory.set(key, history);
   });
 
   // Điểm thi cao nhất theo (học viên, khóa).
@@ -146,6 +168,7 @@ export async function getInstructorClassData(): Promise<{ pending: ClassMember[]
       at: e.purchased_at,
       attendance: attCount.get(k) ?? 0,
       bestScore: bestScore.has(k) ? bestScore.get(k)! : null,
+      feedbackHistory: feedbackHistory.get(k) ?? [],
     };
   };
 

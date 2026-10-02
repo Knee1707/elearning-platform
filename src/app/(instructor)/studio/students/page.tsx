@@ -3,6 +3,7 @@ import { getInstructorClassData } from "@/features/course/queries";
 import { reviewEnrollAction, sendFeedbackAction } from "@/features/instructor/actions";
 
 const dt = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" });
+const dateTime = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" });
 
 export default async function StudioStudentsPage({
   searchParams,
@@ -126,6 +127,25 @@ export default async function StudioStudentsPage({
                             Gửi cho học viên
                           </button>
                         </form>
+                        <div className="mt-3 w-64 rounded-lg border border-border bg-muted/20 p-3">
+                          <p className="text-xs font-semibold text-foreground">
+                            Lịch sử nhận xét ({m.feedbackHistory.length})
+                          </p>
+                          {m.feedbackHistory.length ? (
+                            <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
+                              {m.feedbackHistory.map((feedback) => (
+                                <article key={feedback.id} className="rounded border border-border bg-white p-2 text-xs">
+                                  <time className="text-[11px] text-muted-foreground">
+                                    {dateTime.format(new Date(feedback.createdAt))}
+                                  </time>
+                                  <p className="mt-1 whitespace-pre-wrap text-foreground">{feedback.content}</p>
+                                </article>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">Chưa gửi nhận xét nào.</p>
+                          )}
+                        </div>
                       </details>
                     </td>
                   </tr>
