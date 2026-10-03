@@ -115,6 +115,19 @@ export async function getLessonVideo(lessonId: string): Promise<string | null> {
   return typeof data === "string" ? data : null;
 }
 
+// Đổi đường dẫn video trong Storage thành signed URL để admin có thể xem thử.
+// URL ngoài (YouTube/MP4/CDN...) được giữ nguyên.
+export async function getLessonVideoPreviewUrl(lessonId: string): Promise<string | null> {
+  const source = await getLessonVideo(lessonId);
+  if (!source) return null;
+  if (/^https?:\/\//i.test(source)) return source;
+
+  const supabase = createClient();
+  const { data, error } = await supabase.storage.from("lesson-videos").createSignedUrl(source, 3600);
+  if (error) throw error;
+  return data?.signedUrl ?? null;
+}
+
 
 // Lấy URL tài liệu đính kèm — gọi fn_get_attachment (kiểm quyền phía DB).
 // Trả null nếu chưa đủ quyền (tài liệu bài trả phí + chưa ghi danh).
@@ -123,6 +136,22 @@ export async function getAttachmentUrl(attachmentId: string): Promise<string | n
   const { data, error } = await supabase.rpc("fn_get_attachment", { p_attachment: attachmentId });
   if (error) throw error;
   return typeof data === "string" ? data : null;
+}
+
+// Tạo URL tạm thời cho tài liệu private khi admin cần xem trước.
+export async function getAttachmentPreviewUrl(attachmentId: string): Promise<string | null> {
+  const source = await getAttachmentUrl(attachmentId);
+  if (!source) return null;
+
+  // Dữ liệu cũ lưu public URL tham chiếu; chuyển ngược về path Storage.
+  const marker = "/storage/v1/object/public/lesson-attachments/";
+  const path = source.includes(marker) ? decodeURIComponent(source.split(marker)[1]) : source;
+  if (/^https?:\/\//i.test(path)) return path;
+
+  const supabase = createClient();
+  const { data, error } = await supabase.storage.from("lesson-attachments").createSignedUrl(path, 3600);
+  if (error) throw error;
+  return data?.signedUrl ?? null;
 }
 
 
