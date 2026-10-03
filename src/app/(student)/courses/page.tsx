@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Search,
   SlidersHorizontal,
   RotateCcw,
   BookOpen,
@@ -285,32 +284,13 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
               <span className="text-slate-800 font-semibold">Khám phá khóa học</span>
             </div>
 
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                  Thư viện Khóa học Thực chiến
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">
-                  Hơn 50+ khóa học công nghệ chuẩn đầu ra với giáo trình tương tác thực chiến
-                </p>
-              </div>
-
-              {/* SEARCH BAR (Pill shape) */}
-              <form action="/courses" method="GET" className="relative w-full md:w-84">
-                {levelParam !== "all" && <input type="hidden" name="level" value={levelParam} />}
-                {priceParam !== "all" && <input type="hidden" name="price" value={priceParam} />}
-                {ratingParam > 0 && <input type="hidden" name="rating" value={ratingParam} />}
-                {categoryParam !== "all" && <input type="hidden" name="category" value={categoryParam} />}
-
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  name="q"
-                  defaultValue={keyword}
-                  placeholder="Tìm khóa học, kỹ năng, giảng viên..."
-                  className="w-full rounded-full border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                />
-              </form>
+            <div className="max-w-4xl space-y-1.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900 leading-tight">
+                Thư viện Khóa học Thực chiến
+              </h1>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-2xl">
+                Hơn 50+ khóa học công nghệ chuẩn đầu ra với giáo trình tương tác thực chiến
+              </p>
             </div>
           </div>
         </div>
