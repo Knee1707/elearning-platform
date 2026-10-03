@@ -534,7 +534,8 @@ export type PendingDisciplineRequest = {
 export async function getPendingStudentDiscipline(): Promise<PendingDisciplineRequest[]> {
   const supabase = createClient();
   const { data, error } = await supabase.from("student_discipline_request")
-    .select("id, enrollment_id, action, reason, created_at, profiles(full_name), courses(title)")
+    // Bảng có 3 FK tới profiles (student_id, requested_by, reviewed_by) → phải chỉ rõ FK, nếu không PostgREST báo lỗi mơ hồ.
+    .select("id, enrollment_id, action, reason, created_at, profiles!student_discipline_request_student_id_fkey(full_name), courses(title)")
     .eq("status", "pending").order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []).map((row: Row) => ({
