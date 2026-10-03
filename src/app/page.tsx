@@ -4,32 +4,141 @@ import {
   BookOpen,
   Award,
   Video,
-  ShieldCheck,
   CheckCircle2,
   ArrowRight,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { CourseCard } from "@/components/shared/CourseCard";
 import {
-  getCoursesByCategories,
-  type CategoryGroup,
-  FALLBACK_CATEGORY_GROUPS,
+  getCourseCatalog,
+  type CourseCatalog,
 } from "@/lib/queries/courses";
 
+// Dữ liệu mẫu dự phòng (được dùng khi DB chưa có khóa học hoặc chưa seed)
+const FALLBACK_COURSES: CourseCatalog[] = [
+  {
+    id: "demo-course-1",
+    instructorId: "demo-inst-1",
+    categoryId: "cat-python-web",
+    title: "Microsoft Python Development",
+    slug: "lap-trinh-web-nextjs",
+    description: "Khóa học lập trình Python toàn diện từ cơ bản đến xây dựng ứng dụng thực tế.",
+    level: "beginner",
+    price: 499000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "Microsoft",
+    avgRating: 4.8,
+    ratingCount: 142,
+  },
+  {
+    id: "demo-course-2",
+    instructorId: "demo-inst-2",
+    categoryId: "cat-data-analytics",
+    title: "Google Data Analytics & Trực quan hóa dữ liệu",
+    slug: "phan-tich-du-lieu-python",
+    description: "Học quy trình chuẩn quốc tế về thu thập, làm sạch và phân tích dữ liệu cùng Google.",
+    level: "intermediate",
+    price: 699000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "Google",
+    avgRating: 4.8,
+    ratingCount: 180,
+  },
+  {
+    id: "demo-course-3",
+    instructorId: "demo-inst-3",
+    categoryId: "cat-pm-devops",
+    title: "Microsoft Project Management: Job-Ready Skills",
+    slug: "devops-docker-cicd",
+    description: "Quản trị dự án công nghệ, vận hành Agile Scrum và kiểm soát tiến độ đội ngũ.",
+    level: "intermediate",
+    price: 600000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "Microsoft",
+    avgRating: 4.6,
+    ratingCount: 88,
+  },
+  {
+    id: "demo-course-4",
+    instructorId: "demo-inst-1",
+    categoryId: "cat-python-web",
+    title: "Python for Everybody: Nhập môn đến chuyên sâu",
+    slug: "nhap-mon-frontend",
+    description: "Làm chủ cấu trúc dữ liệu, thuật toán và xử lý tự động hóa với Python.",
+    level: "beginner",
+    price: 0,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "University of Michigan",
+    avgRating: 4.9,
+    ratingCount: 230,
+  },
+  {
+    id: "demo-course-5",
+    instructorId: "demo-inst-2",
+    categoryId: "cat-data-analytics",
+    title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
+    slug: "postgresql-supabase-chuyen-sau",
+    description: "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng.",
+    level: "advanced",
+    price: 399000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "TS. Trần Thị B",
+    avgRating: 4.8,
+    ratingCount: 96,
+  },
+  {
+    id: "demo-course-6",
+    instructorId: "demo-inst-3",
+    categoryId: "cat-pm-devops",
+    title: "Foundations of Agile Project Management",
+    slug: "xay-dung-ung-dung-nextjs-thuc-chien",
+    description: "Nền tảng quản lý dự án linh hoạt chuẩn đầu ra cho quản lý và trưởng nhóm kỹ thuật.",
+    level: "beginner",
+    price: 450000,
+    status: "published",
+    thumbnailUrl: null,
+    isFeatured: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    instructorName: "Google",
+    avgRating: 4.9,
+    ratingCount: 160,
+  },
+];
+
 export default async function HomePage() {
-  let categoryGroups: CategoryGroup[] = [];
+  let courses: CourseCatalog[] = [];
 
   try {
-    categoryGroups = await getCoursesByCategories();
+    courses = await getCourseCatalog();
   } catch {
-    categoryGroups = FALLBACK_CATEGORY_GROUPS;
+    courses = [];
   }
 
-  if (!categoryGroups || categoryGroups.length === 0) {
-    categoryGroups = FALLBACK_CATEGORY_GROUPS;
-  }
+  const displayCourses = courses.length > 0 ? courses : FALLBACK_COURSES;
+  const featuredCourses = displayCourses.filter((c) => c.isFeatured);
+  const spotlightList = featuredCourses.length > 0 ? featuredCourses : displayCourses.slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
@@ -43,7 +152,6 @@ export default async function HomePage() {
         </span>
       </div>
 
-      {/* NAVBAR */}
       <Navbar />
 
       <main className="flex-1">
@@ -157,7 +265,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* COURSES BY CATEGORY SECTION (Coursera Style: 3 Columns x 3 Cards) */}
+        {/* FEATURED COURSES SECTION (Dạng grid thẻ đứng chuẩn) */}
         <section className="py-14 sm:py-20 bg-white border-y border-slate-200/80">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
@@ -167,7 +275,7 @@ export default async function HomePage() {
                   <span>Khóa học được yêu thích</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-2">
-                  Khóa học theo Danh mục
+                  Khóa học Tiêu biểu & Nổi bật
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
                   Được thiết kế bám sát thực tế tuyển dụng, cập nhật công nghệ mới nhất 2026
@@ -183,89 +291,67 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* 3 CỘT DANH MỤC X 3 THẺ CARD NGANG */}
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {categoryGroups.slice(0, 3).map((group) => (
-                <div
-                  key={group.id}
-                  className="flex flex-col justify-between rounded-2xl border border-blue-100/70 bg-[#F0F5FF] p-4 sm:p-5 shadow-xs"
-                >
-                  <div>
-                    <Link
-                      href={`/courses?category=${group.slug}`}
-                      className="group/cat mb-4 flex items-center gap-1.5 text-base sm:text-lg font-bold text-slate-900 transition-colors hover:text-blue-600"
-                    >
-                      <span>{group.name}</span>
-                      <ArrowRight className="h-4 w-4 text-slate-700 transition-transform group-hover/cat:translate-x-1 group-hover/cat:text-blue-600" />
-                    </Link>
-
-                    <div className="flex flex-col gap-3">
-                      {group.courses.slice(0, 3).map((course) => (
-                        <CourseCard key={course.id} course={course} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
+            {/* GRID COURSES (Thẻ đứng truyền thống) */}
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {spotlightList.map((course) => (
+                <CourseCard key={course.id} course={course} />
               ))}
             </div>
           </div>
         </section>
 
-        {/* WHY CHOOSE US SECTION (Bento Style Sáng sủa) */}
+        {/* WHY CHOOSE US SECTION (Coursera & DataCamp Style: Tự định độ, Quiz thực hành, Chứng chỉ số) */}
         <section className="py-16 sm:py-24 bg-[#F8FAFC]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
               <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                Trải nghiệm vượt trội
+                Trải nghiệm học tập chuẩn quốc tế
               </span>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                Tại sao bạn nên chọn học tại Nhom7Edu?
+                Phương pháp học tập hiệu quả tại Nhom7Edu
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Hệ sinh thái học tập khép kín với các công cụ hỗ trợ thông minh giúp bạn tiếp thu kiến thức nhanh hơn.
+                Mô hình học tập tự định độ kết hợp video bài giảng chuyên sâu, bài tập trắc nghiệm thực hành và chứng chỉ số hóa chuẩn đầu ra.
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {/* FEATURE 1 */}
+              {/* FEATURE 1: VIDEO ON-DEMAND & SELF-PACED */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-blue-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                   <Video className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Học qua Video & Điểm danh tự động
+                  Video Bài giảng & Tự định độ (Self-Paced)
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Trình phát video thông minh nhớ vị trí đang xem dở, cho phép tua tốc độ 1.5x, tự động ghi nhận điểm danh
-                  chuyên cần khi bạn theo dõi đạt từ 95% thời lượng.
+                  Chủ động học tập mọi lúc, mọi nơi theo lịch trình cá nhân. Trình phát video chuyên nghiệp hỗ trợ tùy chỉnh tốc độ, tự động lưu mốc học dở dang và mở khóa bài học tuần tự theo lộ trình rõ ràng.
                 </p>
               </div>
 
-              {/* FEATURE 2 */}
+              {/* FEATURE 2: INTERACTIVE PRACTICE & QUIZZES */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <Users className="h-6 w-6" />
+                  <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Lớp học Trực tiếp (Live Meet)
+                  Thực hành Tương tác & Đánh giá qua Quiz
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Tham gia các buổi trao đổi, giải đáp đồ án trực tiếp cùng giảng viên qua Google Meet chỉ với 1 click, hệ
-                  thống tự động gác quyền bảo mật theo vai trò.
+                  Củng cố và kiểm tra kiến thức ngay sau mỗi bài học với hệ thống câu hỏi trắc nghiệm tương tác, nhận phản hồi và chấm điểm tự động tức thì giúp bạn nắm vững kiến thức từ lý thuyết đến ứng dụng.
                 </p>
               </div>
 
-              {/* FEATURE 3 */}
+              {/* FEATURE 3: VERIFIABLE CERTIFICATE */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-amber-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                   <Award className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Chứng chỉ Tốt nghiệp Xác thực QR
+                  Chứng chỉ Chuyên nghiệp Xác thực QR
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Vượt qua bài thi trắc nghiệm chống gian lận để nhận chứng chỉ danh dự. Bất kỳ nhà tuyển
-                  dụng nào cũng có thể quét mã QR để tra cứu kết quả xác thực công khai.
+                  Hoàn thành toàn bộ lộ trình và vượt qua bài thi chuẩn đầu ra để nhận chứng chỉ điện tử chính thức. Tích hợp mã định danh QR tra cứu công khai, dễ dàng chia sẻ lên hồ sơ LinkedIn và CV xin việc.
                 </p>
               </div>
             </div>
