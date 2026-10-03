@@ -13,9 +13,19 @@ import {
   RotateCcw,
   Clock,
   Loader2,
+  QrCode,
+  Award,
 } from "lucide-react";
-import { getQuiz, submitLessonQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
+import {
+  getQuiz,
+  submitLessonQuiz,
+  submitAttempt,
+  type QuizData,
+  type Certificate,
+} from "@/lib/queries/quiz";
 import { createClient } from "@/lib/supabase/client";
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
 // Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
 const FALLBACK_QUIZ: QuizData = {
@@ -73,6 +83,8 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [earnedCert, setEarnedCert] = useState<Certificate | null>(null);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
   // Tự động tìm slug khóa học tương ứng nếu không được truyền trực tiếp
   useEffect(() => {
@@ -180,10 +192,50 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
 
       await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers).catch(() => res.score);
 
+      let calculatedPassed = res.passed;
       setResult({
         score: res.score,
         passed: res.passed,
       });
+
+      if (calculatedPassed) {
+        try {
+          const supabase = createClient();
+          let targetCourseId: string | null = null;
+          let targetCourseTitle = "Khóa học";
+
+          if (targetExamId) {
+            const { data: exData } = await supabase
+              .from("exams")
+              .select("course_id, courses(title)")
+              .eq("id", targetExamId)
+              .maybeSingle();
+            if (exData?.course_id) {
+              targetCourseId = exData.course_id;
+              targetCourseTitle = (exData.courses as any)?.title || targetCourseTitle;
+            }
+          }
+
+          if (!targetCourseId && effectiveCourseSlug) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title")
+              .eq("slug", effectiveCourseSlug)
+              .maybeSingle();
+            if (cData?.id) {
+              targetCourseId = cData.id;
+              targetCourseTitle = cData.title || targetCourseTitle;
+            }
+          }
+
+          if (targetCourseId) {
+            const certRes = await checkAndAutoIssueCertificate(targetCourseId, targetCourseTitle);
+            if (certRes.certificate) {
+              setEarnedCert(certRes.certificate);
+            }
+          }
+        } catch {}
+      }
     } catch {
       // Chấm điểm dự phòng khi offline
       let correctCount = 0;
@@ -193,10 +245,38 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
       if (answers["51000000-0000-0000-0000-000000000003"] === "52000000-0000-0000-0000-000000000009") correctCount++;
 
       const calculatedScore = Math.round((correctCount / quiz.questions.length) * 100);
+      const calculatedPassed = calculatedScore >= quiz.passScore;
       setResult({
         score: calculatedScore,
-        passed: calculatedScore >= quiz.passScore,
+        passed: calculatedPassed,
       });
+
+      if (calculatedPassed) {
+        try {
+          const supabase = createClient();
+          let targetCourseId: string | null = null;
+          let targetCourseTitle = "Khóa học";
+
+          if (effectiveCourseSlug) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title")
+              .eq("slug", effectiveCourseSlug)
+              .maybeSingle();
+            if (cData?.id) {
+              targetCourseId = cData.id;
+              targetCourseTitle = cData.title || targetCourseTitle;
+            }
+          }
+
+          if (targetCourseId) {
+            const certRes = await checkAndAutoIssueCertificate(targetCourseId, targetCourseTitle);
+            if (certRes.certificate) {
+              setEarnedCert(certRes.certificate);
+            }
+          }
+        } catch {}
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -272,8 +352,35 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
             </span>
           </div>
 
+          {/* Vinh danh chứng chỉ tự động cấp (nếu đạt đủ điều kiện) */}
+          {earnedCert && (
+            <div className="my-5 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 p-5 text-center shadow-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                <Award className="h-3.5 w-3.5 text-emerald-600" />
+                Chứng chỉ chính quy đã được cấp tự động
+              </span>
+              <p className="mt-2 text-base font-black text-slate-900">
+                Chúc mừng bạn đã hoàn thành xuất sắc điều kiện nhận chứng chỉ!
+              </p>
+              <p className="mt-1 text-xs text-slate-500 font-mono">
+                Mã chứng chỉ: <strong className="text-slate-900">{earnedCert.code}</strong>
+              </p>
+            </div>
+          )}
+
           {/* Nút hành động */}
           <div className="flex flex-wrap items-center justify-center gap-3">
+            {earnedCert && (
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-5 py-2.5 text-xs font-bold text-amber-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
+              >
+                <QrCode className="h-4 w-4 text-amber-600" />
+                <span>Hiển thị mã QR</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleRetake}
@@ -292,6 +399,13 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
             </Link>
           </div>
         </div>
+
+        {/* Modal hiển thị mã QR */}
+        <CertificateQrModal
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
+          certificate={earnedCert}
+        />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import {
   Award,
   Share2,
@@ -11,6 +12,7 @@ import {
   Sparkles,
   RotateCw,
 } from "lucide-react";
+import { CertificateQrModal } from "./CertificateQrModal";
 
 export interface CertificateViewProps {
   code: string;
@@ -106,6 +108,7 @@ export function CertificateView({
   issuedAt = new Date().toISOString(),
 }: CertificateViewProps) {
   const [copied, setCopied] = useState<boolean>(false);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const [signatureIndex, setSignatureIndex] = useState<number>(() =>
     getInitialSignatureIndex(code, instructorName)
   );
@@ -326,17 +329,29 @@ export function CertificateView({
 
             {/* Mã QR & Tra cứu công khai */}
             <div className="flex flex-col items-center sm:items-end text-center sm:text-right">
-              <div className="flex items-center gap-2 rounded-lg border border-[#c5a059]/40 bg-white/60 dark:bg-black/40 p-2 shadow-sm">
-                <QrCode className="h-10 w-10 text-[#aa7c11] dark:text-[#d4af37]" />
-                <div className="text-left">
-                  <p className="font-sans text-[9px] font-bold uppercase tracking-wider text-neutral-500">
-                    Mã tra cứu
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                title="Bấm để phóng to mã QR cho người khác quét"
+                className="group flex items-center gap-2 rounded-xl border border-[#c5a059]/50 bg-white/80 dark:bg-black/50 p-2 shadow-xs hover:border-[#c5a059] hover:bg-amber-50/50 transition-all cursor-pointer text-left"
+              >
+                <div className="bg-white p-1 rounded-md shadow-2xs">
+                  <QRCodeSVG
+                    value={verifyUrl}
+                    size={42}
+                    level="M"
+                    className="shrink-0"
+                  />
+                </div>
+                <div>
+                  <p className="font-sans text-[9px] font-bold uppercase tracking-wider text-neutral-500 group-hover:text-amber-800 transition-colors">
+                    Mã tra cứu · Nhấp xem QR
                   </p>
                   <p className="font-mono text-xs font-bold text-neutral-900 dark:text-neutral-100">
                     {code}
                   </p>
                 </div>
-              </div>
+              </button>
               <p className="mt-1 font-sans text-[10px] text-neutral-500">
                 Quét mã hoặc tra cứu tại:{" "}
                 <strong className="text-neutral-700 dark:text-neutral-300 font-mono">
@@ -347,6 +362,19 @@ export function CertificateView({
           </div>
         </div>
       </div>
+
+      {/* Modal phóng to mã QR để người khác quét trực tiếp */}
+      <CertificateQrModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
+        certificate={{
+          code,
+          courseTitle,
+          studentName,
+          instructorName,
+          issuedAt,
+        }}
+      />
     </div>
   );
 }
