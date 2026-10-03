@@ -55,8 +55,10 @@ export default async function HomePage() {
               {/* CỘT TRÁI: TIÊU ĐỀ & CTA */}
               <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
                 {/* HEADING */}
-                <h1 className="text-3xl font-black sm:text-5xl lg:text-6xl text-slate-900 leading-[1.18] sm:leading-[1.15]">
-                  Nâng tầm kỹ năng công nghệ cùng{" "}
+                <h1 className="text-3xl font-black sm:text-5xl lg:text-6xl text-slate-900 leading-[1.32] sm:leading-[1.28] lg:leading-[1.26]">
+                  Nâng tầm kỹ năng công nghệ{" "}
+                  <br className="hidden sm:inline" />
+                  cùng{" "}
                   <span className="text-blue-600">
                     Lộ trình chuẩn Thực chiến
                   </span>
