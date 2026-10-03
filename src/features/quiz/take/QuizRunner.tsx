@@ -15,49 +15,7 @@ import {
   Award,
   Loader2,
 } from "lucide-react";
-import { getQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
-
-// Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
-const FALLBACK_QUIZ: QuizData = {
-  quizId: "50000000-0000-0000-0000-000000000001",
-  quizTitle: "Quiz: App Router & Server Components cơ bản",
-  passScore: 60,
-  questions: [
-    {
-      questionId: "51000000-0000-0000-0000-000000000001",
-      questionText: "Trong Next.js 14, cấu trúc thư mục nào định nghĩa file-system routing cho App Router?",
-      position: 1,
-      options: [
-        { optionId: "52000000-0000-0000-0000-000000000001", optionText: "Thư mục app/" },
-        { optionId: "52000000-0000-0000-0000-000000000002", optionText: "Thư mục pages/" },
-        { optionId: "52000000-0000-0000-0000-000000000003", optionText: "Thư mục routes/" },
-        { optionId: "52000000-0000-0000-0000-000000000004", optionText: "Thư mục src/views/" },
-      ],
-    },
-    {
-      questionId: "51000000-0000-0000-0000-000000000002",
-      questionText: "File nào đóng vai trò là UI công khai (entry point) đại diện cho một đường dẫn route cụ thể?",
-      position: 2,
-      options: [
-        { optionId: "52000000-0000-0000-0000-000000000005", optionText: "page.tsx" },
-        { optionId: "52000000-0000-0000-0000-000000000006", optionText: "index.tsx" },
-        { optionId: "52000000-0000-0000-0000-000000000007", optionText: "layout.tsx" },
-        { optionId: "52000000-0000-0000-0000-000000000008", optionText: "route.tsx" },
-      ],
-    },
-    {
-      questionId: "51000000-0000-0000-0000-000000000003",
-      questionText: "Mặc định, các components trong thư mục app/ của Next.js 14 là loại nào?",
-      position: 3,
-      options: [
-        { optionId: "52000000-0000-0000-0000-000000000009", optionText: "React Server Components (RSC)" },
-        { optionId: "52000000-0000-0000-0000-000000000010", optionText: "Client Components" },
-        { optionId: "52000000-0000-0000-0000-000000000011", optionText: "Static HTML Templates" },
-        { optionId: "52000000-0000-0000-0000-000000000012", optionText: "Web Workers" },
-      ],
-    },
-  ],
-};
+import { getQuiz, submitLessonQuiz, FALLBACK_QUIZ, type QuizData } from "@/lib/queries/quiz";
 
 export interface QuizRunnerProps {
   quizId: string;
@@ -115,10 +73,10 @@ export function QuizRunner({ quizId, courseSlug = "nextjs-co-ban-nang-cao" }: Qu
     setIsSubmitting(true);
 
     try {
-      const score = await submitAttempt(quiz.quizId, answers);
+      const res = await submitLessonQuiz(quiz.quizId, answers);
       setResult({
-        score,
-        passed: score >= quiz.passScore,
+        score: res.score,
+        passed: res.passed,
       });
     } catch {
       // Chấm điểm dự phòng khi offline

@@ -11,6 +11,7 @@ import {
   ArrowLeft,
   Trophy,
   FileQuestion,
+  Lock,
 } from "lucide-react";
 import type { Chapter, Lesson } from "@/types/domain";
 
@@ -21,6 +22,9 @@ export interface LessonListProps {
   chapters?: Array<Chapter & { lessons: Lesson[] }>;
   currentLessonId?: string;
   completedLessonIds?: string[];
+  unlockedLessonIds?: string[];
+  quizLessonIds?: string[];
+  quizPassedLessonIds?: string[];
   onSelectLesson?: (lessonId: string) => void;
   className?: string;
 }
@@ -40,6 +44,9 @@ export function LessonList({
   chapters = [],
   currentLessonId,
   completedLessonIds = [],
+  unlockedLessonIds,
+  quizLessonIds = [],
+  quizPassedLessonIds = [],
   onSelectLesson,
   className = "",
 }: LessonListProps) {
@@ -136,6 +143,9 @@ export function LessonList({
                   {chapter.lessons.map((lesson) => {
                     const isCurrent = lesson.id === currentLessonId;
                     const isCompleted = completedLessonIds.includes(lesson.id);
+                    const isUnlocked = unlockedLessonIds ? unlockedLessonIds.includes(lesson.id) : true;
+                    const hasQuiz = quizLessonIds.includes(lesson.id) || lesson.title.toLowerCase().includes("quiz");
+                    const isQuizPassed = quizPassedLessonIds.includes(lesson.id);
 
                     return (
                       <button
@@ -145,12 +155,16 @@ export function LessonList({
                         className={`flex w-full items-start gap-2.5 p-3 text-left transition-colors ${
                           isCurrent
                             ? "bg-blue-50/80 border-l-4 border-blue-600 text-blue-700 font-bold"
+                            : !isUnlocked
+                            ? "opacity-70 hover:bg-slate-100/60 text-slate-500"
                             : "hover:bg-slate-50/80 text-slate-700"
                         }`}
                       >
                         {/* Trạng thái bài */}
                         <div className="mt-0.5 shrink-0">
-                          {isCompleted ? (
+                          {!isUnlocked ? (
+                            <Lock className="h-4 w-4 text-slate-400" />
+                          ) : isCompleted ? (
                             <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                           ) : isCurrent ? (
                             <PlayCircle className="h-4 w-4 text-blue-600 animate-pulse" />
@@ -162,19 +176,32 @@ export function LessonList({
                         {/* Tiêu đề & metadata bài */}
                         <div className="min-w-0 flex-1">
                           <p className="text-xs leading-snug line-clamp-2">{lesson.title}</p>
-                          <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 font-medium">
                             <span>{formatDuration(lesson.durationSeconds)}</span>
                             {lesson.isFree && (
                               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/50">
                                 Học thử
                               </span>
                             )}
-                            {/* Quiz gợi ý nếu có trong bài */}
-                            {lesson.title.toLowerCase().includes("quiz") && (
-                              <span className="flex items-center gap-0.5 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/50">
-                                <FileQuestion className="h-3 w-3" />
-                                Quiz
+                            {!isUnlocked && (
+                              <span className="flex items-center gap-0.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 border border-slate-200/50">
+                                <Lock className="h-2.5 w-2.5" />
+                                Chưa mở
                               </span>
+                            )}
+                            {/* Quiz gợi ý nếu có trong bài */}
+                            {hasQuiz && (
+                              isQuizPassed ? (
+                                <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200/50">
+                                  <CheckCircle2 className="h-2.5 w-2.5 text-emerald-600" />
+                                  Quiz: Đạt
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 border border-amber-200/50">
+                                  <FileQuestion className="h-2.5 w-2.5" />
+                                  Quiz
+                                </span>
+                              )
                             )}
                           </div>
                         </div>

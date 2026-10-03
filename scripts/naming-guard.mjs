@@ -57,6 +57,8 @@ const ALLOWED = {
     "fn_send_feedback",
     // L — chứng chỉ xin/duyệt (0019)
     "fn_request_certificate", "fn_review_certificate",
+    // L — mở khóa bài học tuần tự (0020)
+    "fn_submit_quiz", "fn_is_lesson_unlocked",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

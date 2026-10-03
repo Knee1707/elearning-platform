@@ -133,3 +133,70 @@ export async function getLastPosition(lessonId: string): Promise<number> {
   if (error) throw new Error(`getLastPosition: ${error.message}`);
   return (data?.last_position_seconds as number) ?? 0;
 }
+
+/**
+ * Trạng thái tiến độ chi tiết của một bài học (bao gồm % video, hoàn thành và quiz).
+ */
+export interface LessonProgressState {
+  lessonId: string;
+  watchedPercent: number;
+  isCompleted: boolean;
+  isQuizPassed: boolean;
+  quizScore: number;
+}
+
+/**
+ * Lấy trạng thái tiến độ và điểm quiz của danh sách bài học trong khóa học.
+ */
+export async function getCourseLessonsProgress(
+  lessonIds: string[]
+): Promise<Record<string, LessonProgressState>> {
+  if (!lessonIds || lessonIds.length === 0) return {};
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from("lesson_progress")
+      .select("lesson_id, watched_percent, is_completed, is_quiz_passed, quiz_score")
+      .in("lesson_id", lessonIds);
+
+    if (error || !data) return {};
+
+    const result: Record<string, LessonProgressState> = {};
+    for (const row of data) {
+      result[row.lesson_id] = {
+        lessonId: row.lesson_id,
+        watchedPercent: Number(row.watched_percent ?? 0),
+        isCompleted: Boolean(row.is_completed),
+        isQuizPassed: Boolean(row.is_quiz_passed),
+        quizScore: Number(row.quiz_score ?? 0),
+      };
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Kiểm tra xem một bài học có được mở khóa cho học viên hiện tại hay không.
+ *
+ * Nghiệp vụ:
+ * - Gọi stored procedure `fn_is_lesson_unlocked` trên Database.
+ * - Bài đầu tiên luôn mở; các bài sau chỉ mở khi bài trước đã xem hết video (>= 95% hoặc hoàn thành)
+ *   và đã vượt qua bài quiz (nếu bài trước có quiz).
+ * - Giảng viên sở hữu khóa học và Admin luôn được mở khóa toàn bộ.
+ */
+export async function isLessonUnlocked(lessonId: string): Promise<boolean> {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase.rpc("fn_is_lesson_unlocked", {
+      p_lesson: lessonId,
+    });
+
+    if (error) return false;
+    return Boolean(data);
+  } catch {
+    return false;
+  }
+}
+
