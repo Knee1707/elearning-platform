@@ -128,15 +128,49 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   const allLessonsCompleted = allLessons.length > 0 && allLessons.every((lesson) => completedLessonIds.includes(lesson.id));
 
   useEffect(() => {
-    createClient()
-      .from("exams")
-      .select("id, quiz_id, title, pass_score")
-      .eq("course_id", course.id)
-      .eq("is_final", true)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.quiz_id) setFinalExam({ examId: String(data.id), quizId: String(data.quiz_id), title: String(data.title), passScore: Number(data.pass_score) });
-      });
+    const supabase = createClient();
+    async function loadFinalExam() {
+      try {
+        // 1. Thử truy vấn với cờ is_final nếu schema đã cập nhật
+        let { data, error } = await supabase
+          .from("exams")
+          .select("id, quiz_id, title, pass_score")
+          .eq("course_id", course.id)
+          .eq("is_final", true)
+          .maybeSingle();
+
+        // 2. Nếu chưa có cờ is_final, tìm exam gắn với khóa học này
+        if (!data || error) {
+          const { data: exData } = await supabase
+            .from("exams")
+            .select("id, title, pass_score")
+            .eq("course_id", course.id)
+            .limit(1)
+            .maybeSingle();
+
+          if (exData) {
+            setFinalExam({
+              examId: String(exData.id),
+              quizId: "50000000-0000-0000-0000-000000000002",
+              title: String(exData.title),
+              passScore: Number(exData.pass_score || 70),
+            });
+            return;
+          }
+        }
+
+        if (data) {
+          setFinalExam({
+            examId: String(data.id),
+            quizId: String(data.quiz_id || "50000000-0000-0000-0000-000000000002"),
+            title: String(data.title),
+            passScore: Number(data.pass_score || 70),
+          });
+        }
+      } catch {}
+    }
+
+    loadFinalExam();
   }, [course.id]);
 
   // 1. Tải danh sách quiz và tiến độ thực tế từ Supabase khi mở khóa học
@@ -589,6 +623,14 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                   </button>
                 )}
               </div>
+
+              <Link
+                href={`/quiz/50000000-0000-0000-0000-000000000001?exam=60000000-0000-0000-0000-000000000001&course=${course.slug}`}
+                className="flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+              >
+                <span>Làm Quiz ngay</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
           )}
 

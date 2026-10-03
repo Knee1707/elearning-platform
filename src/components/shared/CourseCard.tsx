@@ -3,6 +3,7 @@ import { Star, Sparkles, BookOpen, GraduationCap } from "lucide-react";
 import type { Course } from "@/types/domain";
 import type { CourseCatalog } from "@/lib/queries/courses";
 import { formatPrice } from "@/lib/utils";
+import { QuickAddToCart } from "@/components/shared/QuickAddToCart";
 
 // Chủ: M3 · Thẻ khóa học phong cách PrepEdu (dùng ở trang chủ, duyệt, tìm kiếm).
 interface CourseCardProps {
@@ -24,11 +25,8 @@ export function CourseCard({ course }: CourseCardProps) {
   const displayLevel = levelMap[course.level?.toLowerCase()] || course.level || "Cơ bản";
 
   return (
-    <Link
-      href={`/courses/${course.slug}`}
-      className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/80 hover:shadow-xl"
-    >
-      <div>
+    <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/80 hover:shadow-xl">
+      <Link href={`/courses/${course.slug}`} className="block flex-1">
         {/* THUMBNAIL CONTAINER */}
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
           {course.thumbnailUrl ? (
@@ -107,10 +105,10 @@ export function CourseCard({ course }: CourseCardProps) {
             <span className="truncate font-medium">{instructorName}</span>
           </div>
         </div>
-      </div>
+      </Link>
 
       {/* PRICE & BUTTON FOOTER */}
-      <div className="flex items-center justify-between border-t border-slate-100 p-5 pt-3">
+      <div className="flex items-center justify-between border-t border-slate-100 p-4 pt-3 mt-auto">
         <div>
           {course.price > 0 ? (
             <div className="flex items-baseline gap-1.5">
@@ -125,10 +123,23 @@ export function CourseCard({ course }: CourseCardProps) {
           )}
         </div>
 
-        <span className="rounded-full bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white transition-all group-hover:bg-blue-600 shadow-xs">
-          Chi tiết
-        </span>
+        <div className="flex items-center gap-2">
+          {course.price > 0 && (
+            <QuickAddToCart
+              courseId={course.id}
+              courseTitle={course.title}
+              price={course.price}
+            />
+          )}
+
+          <Link
+            href={`/courses/${course.slug}`}
+            className="rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-slate-200 shadow-xs"
+          >
+            Chi tiết
+          </Link>
+        </div>
       </div>
-    </Link>
+    </div>
   );
 }
