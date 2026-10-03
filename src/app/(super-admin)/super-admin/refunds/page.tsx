@@ -19,8 +19,11 @@ export default async function SuperAdminRefundsPage({ searchParams }: { searchPa
     <main className="mx-auto max-w-5xl p-8">
       <PageHeader
         title="Hoàn tiền"
-        description="Duyệt: giao dịch chuyển sang 'refunded' và học viên mất quyền truy cập khóa học. Từ chối: bắt buộc ghi lý do. Học viên nhận thông báo trong cả hai trường hợp; lý do từ chối lưu ở Nhật ký hoạt động."
+        description="Lịch sử các yêu cầu hoàn tiền trước đây. Hiện tại hệ thống áp dụng chính sách không hoàn tiền cho bất kỳ khóa học nào sau khi mua."
       />
+      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+        <strong>Thông báo chính sách:</strong> Tính năng gửi yêu cầu hoàn tiền đã được tắt cho toàn bộ học viên và các vai trò trên nền tảng. Khóa học một khi đã mua sẽ không được hoàn tiền.
+      </div>
       <FlashMessage searchParams={searchParams} />
 
       <nav className="mt-6 flex gap-1 border-b border-border" aria-label="Lọc theo trạng thái">

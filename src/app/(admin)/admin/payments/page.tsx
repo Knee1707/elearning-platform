@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import type { PaymentStatus } from "@/types/domain";
-import { ADMIN_PAGE_SIZE, getPayments, getPendingRefunds } from "@/features/admin/queries";
+import { ADMIN_PAGE_SIZE, getPayments } from "@/features/admin/queries";
 import { PageHeader, Pagination, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
 
 const STATUS_OPTIONS: { value: PaymentStatus; label: string }[] = [
@@ -17,46 +17,23 @@ const STATUS_TONE: Record<PaymentStatus, string> = {
 };
 
 export default async function AdminPaymentsPage({ searchParams }: { searchParams: SearchParams }) {
-  const me = await requireRole(ADMIN_ROLES);
+  await requireRole(ADMIN_ROLES);
   const statusParam = param(searchParams, "status");
   const status = STATUS_OPTIONS.find((o) => o.value === statusParam)?.value;
   const periodParam = param(searchParams, "period");
   const period = periodParam && /^\d{4}-(0[1-9]|1[0-2])$/.test(periodParam) ? periodParam : undefined;
   const page = Math.max(1, Number(param(searchParams, "page")) || 1);
 
-  const [{ payments, total }, refunds] = await Promise.all([getPayments({ status, period, page }), getPendingRefunds()]);
+  const { payments, total } = await getPayments({ status, period, page });
   const pageCount = Math.max(1, Math.ceil(total / ADMIN_PAGE_SIZE));
   const pageSum = payments.filter((p) => p.status === "paid").reduce((sum, p) => sum + p.amount, 0);
 
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <PageHeader title="Giao dịch" description="Lịch sử thanh toán và các yêu cầu hoàn tiền đang chờ. Việc duyệt/từ chối hoàn tiền do super admin thực hiện." />
-
-      <section className="mt-6 rounded-lg border border-border">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-3">
-          <h2 className="font-semibold">Yêu cầu hoàn tiền đang chờ ({refunds.length})</h2>
-          {me.role === "super_admin" && (
-            <Link href="/super-admin/refunds" className="text-sm text-violet-700 underline-offset-4 hover:underline dark:text-violet-300">
-              Xử lý ở khu Super Admin
-            </Link>
-          )}
-        </div>
-        {refunds.length ? (
-          <ul className="divide-y divide-border text-sm">
-            {refunds.map((r) => (
-              <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-2 px-5 py-3">
-                <span>
-                  <span className="font-medium">{r.studentName ?? "Học viên"}</span> · {r.courseTitle ?? "Khóa học"} · {money.format(r.amount)}
-                  <span className="block text-muted-foreground">Lý do: {r.reason || "không ghi"}</span>
-                </span>
-                <time className="text-xs text-muted-foreground">{dateTime.format(new Date(r.createdAt))}</time>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-5 py-4 text-sm text-muted-foreground">Không có yêu cầu nào đang chờ.</p>
-        )}
-      </section>
+      <PageHeader
+        title="Giao dịch"
+        description="Lịch sử thanh toán của học viên trên nền tảng. Khóa học một khi đã mua sẽ không áp dụng chính sách hoàn tiền."
+      />
 
       <form className="mt-8 flex flex-wrap items-end gap-3">
         <label className="text-sm">

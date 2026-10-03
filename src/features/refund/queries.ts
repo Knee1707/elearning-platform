@@ -56,12 +56,7 @@ export async function getRefundWindowDays(): Promise<number> {
   return Number.isFinite(days) && days >= 0 ? days : DEFAULT_REFUND_WINDOW_DAYS;
 }
 
-// Khớp điều kiện trong fn_request_refund (DB kiểm lại lần nữa).
-export function refundEligibility(purchase: Purchase, windowDays: number, now = new Date()) {
-  const latest = purchase.refunds[0];
-  if (purchase.status !== "paid") return { eligible: false, reason: null } as const;
-  if (latest && (latest.status === "pending" || latest.status === "approved")) return { eligible: false, reason: null } as const;
-  const deadline = new Date(new Date(purchase.createdAt).getTime() + windowDays * 86_400_000);
-  if (now > deadline) return { eligible: false, reason: `Đã quá hạn ${windowDays} ngày kể từ khi mua` } as const;
-  return { eligible: true, reason: null, deadline } as const;
+// Khóa học một khi đã mua sẽ không được hoàn tiền.
+export function refundEligibility(_purchase: Purchase, _windowDays: number, _now = new Date()) {
+  return { eligible: false, reason: "Khóa học một khi đã mua sẽ không được hoàn tiền." } as const;
 }

@@ -322,7 +322,7 @@ export default function MyLearningPage() {
               className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 active:scale-95"
             >
               <ReceiptText className="h-4 w-4 text-slate-500" />
-              <span>Lịch sử mua &amp; hoàn tiền</span>
+              <span>Lịch sử mua khóa học</span>
             </Link>
             <Link
               href="/certificates"
