@@ -101,6 +101,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   // Đóng/mở sidebar trên màn hình nhỏ
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   const [finalExam, setFinalExam] = useState<{ examId: string; quizId: string; title: string; passScore: number } | null>(null);
+  const [currentLessonQuiz, setCurrentLessonQuiz] = useState<{ id: string; title: string; passScore: number } | null>(null);
 
   // Dữ liệu bài quiz của bài học đang chọn
   const [currentQuiz, setCurrentQuiz] = useState<QuizData | null>(null);
@@ -279,6 +280,34 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   }, [currentLesson]);
 
   // 3. Lưu tiến độ vào localStorage để duy trì trạng thái mượt mà khi demo/offline
+
+  // Tra cứu quiz gắn riêng với bài học hiện tại (nếu có)
+  useEffect(() => {
+    if (!currentLesson?.id) {
+      setCurrentLessonQuiz(null);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("quizzes")
+      .select("id, title, pass_score")
+      .eq("lesson_id", currentLesson.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setCurrentLessonQuiz({
+            id: String(data.id),
+            title: String(data.title),
+            passScore: Number(data.pass_score),
+          });
+        } else {
+          setCurrentLessonQuiz(null);
+        }
+      });
+  }, [currentLesson?.id]);
+
+  // Lưu danh sách bài đã hoàn thành vào localStorage để giữ state mượt mà khi test
+
   useEffect(() => {
     if (typeof window !== "undefined" && course.id) {
       localStorage.setItem(`demo_completed_${course.id}`, JSON.stringify(completedLessonIds));
@@ -593,6 +622,14 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                       : `Cần đạt tối thiểu ${
                           currentQuiz?.passScore ?? 60
                         }/100 điểm để mở khóa bài giảng tiếp theo.`}
+
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {currentLessonQuiz ? currentLessonQuiz.title : "Kiểm tra kiến thức với Quiz trắc nghiệm"}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    {currentLessonQuiz
+                      ? `Điểm đạt yêu cầu: ${currentLessonQuiz.passScore}/100`
+                      : "Củng cố lý thuyết của bài học này trước khi bước sang nội dung tiếp theo"}
                   </p>
                 </div>
               </div>
@@ -624,10 +661,10 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               </div>
 
               <Link
-                href={`/quiz/50000000-0000-0000-0000-000000000001?exam=60000000-0000-0000-0000-000000000001&course=${course.slug}`}
+                href={`/quiz/${currentLessonQuiz?.id || "50000000-0000-0000-0000-000000000001"}?exam=${finalExam?.examId || "60000000-0000-0000-0000-000000000001"}&course=${course.slug}`}
                 className="flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
               >
-                <span>Làm Quiz ngay</span>
+                <span>{currentLessonQuiz ? "Làm Quiz bài học" : "Làm Quiz ngay"}</span>
                 <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>

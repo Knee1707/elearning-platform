@@ -83,13 +83,36 @@ export function CartView() {
         } = await supabase.auth.getSession();
 
         if (!session) {
-          // Chưa đăng nhập: dùng giỏ hàng demo
-          setItems(DEMO_CART_ITEMS);
-          setLoading(false);
+          // Chưa đăng nhập: đọc từ localStorage demo_cart_items
+          try {
+            const demoIds: string[] = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+            if (demoIds.length > 0) {
+              const { data: cData } = await supabase
+                .from("courses")
+                .select("id, title, slug, price, thumbnail_url, level")
+                .in("id", demoIds);
+              if (cData && cData.length > 0) {
+                setItems(
+                  cData.map((c: any) => ({
+                    id: c.id,
+                    courseId: c.id,
+                    title: c.title,
+                    slug: c.slug,
+                    thumbnailUrl: c.thumbnail_url,
+                    instructorName: "Giảng viên LMS",
+                    level: c.level || "Cơ bản",
+                    price: Number(c.price || 0),
+                  }))
+                );
+                return;
+              }
+            }
+          } catch {}
+          setItems([]);
           return;
         }
 
-        // Truy vấn bảng cart_item liên kết với bảng courses
+        // Đã đăng nhập: Truy vấn bảng cart_item liên kết với bảng courses
         const { data, error } = await supabase
           .from("cart_item")
           .select(`
@@ -107,11 +130,9 @@ export function CartView() {
           `)
           .eq("user_id", session.user.id);
 
-        if (error || !data || data.length === 0) {
-          // Nếu DB trống, dùng dữ liệu demo để người dùng trải nghiệm ngay
-          setItems(DEMO_CART_ITEMS);
-        } else {
-          const mapped: CartCourseItem[] = (data as any[]).map((row) => ({
+        let mapped: CartCourseItem[] = [];
+        if (!error && data && data.length > 0) {
+          mapped = (data as any[]).map((row) => ({
             id: row.id,
             courseId: row.course_id,
             title: row.courses?.title || "Khóa học",
@@ -121,16 +142,55 @@ export function CartView() {
             level: row.courses?.level || "Cơ bản",
             price: Number(row.courses?.price || 0),
           }));
-          setItems(mapped.length > 0 ? mapped : DEMO_CART_ITEMS);
         }
+
+        // Đồng bộ thêm các khóa học từ localStorage (nếu vừa bấm thêm trước đó)
+        try {
+          const demoIds: string[] = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+          const existingIds = new Set(mapped.map((m) => m.courseId));
+          const missingIds = demoIds.filter((id) => !existingIds.has(id));
+
+          if (missingIds.length > 0) {
+            const { data: missingCourses } = await supabase
+              .from("courses")
+              .select("id, title, slug, price, thumbnail_url, level")
+              .in("id", missingIds);
+
+            if (missingCourses && missingCourses.length > 0) {
+              for (const c of missingCourses as any[]) {
+                await supabase.rpc("fn_add_to_cart", { p_course: c.id });
+                mapped.push({
+                  id: c.id,
+                  courseId: c.id,
+                  title: c.title,
+                  slug: c.slug,
+                  thumbnailUrl: c.thumbnail_url,
+                  instructorName: "Giảng viên LMS",
+                  level: c.level || "Cơ bản",
+                  price: Number(c.price || 0),
+                });
+              }
+            }
+          }
+        } catch {}
+
+        setItems(mapped);
       } catch {
-        setItems(DEMO_CART_ITEMS);
+        setItems([]);
       } finally {
         setLoading(false);
       }
     }
 
     fetchCart();
+
+    const handleCartUpdated = () => {
+      fetchCart();
+    };
+    window.addEventListener("cart-updated", handleCartUpdated);
+    return () => {
+      window.removeEventListener("cart-updated", handleCartUpdated);
+    };
   }, []);
 
   // Khi giỏ tải xong: mặc định chọn tất cả khóa để thanh toán.
@@ -218,10 +278,16 @@ export function CartView() {
       } else {
         const finalPrice = Number(data);
         const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);
-        const calculatedDiscount = Math.max(0, subtotal - finalPrice);
-        setDiscountAmount(calculatedDiscount);
-        setAppliedCoupon(code);
-        setCouponCode("");
+        if (finalPrice === 0 && subtotal > 0) {
+          setCouponError("Mã giảm giá không áp dụng cho các khóa học hiện tại trong giỏ");
+          setAppliedCoupon(null);
+          setDiscountAmount(0);
+        } else {
+          const calculatedDiscount = Math.max(0, subtotal - finalPrice);
+          setDiscountAmount(calculatedDiscount);
+          setAppliedCoupon(code);
+          setCouponCode("");
+        }
       }
     } catch {
       // Fallback cho mã mẫu
@@ -258,6 +324,11 @@ export function CartView() {
         p_course_ids: paidIds,
         p_coupon_code: appliedCoupon ? appliedCoupon.split(" ")[0] : null,
       });
+
+      // Dọn dẹp các khóa học đã mua khỏi bảng cart_item trong DB
+      for (const cid of paidIds) {
+        await supabase.rpc("fn_remove_from_cart", { p_course: cid });
+      }
     } catch {
       // Cho phép hoàn tất mô phỏng ngay cả khi RPC chưa sẵn sàng (môi trường test).
     } finally {
