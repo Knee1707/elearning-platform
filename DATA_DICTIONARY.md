@@ -125,6 +125,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 `idx_courses_instructor_id`, `idx_courses_category_id`, `idx_courses_status`,
 `idx_course_tag_tag_id`, `idx_chapters_course_id`, `idx_lessons_chapter_id`,
 `idx_attachments_lesson_id`, `idx_reviews_course_id`, `idx_enrollments_user_id`,
+`uq_courses_title_normalized`,
 `idx_enrollments_course_id`, `idx_cart_item_user_id`, `idx_wishlist_user_id`,
 `idx_payments_user_id`, `idx_payments_course_id`, `idx_payments_created_at`,
 `idx_refund_payment_id`, `idx_payout_instructor_id`, `idx_lesson_progress_user_id`,

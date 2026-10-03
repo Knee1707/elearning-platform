@@ -29,6 +29,25 @@ const slugify = (value: string) =>
 export async function createCourse(input: CourseInput): Promise<{ id: string }> {
   const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
   const supabase = createClient();
+  const title = input.title.trim().replace(/\s+/g, " ");
+  const normalizedTitle = title.toLowerCase();
+
+  if (!title) throw new Error("Tên khóa học không được để trống.");
+
+  // Kiểm tra các khóa đang nhìn thấy trước để báo lỗi thân thiện ngay trên form.
+  // Unique index trong migration còn bảo vệ cả các khóa nháp của giảng viên khác.
+  const { data: existingCourses, error: duplicateCheckError } = await supabase
+    .from("courses")
+    .select("id, title");
+  if (duplicateCheckError) throw duplicateCheckError;
+  if (
+    existingCourses?.some(
+      (course: { title: string }) => course.title.trim().replace(/\s+/g, " ").toLowerCase() === normalizedTitle,
+    )
+  ) {
+    throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+  }
+
   const slug = `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
 
   const { data, error } = await supabase
@@ -36,7 +55,7 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     .insert({
       instructor_id: profile.id,
       category_id: input.categoryId,
-      title: input.title.trim(),
+      title,
       slug,
       description: input.description.trim(),
       level: input.level,
@@ -45,11 +64,21 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+    }
+    throw error;
+  }
   return { id: data.id };
 }
 
 const editorPath = (courseId: string) => `/studio/${courseId}`;
+
+export type AddLessonState = {
+  status: "idle" | "success" | "error";
+  message?: string;
+};
 
 export async function addChapter(formData: FormData) {
   const courseId = String(formData.get("courseId"));
@@ -69,26 +98,53 @@ export async function addChapter(formData: FormData) {
   revalidatePath(editorPath(courseId));
 }
 
-export async function addLesson(formData: FormData) {
-  const courseId = String(formData.get("courseId"));
-  const chapterId = String(formData.get("chapterId"));
-  const supabase = createClient();
-  const { data } = await supabase
-    .from("lessons")
-    .select("position")
-    .eq("chapter_id", chapterId)
-    .order("position", { ascending: false })
-    .limit(1);
-  const { error } = await supabase.from("lessons").insert({
-    chapter_id: chapterId,
-    title: String(formData.get("title")).trim(),
-    video_url: String(formData.get("videoUrl")).trim() || null,
-    duration_seconds: Number(formData.get("durationSeconds") || 0),
-    is_free: formData.get("isFree") === "on",
-    position: Number(data?.[0]?.position ?? 0) + 1,
-  });
-  if (error) throw error;
-  revalidatePath(editorPath(courseId));
+export async function addLesson(
+  _previousState: AddLessonState,
+  formData: FormData,
+): Promise<AddLessonState> {
+  const courseId = String(formData.get("courseId") ?? "");
+  const chapterId = String(formData.get("chapterId") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  const videoUrl = String(formData.get("videoUrl") ?? "").trim();
+  const durationSeconds = Number(formData.get("durationSeconds") || 0);
+
+  if (!courseId || !chapterId) return { status: "error", message: "Thiếu thông tin khóa học hoặc chương." };
+  if (!title) return { status: "error", message: "Vui lòng nhập tên bài học." };
+  if (!Number.isFinite(durationSeconds) || durationSeconds < 0) {
+    return { status: "error", message: "Thời lượng phải là số giây không âm." };
+  }
+
+  try {
+    await requireRole(["instructor", ...ADMIN_ROLES]);
+    const supabase = createClient();
+    const { data, error: positionError } = await supabase
+      .from("lessons")
+      .select("position")
+      .eq("chapter_id", chapterId)
+      .order("position", { ascending: false })
+      .limit(1);
+    if (positionError) throw positionError;
+
+    const { error } = await supabase.from("lessons").insert({
+      chapter_id: chapterId,
+      title,
+      video_url: videoUrl || null,
+      duration_seconds: durationSeconds,
+      is_free: formData.get("isFree") === "on",
+      position: Number(data?.[0]?.position ?? 0) + 1,
+    });
+    if (error) {
+      if (error.code === "23505") {
+        throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+      }
+      throw error;
+    }
+    revalidatePath(editorPath(courseId));
+    return { status: "success", message: "Đã thêm bài học." };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Lỗi không xác định từ máy chủ.";
+    return { status: "error", message: `Không thể thêm bài học: ${message}` };
+  }
 }
 
 export async function updateCourse(formData: FormData) {

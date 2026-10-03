@@ -34,6 +34,7 @@ export function CourseForm({
     register,
     control,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<CourseInput>({
     resolver: zodResolver(courseSchema),
@@ -44,9 +45,11 @@ export function CourseForm({
     setServerError(null);
     try {
       const { id } = await createCourse(values);
+      reset();
       router.push(area === "admin" ? `/admin/courses/${id}/edit` : `/studio/${id}`);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : "Tạo khóa thất bại.");
+      const reason = err instanceof Error ? err.message : "Lỗi không xác định từ máy chủ.";
+      setServerError(`Không thể tạo khóa học: ${reason}`);
     }
   }
 
@@ -116,7 +119,11 @@ export function CourseForm({
         {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
       </div>
 
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+      {serverError && (
+        <p className="text-sm text-destructive" role="alert" aria-live="assertive">
+          {serverError}
+        </p>
+      )}
 
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Đang tạo..." : "Tạo khóa (nháp)"}
