@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Banknote, Crown, Percent, ShieldCheck, Undo2, Users, Wallet } from "lucide-react";
+import { Banknote, Crown, Percent, ShieldCheck, Users, Wallet } from "lucide-react";
 import { getAdminDashboard } from "@/lib/queries/admin";
 import { getActivityLog, getSuperAdminOverview } from "@/features/super-admin/queries";
 import {
@@ -25,18 +25,17 @@ export default async function SuperAdminDashboardPage() {
     getTopCoursesByEnrollment(5).catch(() => []),
   ]);
 
-  const cards = [
+  const cards: {
+    label: string;
+    value: string | number;
+    icon: typeof Crown;
+    href: string;
+    warn?: boolean;
+  }[] = [
     { label: "Super admin", value: overview.superAdminCount, icon: Crown, href: "/super-admin/admins" },
     { label: "Admin", value: overview.adminCount, icon: ShieldCheck, href: "/super-admin/admins" },
     { label: "Tổng người dùng", value: dashboard?.totalUsers ?? "—", icon: Users, href: "/admin/users" },
     { label: "Tổng doanh thu", value: dashboard ? money.format(dashboard.totalRevenue) : "—", icon: Wallet, href: "/super-admin/payouts" },
-    {
-      label: "Hoàn tiền chờ duyệt",
-      value: overview.pendingRefundCount,
-      icon: Undo2,
-      href: "/super-admin/refunds",
-      warn: overview.pendingRefundCount > 0,
-    },
     {
       label: "Payout chưa chi trả",
       value: `${overview.draftPayoutCount} · ${money.format(overview.draftPayoutNet)}`,

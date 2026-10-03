@@ -47,12 +47,12 @@ export const SETTING_DEFS: SettingDef[] = [
   {
     key: "refund_window_days",
     label: "Hạn yêu cầu hoàn tiền",
-    description: "Số ngày kể từ khi mua mà học viên còn được gửi yêu cầu hoàn tiền (0 = tắt hoàn tiền).",
+    description: "Số ngày kể từ khi mua mà học viên còn được gửi yêu cầu hoàn tiền (0 = tắt hoàn tiền, khóa học không áp dụng hoàn tiền).",
     type: "number",
     min: 0,
     max: 365,
     step: 1,
-    defaultValue: 7,
+    defaultValue: 0,
     unit: "ngày",
   },
   {

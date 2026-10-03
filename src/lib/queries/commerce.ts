@@ -33,13 +33,8 @@ export async function mockPurchase(courseIds: string[], couponCode?: string): Pr
   return Array.isArray(data) ? data.map(String) : [];
 }
 
-export async function requestRefund(paymentId: string, reason: string) {
-  const supabase = createClient();
-  const { error } = await supabase.rpc("fn_request_refund", {
-    p_payment: paymentId,
-    p_reason: reason,
-  });
-  if (error) throw error;
+export async function requestRefund(_paymentId: string, _reason: string) {
+  throw new Error("Khóa học một khi đã mua sẽ không được hoàn tiền.");
 }
 
 export async function isEnrolled(courseId: string): Promise<boolean> {

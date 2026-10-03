@@ -14,7 +14,6 @@ import {
   ShieldCheck,
   ShieldAlert,
   Tag,
-  Undo2,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -77,7 +76,6 @@ const SUPER_ONLY_GROUPS: NavGroup[] = [
   {
     title: "Tài chính",
     items: [
-      { href: "/super-admin/refunds", label: "Hoàn tiền", icon: Undo2 },
       { href: "/super-admin/payouts", label: "Payout giảng viên", icon: Banknote },
     ],
   },
