@@ -35,7 +35,6 @@ import {
   submitLessonQuiz,
   type QuizData,
 } from "@/lib/queries/quiz";
-import { markComplete } from "@/lib/queries/progress";
 import { createClient } from "@/lib/supabase/client";
 
 export interface LearningWorkspaceProps {

@@ -14,9 +14,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { getQuiz, submitLessonQuiz, FALLBACK_QUIZ, type QuizData } from "@/lib/queries/quiz";
-
-import { getQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
+import { getQuiz, submitLessonQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
 import { createClient } from "@/lib/supabase/client";
 
 // Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
@@ -120,9 +118,6 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
     try {
       const res = await submitLessonQuiz(quiz.quizId, answers);
 
-      const score = await submitAttempt(examId ?? quiz.quizId, answers);
-
-
       let targetExamId = examId;
       if (!targetExamId) {
         // Tự động tra cứu ID kỳ thi từ Database để không bao giờ bị lỗi khóa ngoại FK
@@ -137,7 +132,8 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
         } catch {}
       }
 
-      const score = await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers);
+      await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers).catch(() => res.score);
+
       setResult({
         score: res.score,
         passed: res.passed,
