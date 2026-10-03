@@ -280,6 +280,41 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   }, [currentLesson]);
 
   // 3. Lưu tiến độ vào localStorage để duy trì trạng thái mượt mà khi demo/offline
+  // Tải tiến độ các bài học đã hoàn thành từ Database (Supabase)
+  useEffect(() => {
+    const supabase = createClient();
+    async function loadLessonProgress() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.user) return;
+
+        const lessonIds = allLessons.map((l) => l.id);
+        if (lessonIds.length === 0) return;
+
+        const { data, error } = await supabase
+          .from("lesson_progress")
+          .select("lesson_id")
+          .eq("user_id", session.user.id)
+          .eq("is_completed", true)
+          .in("lesson_id", lessonIds);
+
+        if (!error && data && data.length > 0) {
+          const dbCompletedIds = data.map((d: any) => String(d.lesson_id));
+          setCompletedLessonIds((prev) => {
+            const merged = Array.from(new Set([...prev, ...dbCompletedIds]));
+            return merged;
+          });
+        }
+      } catch {
+        // Dự phòng offline
+      }
+    }
+
+    loadLessonProgress();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course.id]);
 
   // Tra cứu quiz gắn riêng với bài học hiện tại (nếu có)
   useEffect(() => {
@@ -679,7 +714,18 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                 <h4 className="text-xs font-bold text-slate-900">{finalExam.title}</h4>
                 <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học và đạt từ {finalExam.passScore}/100 để gửi yêu cầu chứng nhận.</p>
               </div>
-              {allLessonsCompleted ? <Link href={`/quiz/${finalExam.quizId}?exam=${finalExam.examId}`} className="rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600">Thi cuối khóa</Link> : <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-500">Chưa hoàn thành nội dung</span>}
+              {allLessonsCompleted ? (
+                <Link
+                  href={`/quiz/${finalExam.quizId}?exam=${finalExam.examId}&course=${course.slug}`}
+                  className="rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-all active:scale-95"
+                >
+                  Thi cuối khóa
+                </Link>
+              ) : (
+                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
+                  Chưa hoàn thành nội dung
+                </span>
+              )}
             </div>
           )}
 

@@ -35,25 +35,6 @@ export default function ProfilePage() {
     async function loadProfile() {
       setIsLoading(true);
 
-      // 1. Kiểm tra nếu có phiên demo login
-      const isDemo = typeof window !== "undefined" && localStorage.getItem("demo_logged_in") === "true";
-      if (isDemo && isMounted) {
-        const demoUser: Profile = {
-          id: "00000000-0000-0000-0000-000000000002",
-          fullName: "Trần Thị Học Viên A",
-          avatarUrl: null,
-          role: "student",
-          isBanned: false,
-          createdAt: new Date(Date.now() - 86400000 * 30).toISOString(),
-        };
-        setProfile(demoUser);
-        setFullName(demoUser.fullName);
-        setEmail("hva@demo.local");
-        setBio("Đam mê lập trình Web, Next.js và kiến trúc microservices.");
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const supabase = createClient();
         const {
@@ -79,9 +60,14 @@ export default function ProfilePage() {
             });
             setFullName(data.full_name ?? "");
             setAvatarUrl(data.avatar_url ?? "");
+            const savedBio = typeof window !== "undefined" ? localStorage.getItem(`user_bio_${data.id}`) : null;
+            if (savedBio) setBio(savedBio);
+            return;
           }
-        } else if (isMounted) {
-          // Khởi tạo thông tin mẫu nếu chưa đăng nhập
+        }
+
+        // Dự phòng nếu chưa có phiên đăng nhập thật
+        if (isMounted) {
           const sample: Profile = {
             id: "00000000-0000-0000-0000-000000000002",
             fullName: "Trần Thị Học Viên A",
@@ -93,9 +79,10 @@ export default function ProfilePage() {
           setProfile(sample);
           setFullName(sample.fullName);
           setEmail("hva@demo.local");
-          setBio("Học viên tích cực tại Nhom7EduLearn.");
+          setBio("Học viên tích cực tại LMS.");
         }
       } catch {
+        // Dự phòng khi offline
         if (isMounted) {
           const sample: Profile = {
             id: "00000000-0000-0000-0000-000000000002",
@@ -116,42 +103,49 @@ export default function ProfilePage() {
       }
     }
 
-    loadProfile();
+  loadProfile();
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  return () => {
+    isMounted = false;
+  };
+}, []);
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    if (!profile) return;
+async function handleSave(e: React.FormEvent) {
+  e.preventDefault();
+  if (!profile) return;
 
-    setIsSaving(true);
-    setSuccessNotice(null);
+  setIsSaving(true);
+  setSuccessNotice(null);
 
-    try {
-      const supabase = createClient();
-      await supabase
-        .from("profiles")
-        .update({
-          full_name: fullName.trim(),
-          avatar_url: avatarUrl.trim() || null,
-        })
-        .eq("id", profile.id);
+  try {
+    const supabase = createClient();
+    await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName.trim(),
+        avatar_url: avatarUrl.trim() || null,
+      })
+      .eq("id", profile.id);
 
-      setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
-      setSuccessNotice("Cập nhật thông tin hồ sơ thành công!");
-      setTimeout(() => setSuccessNotice(null), 4000);
-    } catch {
-      // Fallback state
-      setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
-      setSuccessNotice("Cập nhật thông tin hồ sơ thành công (chế độ demo)!");
-      setTimeout(() => setSuccessNotice(null), 4000);
-    } finally {
-      setIsSaving(false);
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`user_bio_${profile.id}`, bio.trim());
     }
+
+    setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
+    setSuccessNotice("Cập nhật thông tin hồ sơ thành công!");
+    setTimeout(() => setSuccessNotice(null), 4000);
+  } catch {
+    // Fallback state
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`user_bio_${profile.id}`, bio.trim());
+    }
+    setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
+    setSuccessNotice("Cập nhật thông tin hồ sơ thành công!");
+    setTimeout(() => setSuccessNotice(null), 4000);
+  } finally {
+    setIsSaving(false);
   }
+}
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
