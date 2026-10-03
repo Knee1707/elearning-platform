@@ -622,6 +622,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                       : `Cần đạt tối thiểu ${
                           currentQuiz?.passScore ?? 60
                         }/100 điểm để mở khóa bài giảng tiếp theo.`}
+                  </p>
 
                   <h4 className="text-xs font-bold text-slate-900">
                     {currentLessonQuiz ? currentLessonQuiz.title : "Kiểm tra kiến thức với Quiz trắc nghiệm"}
