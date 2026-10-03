@@ -38,7 +38,7 @@ export function CourseForm({
     formState: { errors, isSubmitting },
   } = useForm<CourseInput>({
     resolver: zodResolver(courseSchema),
-    defaultValues: { categoryId: null, level: "beginner", price: 0 },
+    defaultValues: { categoryId: null, level: "beginner", price: 0, status: area === "admin" ? "published" : "draft" },
   });
 
   async function onSubmit(values: CourseInput) {
@@ -119,6 +119,24 @@ export function CourseForm({
         {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
       </div>
 
+      {area === "admin" && (
+        <div className="space-y-2">
+          <Label htmlFor="status">Trạng thái phát hành</Label>
+          <select
+            id="status"
+            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm font-medium"
+            {...register("status")}
+            defaultValue="published"
+          >
+            <option value="published">Xuất bản ngay (Hiển thị lên Khám phá khóa học)</option>
+            <option value="draft">Lưu bản nháp (Chưa công khai)</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Khóa học xuất bản sẽ xuất hiện ngay lập tức tại trang Khám phá khóa học và trang chủ.
+          </p>
+        </div>
+      )}
+
       {serverError && (
         <p className="text-sm text-destructive" role="alert" aria-live="assertive">
           {serverError}
@@ -126,7 +144,7 @@ export function CourseForm({
       )}
 
       <Button type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Đang tạo..." : "Tạo khóa (nháp)"}
+        {isSubmitting ? "Đang tạo..." : area === "admin" ? "Tạo & Cấp khóa học" : "Tạo khóa (nháp)"}
       </Button>
     </form>
   );

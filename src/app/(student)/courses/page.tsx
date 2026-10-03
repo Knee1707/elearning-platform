@@ -8,6 +8,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
+import { createClient } from "@/lib/supabase/server";
 import { CourseCard } from "@/components/shared/CourseCard";
 import {
   searchCourses,
@@ -145,6 +146,17 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   const categoryParam = searchParams?.category?.toLowerCase() || "all";
 
 
+  // Lấy danh sách danh mục thực tế từ DB để ánh xạ UUID sang slug
+  let dbCategories: Array<{ id: string; slug: string; name: string }> = [];
+  try {
+    const supabase = createClient();
+    const { data } = await supabase.from("categories").select("id, slug, name");
+    if (data) dbCategories = data;
+  } catch {
+    dbCategories = [];
+  }
+  const categoryMap = new Map(dbCategories.map((c) => [c.id, c.slug]));
+
   // Gọi query từ tầng lib/queries/courses.ts
   let rawCourses: CourseCatalog[] = [];
   try {
@@ -161,8 +173,13 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
     rawCourses = [];
   }
 
-  // Dùng dữ liệu fallback nếu database trống
-  let courses = rawCourses.length > 0 ? rawCourses : FALLBACK_COURSES;
+  // Ưu tiên các khóa học từ database (được Admin cấp/xuất bản) lên đầu tiên, kết hợp cùng fallback courses nếu còn thiếu
+  const existingIds = new Set(rawCourses.map((c) => c.id));
+  const existingSlugs = new Set(rawCourses.map((c) => c.slug));
+  const mergedFallback = FALLBACK_COURSES.filter(
+    (fb) => !existingIds.has(fb.id) && !existingSlugs.has(fb.slug)
+  );
+  let courses: CourseCatalog[] = [...rawCourses, ...mergedFallback];
 
   // Lọc theo từ khóa
   if (keyword) {
@@ -183,25 +200,33 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   // Lọc theo danh mục
   if (categoryParam && categoryParam !== "all") {
     courses = courses.filter((c) => {
+      const courseSlug = c.categoryId ? categoryMap.get(c.categoryId) : undefined;
+      if (courseSlug && courseSlug === categoryParam) return true;
+
       if (categoryParam === "lap-trinh-web") {
         return (
           c.categoryId === "cat-python-web" ||
+          courseSlug === "lap-trinh-web" ||
           c.title.toLowerCase().includes("python") ||
           c.title.toLowerCase().includes("next.js") ||
-          c.title.toLowerCase().includes("web")
+          c.title.toLowerCase().includes("web") ||
+          c.title.toLowerCase().includes("lập trình")
         );
       }
       if (categoryParam === "du-lieu-va-ai") {
         return (
           c.categoryId === "cat-data-analytics" ||
+          courseSlug === "du-lieu-va-ai" ||
           c.title.toLowerCase().includes("data") ||
           c.title.toLowerCase().includes("sql") ||
-          c.title.toLowerCase().includes("dữ liệu")
+          c.title.toLowerCase().includes("dữ liệu") ||
+          c.title.toLowerCase().includes("ai")
         );
       }
       if (categoryParam === "ky-nang-nghe-nghiep") {
         return (
           c.categoryId === "cat-pm-devops" ||
+          courseSlug === "ky-nang-nghe-nghiep" ||
           c.title.toLowerCase().includes("management") ||
           c.title.toLowerCase().includes("quản lý") ||
           c.title.toLowerCase().includes("devops")

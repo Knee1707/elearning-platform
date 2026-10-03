@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { updateCourse, submitForReview } from "@/features/course/courseActions";
+import { updateCourse, submitForReview, adminPublishCourseDirectly } from "@/features/course/courseActions";
 import { ChapterManager } from "@/features/course/ChapterManager";
 
 type PageProps = { params: { courseId: string } };
@@ -56,21 +56,40 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
         </span>
       </div>
 
-      <section className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border p-4">
-        {canSubmit ? (
+      <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border p-4 bg-slate-50/50">
+        {status !== "published" ? (
           <>
-            <p className="text-sm text-muted-foreground">Cần ít nhất 1 chương và 1 bài học. Sau khi gửi duyệt, vào mục “Duyệt khóa học” để xuất bản.</p>
-            <form action={submitForReview} className="ml-auto">
-              <input type="hidden" name="courseId" value={String(course.id)} />
-              <button type="submit" className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground">Gửi duyệt</button>
-            </form>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">Phát hành khóa học</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Khóa học hiện đang ở trạng thái <b>{STATUS_LABEL[status] ?? status}</b>. Quản trị viên có thể xuất bản ngay để hiển thị lên phần Khám phá khóa học.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {canSubmit && (
+                <form action={submitForReview}>
+                  <input type="hidden" name="courseId" value={String(course.id)} />
+                  <button type="submit" className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">
+                    Gửi duyệt
+                  </button>
+                </form>
+              )}
+              <form action={adminPublishCourseDirectly}>
+                <input type="hidden" name="courseId" value={String(course.id)} />
+                <button
+                  type="submit"
+                  className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
+                >
+                  Xuất bản ngay lên Khám phá
+                </button>
+              </form>
+            </div>
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            {status === "pending" && "Khóa đang chờ duyệt — vào “Duyệt khóa học” để xuất bản."}
-            {status === "published" && "Khóa đã publish, đang hiển thị công khai."}
-            {status === "hidden" && "Khóa đang bị ẩn."}
-          </p>
+          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>Khóa học đã được xuất bản công khai và đang hiển thị trên trang chủ &amp; trang Khám phá khóa học.</span>
+          </div>
         )}
       </section>
 

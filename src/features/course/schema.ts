@@ -6,6 +6,7 @@ export const courseSchema = z.object({
   categoryId: z.string().uuid("Danh mục không hợp lệ.").nullable(),
   level: z.enum(["beginner", "intermediate", "advanced"]),
   price: z.coerce.number().min(0, "Giá không được âm."),
+  status: z.enum(["draft", "published"]).optional(),
 });
 
 export type CourseInput = z.infer<typeof courseSchema>;

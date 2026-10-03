@@ -82,13 +82,13 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
 
       {/* Kiểm duyệt ngay sau khi xem nội dung (lý do bắt buộc khi từ chối/ẩn). */}
       <div className="mt-4 flex flex-wrap items-start gap-2">
-        {(course.status === "pending" || course.status === "hidden") && (
+        {(course.status === "draft" || course.status === "pending" || course.status === "hidden") && (
           <form action={moderateCourseAction}>
             <input type="hidden" name="courseId" value={String(course.id)} />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="returnTo" value={`/admin/courses/${course.id}`} />
-            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">
-              {course.status === "pending" ? "Duyệt xuất bản" : "Hiển thị lại"}
+            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-semibold">
+              {course.status === "pending" ? "Duyệt xuất bản" : course.status === "draft" ? "Xuất bản ngay lên Khám phá" : "Hiển thị lại"}
             </button>
           </form>
         )}
