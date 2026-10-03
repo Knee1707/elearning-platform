@@ -12,13 +12,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 function mapAuthError(message: string): string {
-  if (message.includes("User already registered")) {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("already registered") || normalized.includes("already exists")) {
     return "Email này đã được đăng ký.";
   }
-  if (message.includes("Password should be")) {
+  if (normalized.includes("password should be") || normalized.includes("password is too")) {
     return "Mật khẩu chưa đủ mạnh.";
   }
-  return "Đăng ký thất bại. Vui lòng thử lại.";
+  if (normalized.includes("email rate limit") || normalized.includes("rate limit")) {
+    return "Bạn đã thử đăng ký quá nhiều lần. Vui lòng chờ một lúc rồi thử lại.";
+  }
+  if (normalized.includes("invalid email")) {
+    return "Địa chỉ email không hợp lệ.";
+  }
+  if (normalized.includes("database error") || normalized.includes("saving new user")) {
+    return "Không thể tạo hồ sơ người dùng. Vui lòng kiểm tra cấu hình Supabase và thử lại.";
+  }
+  return `Đăng ký thất bại: ${message}`;
 }
 
 export function RegisterForm() {
@@ -33,23 +43,28 @@ export function RegisterForm() {
 
   async function onSubmit(values: RegisterInput) {
     setServerError(null);
-    const supabase = createClient();
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signUp({
+        email: values.email.trim(),
+        password: values.password,
+        options: {
+          // TODO(M4): xác nhận với L đúng key trigger DB đọc để insert profiles.full_name.
+          data: { full_name: values.fullName.trim() },
+        },
+      });
 
-    const { error } = await supabase.auth.signUp({
-      email: values.email,
-      password: values.password,
-      options: {
-        // TODO(M4): xác nhận với L đúng key trigger DB đọc để insert profiles.full_name.
-        data: { full_name: values.fullName },
-      },
-    });
+      if (error) {
+        setServerError(mapAuthError(error.message));
+        return;
+      }
 
-    if (error) {
-      setServerError(mapAuthError(error.message));
-      return;
+      setSubmitted(true);
+    } catch (error) {
+      setServerError(
+        mapAuthError(error instanceof Error ? error.message : "Không kết nối được đến máy chủ."),
+      );
     }
-
-    setSubmitted(true);
   }
 
   if (submitted) {
@@ -108,7 +123,11 @@ export function RegisterForm() {
         )}
       </div>
 
-      {serverError && <p className="text-sm text-destructive">{serverError}</p>}
+      {serverError && (
+        <p className="text-sm text-destructive" role="alert" aria-live="assertive">
+          {serverError}
+        </p>
+      )}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "Đang đăng ký..." : "Đăng ký"}
