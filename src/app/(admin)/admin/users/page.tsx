@@ -64,7 +64,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
       </div>
       <FlashMessage searchParams={searchParams} />
 
-      <form className="mt-6 flex flex-wrap items-end gap-3" role="search">
+      <form key={`${keyword}|${role ?? ""}|${statusParam ?? ""}`} className="mt-6 flex flex-wrap items-end gap-3" role="search">
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Tên</span>
           <span className="relative block">
@@ -88,7 +88,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
           </select>
         </label>
         <button type="submit" className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Lọc</button>
-        {(keyword || role || statusParam) && <Link href="/admin/users" className="px-2 py-2 text-sm underline">Bỏ lọc</Link>}
+        {/* Dùng <a> (tải lại trang) thay vì <Link> để tránh cache router giữ kết quả/giá trị lọc cũ. */}
+        {(keyword || role || statusParam) && <a href="/admin/users" className="px-2 py-2 text-sm underline">Bỏ lọc</a>}
       </form>
 
       <div className="mt-6 overflow-x-auto rounded-lg border border-border">
