@@ -32,20 +32,24 @@ export function QuickAddToCart({ courseId }: QuickAddToCartProps) {
         }
       } catch {}
 
-      // 2. Thêm vào Supabase cart nếu người dùng đã đăng nhập
+      // 2. Thêm vào giỏ hàng Supabase nếu người dùng đã đăng nhập
       const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (session?.user) {
-        await supabase.from("cart").upsert(
-          {
-            user_id: session.user.id,
-            course_id: courseId,
-          },
-          { onConflict: "user_id,course_id" },
-        );
+        const { error } = await supabase.rpc("fn_add_to_cart", { p_course: courseId });
+        if (error) {
+          // Fallback chèn trực tiếp vào bảng cart_item nếu RPC gặp lỗi
+          await supabase.from("cart_item").upsert(
+            {
+              user_id: session.user.id,
+              course_id: courseId,
+            },
+            { onConflict: "user_id,course_id" },
+          );
+        }
       }
 
       // 3. Bắn event cập nhật badge giỏ hàng trên thanh điều hướng
