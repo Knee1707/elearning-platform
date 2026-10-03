@@ -1,16 +1,27 @@
+"use client";
+
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Star, Sparkles, BookOpen, GraduationCap } from "lucide-react";
 import type { Course } from "@/types/domain";
 import type { CourseCatalog } from "@/lib/queries/courses";
-import { formatPrice } from "@/lib/utils";
-import { QuickAddToCart } from "@/components/shared/QuickAddToCart";
 
-// Chủ: M3 · Thẻ khóa học phong cách PrepEdu (dùng ở trang chủ, duyệt, tìm kiếm).
+// Thẻ khóa học hiển thị tối giản: Rating, Tiêu đề, Giảng viên.
+// Bấm vào card sẽ chuyển sang trang chi tiết để xem đầy đủ nội dung và giá tiền.
 interface CourseCardProps {
   course: Course | CourseCatalog;
 }
 
+const FALLBACK_GRADIENTS = [
+  "from-blue-700 via-blue-600 to-indigo-800",
+  "from-indigo-700 via-purple-600 to-violet-800",
+  "from-slate-800 via-slate-700 to-zinc-900",
+  "from-sky-700 via-blue-600 to-cyan-800",
+  "from-emerald-700 via-teal-600 to-cyan-800",
+];
+
 export function CourseCard({ course }: CourseCardProps) {
+  const [imageError, setImageError] = useState(false);
   const catalogItem = course as Partial<CourseCatalog>;
   const instructorName = catalogItem.instructorName || "Giảng viên LMS";
   const avgRating = catalogItem.avgRating ?? 5.0;
@@ -24,21 +35,36 @@ export function CourseCard({ course }: CourseCardProps) {
   };
   const displayLevel = levelMap[course.level?.toLowerCase()] || course.level || "Cơ bản";
 
+  const gradientClass = useMemo(() => {
+    const key = course.id || course.title || "";
+    let hash = 0;
+    for (let i = 0; i < key.length; i++) {
+      hash = (hash + key.charCodeAt(i)) % FALLBACK_GRADIENTS.length;
+    }
+    return FALLBACK_GRADIENTS[hash];
+  }, [course.id, course.title]);
+
   return (
-    <div className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/80 hover:shadow-xl">
-      <Link href={`/courses/${course.slug}`} className="block flex-1">
+    <Link
+      href={`/courses/${course.slug}`}
+      className="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-xs transition-all duration-300 hover:-translate-y-1.5 hover:border-blue-400/80 hover:shadow-xl cursor-pointer"
+    >
+      <div>
         {/* THUMBNAIL CONTAINER */}
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-100">
-          {course.thumbnailUrl ? (
+          {course.thumbnailUrl && !imageError ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={course.thumbnailUrl}
               alt={course.title}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               loading="lazy"
+              onError={() => setImageError(true)}
             />
           ) : (
-            <div className="relative flex h-full w-full flex-col justify-between bg-gradient-to-tr from-blue-700 via-blue-600 to-indigo-800 p-4 text-white transition-transform duration-500 group-hover:scale-105">
+            <div
+              className={`relative flex h-full w-full flex-col justify-between bg-gradient-to-tr ${gradientClass} p-4 text-white transition-transform duration-500 group-hover:scale-105`}
+            >
               <div className="flex items-center justify-between">
                 <span className="flex h-7 w-7 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md text-white">
                   <BookOpen className="h-4 w-4" />
@@ -72,7 +98,7 @@ export function CourseCard({ course }: CourseCardProps) {
           </div>
         </div>
 
-        {/* CARD CONTENT */}
+        {/* CARD CONTENT: RATING & TIÊU ĐỀ */}
         <div className="p-5 space-y-3">
           {/* RATING & REVIEWS */}
           <div className="flex items-center gap-2 text-xs">
@@ -89,57 +115,16 @@ export function CourseCard({ course }: CourseCardProps) {
           <h3 className="line-clamp-2 text-sm sm:text-base font-bold leading-snug text-slate-900 transition-colors group-hover:text-blue-600">
             {course.title}
           </h3>
-
-          {/* MÔ TẢ NGẮN (NẾU CÓ) */}
-          {course.description && (
-            <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">
-              {course.description}
-            </p>
-          )}
-
-          {/* GIẢNG VIÊN */}
-          <div className="flex items-center gap-2 pt-1 text-xs text-slate-600">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
-              <GraduationCap className="h-3 w-3" />
-            </div>
-            <span className="truncate font-medium">{instructorName}</span>
-          </div>
-        </div>
-      </Link>
-
-      {/* PRICE & BUTTON FOOTER */}
-      <div className="flex items-center justify-between border-t border-slate-100 p-4 pt-3 mt-auto">
-        <div>
-          {course.price > 0 ? (
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-mono text-base font-black text-blue-600">
-                {formatPrice(course.price)}
-              </span>
-            </div>
-          ) : (
-            <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-600">
-              Miễn phí
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {course.price > 0 && (
-            <QuickAddToCart
-              courseId={course.id}
-              courseTitle={course.title}
-              price={course.price}
-            />
-          )}
-
-          <Link
-            href={`/courses/${course.slug}`}
-            className="rounded-full bg-slate-100 px-3.5 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-slate-200 shadow-xs"
-          >
-            Chi tiết
-          </Link>
         </div>
       </div>
-    </div>
+
+      {/* GIẢNG VIÊN (FOOTER CARD) */}
+      <div className="px-5 pb-5 pt-3 border-t border-slate-100 flex items-center gap-2 text-xs text-slate-600">
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">
+          <GraduationCap className="h-3 w-3" />
+        </div>
+        <span className="truncate font-medium">{instructorName}</span>
+      </div>
+    </Link>
   );
 }
