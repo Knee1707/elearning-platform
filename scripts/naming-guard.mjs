@@ -25,7 +25,7 @@ const ALLOWED = {
     "reviews", "lesson_progress", "lesson_note", "qa_question", "qa_answer",
     "quizzes", "questions", "options", "exams", "exam_attempts", "answers",
     "certificates", "live_sessions", "attendance", "notification", "report",
-    "student_feedback",
+    "student_feedback", "student_discipline_request",
   ]),
   enums: new Set([
     "user_role", "course_status", "enrollment_status", "payment_status",

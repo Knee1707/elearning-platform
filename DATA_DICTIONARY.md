@@ -82,6 +82,7 @@
 | `attendance` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `source`(attendance_source) · `lesson_id`(FK→lessons) · `live_session_id`(FK→live_sessions) · `attended_at` |
 | `notification` | `id` · `user_id`(FK→profiles) · `type`(notif_type) · `title` · `body` · `is_read` · `created_at` |
 | `report` | `id` · `reporter_id`(FK→profiles) · `entity` · `entity_id` · `reason` · `status`(report_status) · `created_at` |
+| `student_discipline_request` **[0022]** | `id` · `enrollment_id`(FK→enrollments) · `student_id`(FK→profiles) · `course_id`(FK→courses) · `requested_by`(FK→profiles) · `action`(`warning`/`suspend`/`expel`) · `reason` · `status`(`pending`/`approved`/`rejected`) · `reviewed_by`(FK→profiles) · `reviewed_at` · `review_reason` · `created_at` |
 
 ---
 
