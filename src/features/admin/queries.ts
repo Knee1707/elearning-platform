@@ -28,13 +28,22 @@ export type PendingCertificate = {
   courseTitle: string | null;
 };
 
-export async function getPendingCertificates(): Promise<PendingCertificate[]> {
+export async function getCertificateCourseOptions() {
   const supabase = createClient();
-  const { data, error } = await supabase
+  const { data, error } = await supabase.from("courses").select("id, title").order("title");
+  if (error) throw error;
+  return (data ?? []).map((row: Row) => ({ id: String(row.id), title: String(row.title) }));
+}
+
+export async function getPendingCertificates(courseId?: string): Promise<PendingCertificate[]> {
+  const supabase = createClient();
+  let query = supabase
     .from("certificates")
     .select("id, code, issued_at, profiles(full_name), courses(title)")
     .eq("status", "pending")
     .order("issued_at", { ascending: false });
+  if (courseId) query = query.eq("course_id", courseId);
+  const { data, error } = await query;
   if (error) throw error;
   return (data ?? []).map((r: Row) => ({
     id: String(r.id),
@@ -509,9 +518,32 @@ export interface CertificateRow {
   studentId: string;
   studentName: string | null;
   courseTitle: string | null;
+  status: string;
 }
 
-const CERT_SELECT = "id, code, issued_at, revoked_at, revoked_reason, user_id, profiles!inner(full_name), courses(title)";
+export type PendingDisciplineRequest = {
+  id: string;
+  enrollmentId: string;
+  studentName: string | null;
+  courseTitle: string | null;
+  action: string;
+  reason: string;
+  createdAt: string;
+};
+
+export async function getPendingStudentDiscipline(): Promise<PendingDisciplineRequest[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("student_discipline_request")
+    .select("id, enrollment_id, action, reason, created_at, profiles(full_name), courses(title)")
+    .eq("status", "pending").order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((row: Row) => ({
+    id: String(row.id), enrollmentId: String(row.enrollment_id), studentName: nameOf(row.profiles), courseTitle: titleOf(row.courses),
+    action: String(row.action), reason: String(row.reason), createdAt: String(row.created_at),
+  }));
+}
+
+const CERT_SELECT = "id, code, issued_at, revoked_at, revoked_reason, status, user_id, profiles!inner(full_name), courses(title)";
 
 const toCertificate = (row: Row): CertificateRow => ({
   id: String(row.id),
@@ -522,15 +554,17 @@ const toCertificate = (row: Row): CertificateRow => ({
   studentId: String(row.user_id),
   studentName: nameOf(row.profiles),
   courseTitle: titleOf(row.courses),
+  status: String(row.status ?? "approved"),
 });
 
 // Tìm theo mã chứng chỉ HOẶC tên học viên; lọc đã thu hồi.
-export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean }) {
+export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean; courseId?: string }) {
   const supabase = createClient();
   const cleaned = cleanKeyword(filters.keyword ?? "");
   const base = () => {
     let q = supabase.from("certificates").select(CERT_SELECT).order("issued_at", { ascending: false }).limit(50);
     if (filters.revokedOnly) q = q.not("revoked_at", "is", null);
+    if (filters.courseId) q = q.eq("course_id", filters.courseId);
     return q;
   };
   if (!cleaned) {

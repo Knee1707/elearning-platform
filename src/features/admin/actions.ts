@@ -64,6 +64,21 @@ export async function toggleBanAction(formData: FormData) {
   });
 }
 
+export async function reviewStudentDisciplineAction(formData: FormData) {
+  const approve = text(formData, "approve") === "true";
+  await runAction({
+    path: "/admin/student-discipline",
+    roles: ADMIN_ROLES,
+    success: approve ? "Đã phê duyệt xử lý học viên." : "Đã từ chối đề xuất xử lý.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("fn_review_student_discipline", { p_request: text(formData, "requestId"), p_approve: approve, p_review_reason: text(formData, "reviewReason") || null });
+      if (error) throw error;
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Tạo tài khoản mới (dùng service role để tạo auth user). Quyền được kiểm ở đây

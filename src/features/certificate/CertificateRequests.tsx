@@ -54,7 +54,7 @@ export function CertificateRequests() {
         showToast(error.message || "Không gửi được yêu cầu.");
       } else {
         setRows((prev) => prev.map((r) => (r.courseId === courseId ? { ...r, status: "pending" } : r)));
-        showToast("Đã gửi yêu cầu cấp chứng chỉ! Chờ admin duyệt.");
+        showToast("Đã gửi yêu cầu cấp chứng chỉ! Chờ giảng viên duyệt.");
       }
     } catch {
       showToast("Không gửi được yêu cầu. Vui lòng thử lại.");
@@ -79,7 +79,7 @@ export function CertificateRequests() {
         Xin cấp chứng chỉ
       </h2>
       <p className="mb-3 text-xs text-slate-500">
-        Hoàn thành khóa học và vượt qua bài thi để xin cấp chứng chỉ. Admin sẽ duyệt trước khi cấp.
+        Hoàn thành toàn bộ nội dung và đạt kỳ thi cuối khóa; yêu cầu sẽ được gửi để giảng viên duyệt.
       </p>
       <div className="space-y-2">
         {rows.map((r) => (
@@ -91,7 +91,7 @@ export function CertificateRequests() {
               </span>
             ) : r.status === "pending" ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                <Clock className="h-3.5 w-3.5" /> Chờ admin duyệt
+                <Clock className="h-3.5 w-3.5" /> Chờ giảng viên duyệt
               </span>
             ) : (
               <button

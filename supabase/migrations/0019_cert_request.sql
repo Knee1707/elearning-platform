@@ -7,6 +7,9 @@
 
 -- 1) Trạng thái duyệt. Chứng chỉ cũ (đã cấp) mặc định 'approved' để không gãy.
 alter table certificates add column if not exists status text not null default 'approved';
+-- Tương thích với các database đã đánh dấu 0014 nhưng thiếu cột thu hồi.
+alter table certificates add column if not exists revoked_at timestamptz;
+alter table certificates add column if not exists revoked_reason text;
 
 -- 2) Ngừng tự động cấp — chuyển sang cơ chế xin/duyệt.
 drop trigger if exists trg_issue_certificate on exam_attempts;

@@ -67,6 +67,14 @@ export const ACTION_LABELS: Record<string, string> = {
   delete_qa: "Xóa hỏi đáp",
   revoke_certificate: "Thu hồi chứng chỉ",
   restore_certificate: "Khôi phục chứng chỉ",
+  approve_certificate: "Duyệt chứng nhận",
+  reject_certificate: "Từ chối chứng nhận",
+  approve_student_warning: "Duyệt cảnh cáo học viên",
+  reject_student_warning: "Từ chối cảnh cáo học viên",
+  approve_student_suspend: "Duyệt đình chỉ học viên",
+  reject_student_suspend: "Từ chối đình chỉ học viên",
+  approve_student_expel: "Duyệt đuổi học viên",
+  reject_student_expel: "Từ chối đuổi học viên",
   update_setting: "Sửa cấu hình",
   delete_setting: "Xóa cấu hình",
 };
@@ -84,6 +92,7 @@ export const ENTITY_LABELS: Record<string, string> = {
   qa_question: "Câu hỏi Q&A",
   qa_answer: "Trả lời Q&A",
   certificate: "Chứng chỉ",
+  student_discipline: "Xử lý học viên",
 };
 
 const show = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "string" ? v : JSON.stringify(v));

@@ -44,3 +44,43 @@ export async function sendFeedbackAction(formData: FormData) {
   revalidatePath("/studio/students");
   redirect(`/studio/students?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
 }
+
+// Giảng viên đề xuất cảnh cáo/đình chỉ/đuổi học; admin phê duyệt tại khu quản trị.
+export async function requestStudentDisciplineAction(formData: FormData) {
+  let msg = "";
+  let err: string | null = null;
+  try {
+    const supabase = createClient();
+    const { error } = await supabase.rpc("fn_request_student_discipline", {
+      p_enrollment: String(formData.get("enrollmentId")),
+      p_action: String(formData.get("action")),
+      p_reason: String(formData.get("reason") ?? ""),
+    });
+    if (error) throw error;
+    msg = "Đã gửi đề xuất xử lý học viên cho admin.";
+  } catch (e) {
+    err = e instanceof Error ? e.message : "Có lỗi xảy ra.";
+  }
+  revalidatePath("/studio/students");
+  redirect(`/studio/students?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
+}
+
+// Giảng viên duyệt/từ chối yêu cầu chứng nhận trong khóa mình phụ trách.
+export async function reviewInstructorCertificateAction(formData: FormData) {
+  const approve = String(formData.get("approve")) === "true";
+  let msg = "";
+  let err: string | null = null;
+  try {
+    const supabase = createClient();
+    const { error } = await supabase.rpc("fn_review_certificate", {
+      p_certificate: String(formData.get("certificateId")),
+      p_approve: approve,
+    });
+    if (error) throw error;
+    msg = approve ? "Đã duyệt yêu cầu chứng nhận." : "Đã từ chối yêu cầu chứng nhận.";
+  } catch (e) {
+    err = e instanceof Error ? e.message : "Có lỗi xảy ra.";
+  }
+  revalidatePath("/studio/certificates");
+  redirect(`/studio/certificates?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
+}

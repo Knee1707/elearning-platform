@@ -19,10 +19,11 @@ import { getQuiz, submitLessonQuiz, FALLBACK_QUIZ, type QuizData } from "@/lib/q
 
 export interface QuizRunnerProps {
   quizId: string;
+  examId?: string;
   courseSlug?: string;
 }
 
-export function QuizRunner({ quizId, courseSlug = "nextjs-co-ban-nang-cao" }: QuizRunnerProps) {
+export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-cao" }: QuizRunnerProps) {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -74,6 +75,9 @@ export function QuizRunner({ quizId, courseSlug = "nextjs-co-ban-nang-cao" }: Qu
 
     try {
       const res = await submitLessonQuiz(quiz.quizId, answers);
+
+      const score = await submitAttempt(examId ?? quiz.quizId, answers);
+
       setResult({
         score: res.score,
         passed: res.passed,

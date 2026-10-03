@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ExternalLink, Search } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { getCertificates, getPendingCertificates } from "@/features/admin/queries";
+import { getCertificateCourseOptions, getCertificates, getPendingCertificates } from "@/features/admin/queries";
 import { restoreCertificateAction, revokeCertificateAction, reviewCertificateAction } from "@/features/admin/actions";
 import { FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
@@ -10,11 +10,13 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
   await requireRole(ADMIN_ROLES);
   const keyword = param(searchParams, "q") ?? "";
   const revokedOnly = param(searchParams, "status") === "revoked";
-  const [certificates, pending] = await Promise.all([
-    getCertificates({ keyword, revokedOnly }),
-    getPendingCertificates(),
+  const courseId = param(searchParams, "courseId");
+  const [courses, certificates, pending] = await Promise.all([
+    getCertificateCourseOptions(),
+    getCertificates({ keyword, revokedOnly, courseId }),
+    getPendingCertificates(courseId),
   ]);
-  const here = buildHref("/admin/certificates", { q: keyword, status: revokedOnly ? "revoked" : undefined });
+  const here = buildHref("/admin/certificates", { q: keyword, status: revokedOnly ? "revoked" : undefined, courseId });
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -23,6 +25,14 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
         description="Tra cứu chứng chỉ theo mã hoặc tên học viên. Thu hồi khi phát hiện gian lận — trang xác thực công khai sẽ báo chứng chỉ đã bị thu hồi."
       />
       <FlashMessage searchParams={searchParams} />
+
+      <section className="mt-6 rounded-lg border border-border bg-white p-4">
+        <h2 className="font-semibold">Theo khóa học</h2>
+        <form className="mt-3 flex flex-wrap items-end gap-3">
+          <label className="text-sm"><span className="mb-1 block text-muted-foreground">Chọn khóa học</span><select name="courseId" defaultValue={courseId ?? ""} className="min-w-72 rounded border border-border bg-background px-3 py-2"><option value="">Tất cả khóa học</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label>
+          <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Lọc</button>
+        </form>
+      </section>
 
       {/* Yêu cầu cấp chứng chỉ chờ duyệt */}
       <section className="mt-6">

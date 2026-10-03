@@ -35,6 +35,7 @@ import {
   submitLessonQuiz,
   type QuizData,
 } from "@/lib/queries/quiz";
+import { markComplete } from "@/lib/queries/progress";
 import { createClient } from "@/lib/supabase/client";
 
 export interface LearningWorkspaceProps {
@@ -100,6 +101,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
 
   // Đóng/mở sidebar trên màn hình nhỏ
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
+  const [finalExam, setFinalExam] = useState<{ examId: string; quizId: string; title: string; passScore: number } | null>(null);
 
   // Dữ liệu bài quiz của bài học đang chọn
   const [currentQuiz, setCurrentQuiz] = useState<QuizData | null>(null);
@@ -123,6 +125,19 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
 
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
+  const allLessonsCompleted = allLessons.length > 0 && allLessons.every((lesson) => completedLessonIds.includes(lesson.id));
+
+  useEffect(() => {
+    createClient()
+      .from("exams")
+      .select("id, quiz_id, title, pass_score")
+      .eq("course_id", course.id)
+      .eq("is_final", true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.quiz_id) setFinalExam({ examId: String(data.id), quizId: String(data.quiz_id), title: String(data.title), passScore: Number(data.pass_score) });
+      });
+  }, [course.id]);
 
   // 1. Tải danh sách quiz và tiến độ thực tế từ Supabase khi mở khóa học
   useEffect(() => {
@@ -578,6 +593,18 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
           )}
 
           {/* HỆ THỐNG CÁC TABS TƯƠNG TÁC (TỔNG QUAN / BÀI QUIZ / GHI CHÚ / HỎI ĐÁP) */}
+
+          {finalExam && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-xs">
+              <div>
+                <h4 className="text-xs font-bold text-slate-900">{finalExam.title}</h4>
+                <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học và đạt từ {finalExam.passScore}/100 để gửi yêu cầu chứng nhận.</p>
+              </div>
+              {allLessonsCompleted ? <Link href={`/quiz/${finalExam.quizId}?exam=${finalExam.examId}`} className="rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600">Thi cuối khóa</Link> : <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-500">Chưa hoàn thành nội dung</span>}
+            </div>
+          )}
+
+          {/* HỆ THỐNG CÁC TABS TƯƠNG TÁC (TỔNG QUAN / GHI CHÚ / HỎI ĐÁP) */}
           <div className="mt-8">
             {/* Header Tabs */}
             <div className="flex border-b border-slate-200 gap-1 sm:gap-2">
