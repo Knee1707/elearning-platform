@@ -22,8 +22,8 @@ function mapAuthError(message: string): string {
   if (normalized.includes("email rate limit") || normalized.includes("rate limit")) {
     return "Bạn đã thử đăng ký quá nhiều lần. Vui lòng chờ một lúc rồi thử lại.";
   }
-  if (normalized.includes("invalid email")) {
-    return "Địa chỉ email không hợp lệ.";
+  if (normalized.includes("invalid email") || (normalized.includes("email address") && normalized.includes("invalid"))) {
+    return "Địa chỉ email không hợp lệ. Hãy dùng email thật, ví dụ Gmail hoặc Outlook.";
   }
   if (normalized.includes("database error") || normalized.includes("saving new user")) {
     return "Không thể tạo hồ sơ người dùng. Vui lòng kiểm tra cấu hình Supabase và thử lại.";
