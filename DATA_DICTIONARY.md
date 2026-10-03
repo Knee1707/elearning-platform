@@ -67,7 +67,7 @@
 
 | Bảng | Cột |
 |---|---|
-| `lesson_progress` | `id` · `user_id`(FK→profiles) · `lesson_id`(FK→lessons) · `watched_percent` · `is_completed` · `last_position_seconds` · `updated_at` |
+| `lesson_progress` | `id` · `user_id`(FK→profiles) · `lesson_id`(FK→lessons) · `watched_percent` · `is_completed` · `last_position_seconds` · `quiz_score` **[0020]** · `is_quiz_passed` **[0020]** · `updated_at` |
 | `lesson_note` | `id` · `user_id`(FK→profiles) · `lesson_id`(FK→lessons) · `timestamp_seconds` · `content` · `created_at` |
 | `qa_question` | `id` · `lesson_id`(FK→lessons) · `user_id`(FK→profiles) · `content` · `created_at` |
 | `qa_answer` | `id` · `question_id`(FK→qa_question) · `user_id`(FK→profiles) · `content` · `created_at` |
@@ -199,9 +199,14 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
 | `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
 | `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
+| `fn_submit_quiz` **[0020]** | `p_quiz uuid`, `p_answers jsonb` → `jsonb`. Học viên nộp bài quiz bài học, DB chấm điểm và cập nhật `lesson_progress` |
+| `fn_is_lesson_unlocked` **[0020]** | `p_lesson uuid`, `p_user uuid` (mặc định auth.uid()). Kiểm tra bài học đã mở khóa chưa (bài 1 luôn mở, bài N yêu cầu bài N-1 xem xong + pass quiz) |
+| `fn_get_lesson_video` **[sửa 0020]** | thêm điều kiện `fn_is_lesson_unlocked(p_lesson)` cho học viên |
 
 **Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`/`rejected`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
 **Cột [0021]:** `quizzes.course_id`, `quizzes.is_final`, `exams.quiz_id`, `exams.is_final` — kỳ thi cuối khóa và bộ câu hỏi độc lập với bài học.
+
+**Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 

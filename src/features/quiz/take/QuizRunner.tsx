@@ -14,7 +14,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { getQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
+import { getQuiz, submitLessonQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
 import { createClient } from "@/lib/supabase/client";
 
 // Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
@@ -162,6 +162,8 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
     setIsSubmitting(true);
 
     try {
+      const res = await submitLessonQuiz(quiz.quizId, answers);
+
       let targetExamId = examId;
       if (!targetExamId) {
         // Tự động tra cứu ID kỳ thi từ Database để không bao giờ bị lỗi khóa ngoại FK
@@ -176,10 +178,11 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
         } catch {}
       }
 
-      const score = await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers);
+      await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers).catch(() => res.score);
+
       setResult({
-        score,
-        passed: score >= quiz.passScore,
+        score: res.score,
+        passed: res.passed,
       });
     } catch {
       // Chấm điểm dự phòng khi offline

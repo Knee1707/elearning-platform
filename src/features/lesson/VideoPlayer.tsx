@@ -25,6 +25,9 @@ type PlayerState = "idle" | "loading" | "ready" | "locked";
 export interface VideoPlayerProps {
   lessonId: string;
   isFree?: boolean;
+  isLocked?: boolean;
+  lockReason?: string;
+  onGoToPreviousLesson?: () => void;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
   onProgress?: (percent: number) => void;
@@ -42,6 +45,9 @@ function formatTime(totalSeconds: number): string {
 export function VideoPlayer({
   lessonId,
   isFree,
+  isLocked,
+  lockReason,
+  onGoToPreviousLesson,
   onTimeUpdate,
   onEnded,
   onProgress,
@@ -66,6 +72,11 @@ export function VideoPlayer({
   // 1. Tải URL video bài giảng với kiểm tra quyền gác
   useEffect(() => {
     let isMounted = true;
+    if (isLocked) {
+      setState("locked");
+      return;
+    }
+
     setState("loading");
     setResumeNotice(null);
     hasLoadedPositionRef.current = false;
@@ -111,7 +122,7 @@ export function VideoPlayer({
     return () => {
       isMounted = false;
     };
-  }, [lessonId, isFree]);
+  }, [lessonId, isFree, isLocked]);
 
   // 2. Lấy vị trí đã xem lần trước (getLastPosition) để tự động phát tiếp
   async function handleLoadedMetadata() {
@@ -225,6 +236,33 @@ export function VideoPlayer({
     } else {
       containerRef.current.requestFullscreen().catch(() => {});
     }
+  }
+
+  // Giao diện khi bài học bị khóa theo tiến độ tuần tự (Sequential Lock)
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-amber-300 bg-gradient-to-b from-amber-50/70 to-white p-10 text-center shadow-xs">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600 border border-amber-200 shadow-xs">
+          <Lock className="h-7 w-7" />
+        </div>
+        <h3 className="mt-4 text-base font-black text-slate-900">Bài học này chưa được mở khóa</h3>
+        <p className="mt-2 max-w-md text-xs text-slate-600 leading-relaxed font-medium">
+          {lockReason || "Theo lộ trình học tập tuần tự, bạn cần xem hết video (tối thiểu 95%) và vượt qua bài quiz của bài trước để mở khóa bài học này."}
+        </p>
+        {onGoToPreviousLesson && (
+          <div className="mt-6 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={onGoToPreviousLesson}
+              className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 transition-all hover:bg-blue-700 active:scale-95"
+            >
+              <RotateCcw className="h-4 w-4" />
+              <span>Quay lại bài học trước</span>
+            </button>
+          </div>
+        )}
+      </div>
+    );
   }
 
   // Giao diện khi bài học bị khóa (chưa ghi danh)

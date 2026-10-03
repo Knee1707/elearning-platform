@@ -59,6 +59,9 @@ const ALLOWED = {
     "fn_send_feedback",
     // L — chứng chỉ xin/duyệt (0019)
     "fn_request_certificate", "fn_review_certificate",
+    // L — mở khóa bài học tuần tự (0020)
+    "fn_submit_quiz", "fn_is_lesson_unlocked",
+
     // L — kỳ thi cuối khóa + duyệt chứng nhận bởi giảng viên (0021)
     "fn_create_final_exam",
     "fn_request_student_discipline", "fn_review_student_discipline",
