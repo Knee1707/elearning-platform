@@ -39,7 +39,7 @@
 
 | Bảng | Cột (đúng thứ tự, đúng tên) |
 |---|---|
-| `profiles` | `id`(PK,FK→auth.users) · `full_name` · `avatar_url` · `role`(user_role) · `is_banned` · `created_at` |
+| `profiles` | `id`(PK,FK→auth.users) · `full_name` · `phone` **[0025]** · `avatar_url` · `role`(user_role) · `is_banned` · `created_at` |
 | `system_setting` | `key`(PK) · `value`(jsonb) · `updated_at` |
 | `activity_log` | `id` · `user_id`(FK→profiles) · `action` · `entity` · `entity_id` · `created_at` · `reason` **[0010]** · `metadata`(jsonb) **[0010]** |
 | `coupon` | `id` · `code`(UNIQUE) · `type`(coupon_type) · `value` · `instructor_id`(FK→profiles) · `valid_from` · `valid_to` · `usage_limit` · `used_count` · `created_at` |

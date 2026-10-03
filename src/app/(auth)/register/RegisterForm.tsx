@@ -50,7 +50,7 @@ export function RegisterForm() {
         password: values.password,
         options: {
           // TODO(M4): xác nhận với L đúng key trigger DB đọc để insert profiles.full_name.
-          data: { full_name: values.fullName.trim() },
+          data: { full_name: values.fullName.trim(), phone: values.phone.trim() },
         },
       });
 
@@ -95,6 +95,19 @@ export function RegisterForm() {
         <Label htmlFor="email">Email</Label>
         <Input id="email" type="email" autoComplete="email" {...register("email")} />
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="phone">Số điện thoại</Label>
+        <Input
+          id="phone"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="0912345678"
+          {...register("phone")}
+        />
+        {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
       </div>
 
       <div className="space-y-2">

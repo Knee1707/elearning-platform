@@ -17,6 +17,7 @@ export type NotifType = "purchase" | "reply" | "system" | "reminder";
 export interface Profile {
   id: string;
   fullName: string;
+  phone?: string | null;
   avatarUrl: string | null;
   role: UserRole;
   isBanned: boolean;
