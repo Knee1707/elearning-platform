@@ -57,15 +57,11 @@ export default function NotificationsPage() {
       try {
         const data = await getMyNotifications();
         if (isMounted) {
-          if (data && data.length > 0) {
-            setNotifications(data);
-          } else {
-            setNotifications(FALLBACK_NOTIFICATIONS);
-          }
+          setNotifications(data ?? []);
         }
       } catch {
         if (isMounted) {
-          setNotifications(FALLBACK_NOTIFICATIONS);
+          setNotifications([]);
         }
       } finally {
         if (isMounted) {
@@ -83,10 +79,12 @@ export default function NotificationsPage() {
 
   // Đánh dấu 1 thông báo đã đọc
   async function handleMarkRead(id: string) {
-    try {
-      await markRead(id);
-    } catch {
-      // Tiếp tục cập nhật UI khi offline
+    if (!id.startsWith("notif-")) {
+      try {
+        await markRead(id);
+      } catch {
+        // Tiếp tục cập nhật UI khi offline
+      }
     }
 
     setNotifications((prev) =>
