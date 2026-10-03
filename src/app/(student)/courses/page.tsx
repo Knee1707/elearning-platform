@@ -6,18 +6,26 @@ import {
   BookOpen,
   Sparkles,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { CourseCard } from "@/components/shared/CourseCard";
-import { searchCourses, getCourseCatalog, type CourseCatalog } from "@/lib/queries/courses";
+import {
+  searchCourses,
+  getCourseCatalog,
+  getCoursesByCategories,
+  type CourseCatalog,
+  type CategoryGroup,
+  FALLBACK_CATEGORY_GROUPS,
+} from "@/lib/queries/courses";
 
 // Dữ liệu mẫu dự phòng khi database chưa có dữ liệu
 const FALLBACK_COURSES: CourseCatalog[] = [
   {
     id: "demo-course-1",
     instructorId: "demo-inst-1",
-    categoryId: "cat-it",
-    title: "Lập trình Web hiện đại với Next.js 14, React & TypeScript",
+    categoryId: "cat-python-web",
+    title: "Microsoft Python Development",
     slug: "lap-trinh-web-nextjs",
     description: "Xây dựng ứng dụng web chuẩn Production từ cơ bản đến nâng cao cùng SSR, RLS và Server Actions.",
     level: "intermediate",
@@ -27,14 +35,14 @@ const FALLBACK_COURSES: CourseCatalog[] = [
     isFeatured: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    instructorName: "ThS. Nguyễn Văn A",
-    avgRating: 4.9,
+    instructorName: "Microsoft",
+    avgRating: 4.8,
     ratingCount: 142,
   },
   {
     id: "demo-course-2",
     instructorId: "demo-inst-2",
-    categoryId: "cat-db",
+    categoryId: "cat-data-analytics",
     title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
     slug: "postgresql-supabase-chuyen-sau",
     description: "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng cho ứng dụng lớn.",
@@ -52,8 +60,8 @@ const FALLBACK_COURSES: CourseCatalog[] = [
   {
     id: "demo-course-3",
     instructorId: "demo-inst-3",
-    categoryId: "cat-fe",
-    title: "Nhập môn Lập trình Giao diện Web (HTML5, CSS3, Tailwind)",
+    categoryId: "cat-python-web",
+    title: "Python for Everybody: Nhập môn đến chuyên sâu",
     slug: "nhap-mon-frontend",
     description: "Khóa học miễn phí dành cho người mới bắt đầu muốn tạo dựng các trang web đẹp mắt và responsive.",
     level: "beginner",
@@ -63,15 +71,15 @@ const FALLBACK_COURSES: CourseCatalog[] = [
     isFeatured: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    instructorName: "Kỹ sư Lê Hoàng C",
-    avgRating: 4.7,
+    instructorName: "University of Michigan",
+    avgRating: 4.9,
     ratingCount: 215,
   },
   {
     id: "demo-course-4",
     instructorId: "demo-inst-4",
-    categoryId: "cat-be",
-    title: "Xây dựng RESTful API & Microservices với Node.js & Express",
+    categoryId: "cat-data-analytics",
+    title: "Google Data Analytics & Trực quan hóa dữ liệu",
     slug: "nodejs-restful-api",
     description: "Thiết kế hệ thống Backend chịu tải cao, JWT Authentication, phân quyền và Docker hóa.",
     level: "intermediate",
@@ -81,15 +89,15 @@ const FALLBACK_COURSES: CourseCatalog[] = [
     isFeatured: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    instructorName: "ThS. Phạm Quốc D",
-    avgRating: 4.6,
+    instructorName: "Google",
+    avgRating: 4.8,
     ratingCount: 88,
   },
   {
     id: "demo-course-5",
     instructorId: "demo-inst-5",
-    categoryId: "cat-mobile",
-    title: "Lập trình Ứng dụng Di động Đa nền tảng với Flutter & Dart",
+    categoryId: "cat-pm-devops",
+    title: "Microsoft Project Management: Job-Ready Skills",
     slug: "lap-trinh-flutter-dart",
     description: "Phát triển ứng dụng iOS và Android từ một cơ sở mã nguồn duy nhất với hiệu năng đỉnh cao.",
     level: "beginner",
@@ -99,14 +107,14 @@ const FALLBACK_COURSES: CourseCatalog[] = [
     isFeatured: true,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    instructorName: "TS. Vũ Hải E",
-    avgRating: 4.9,
+    instructorName: "Microsoft",
+    avgRating: 4.6,
     ratingCount: 110,
   },
   {
     id: "demo-course-6",
     instructorId: "demo-inst-6",
-    categoryId: "cat-devops",
+    categoryId: "cat-pm-devops",
     title: "DevOps Thực Chiến: Docker, Kubernetes & CI/CD Pipeline",
     slug: "devops-docker-cicd",
     description: "Tự động hóa triển khai, giám sát hệ thống và tối ưu hóa quy trình release phần mềm doanh nghiệp.",
@@ -117,7 +125,7 @@ const FALLBACK_COURSES: CourseCatalog[] = [
     isFeatured: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    instructorName: "Kỹ sư Đặng Minh F",
+    instructorName: "IBM Skills",
     avgRating: 4.8,
     ratingCount: 75,
   },
@@ -129,6 +137,7 @@ interface CoursesPageProps {
     level?: string;
     price?: string;
     rating?: string;
+    category?: string;
   };
 }
 
@@ -137,8 +146,20 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   const levelParam = searchParams?.level?.toLowerCase() || "all";
   const priceParam = searchParams?.price?.toLowerCase() || "all";
   const ratingParam = searchParams?.rating ? Number(searchParams.rating) : 0;
+  const categoryParam = searchParams?.category?.toLowerCase() || "all";
 
-  // Gọi query từ tầng lib/queries/courses.ts (M1)
+  // Lấy dữ liệu danh mục nhóm sẵn 3 cards
+  let categoryGroups: CategoryGroup[] = [];
+  try {
+    categoryGroups = await getCoursesByCategories();
+  } catch {
+    categoryGroups = FALLBACK_CATEGORY_GROUPS;
+  }
+  if (!categoryGroups || categoryGroups.length === 0) {
+    categoryGroups = FALLBACK_CATEGORY_GROUPS;
+  }
+
+  // Gọi query từ tầng lib/queries/courses.ts
   let rawCourses: CourseCatalog[] = [];
   try {
     if (keyword || (levelParam && levelParam !== "all") || ratingParam > 0) {
@@ -157,7 +178,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
   // Dùng dữ liệu fallback nếu database trống
   let courses = rawCourses.length > 0 ? rawCourses : FALLBACK_COURSES;
 
-  // Lọc thêm theo giá và cấp độ (áp dụng cho cả dữ liệu DB lẫn fallback)
+  // Lọc theo từ khóa
   if (keyword) {
     const lowerQ = keyword.toLowerCase();
     courses = courses.filter(
@@ -168,10 +189,43 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
     );
   }
 
+  // Lọc theo cấp độ
   if (levelParam && levelParam !== "all") {
     courses = courses.filter((c) => c.level?.toLowerCase() === levelParam);
   }
 
+  // Lọc theo danh mục
+  if (categoryParam && categoryParam !== "all") {
+    courses = courses.filter((c) => {
+      if (categoryParam === "lap-trinh-web") {
+        return (
+          c.categoryId === "cat-python-web" ||
+          c.title.toLowerCase().includes("python") ||
+          c.title.toLowerCase().includes("next.js") ||
+          c.title.toLowerCase().includes("web")
+        );
+      }
+      if (categoryParam === "du-lieu-va-ai") {
+        return (
+          c.categoryId === "cat-data-analytics" ||
+          c.title.toLowerCase().includes("data") ||
+          c.title.toLowerCase().includes("sql") ||
+          c.title.toLowerCase().includes("dữ liệu")
+        );
+      }
+      if (categoryParam === "ky-nang-nghe-nghiep") {
+        return (
+          c.categoryId === "cat-pm-devops" ||
+          c.title.toLowerCase().includes("management") ||
+          c.title.toLowerCase().includes("quản lý") ||
+          c.title.toLowerCase().includes("devops")
+        );
+      }
+      return c.categoryId === categoryParam;
+    });
+  }
+
+  // Lọc theo mức giá
   if (priceParam === "free") {
     courses = courses.filter((c) => c.price === 0);
   } else if (priceParam === "under500") {
@@ -180,9 +234,18 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
     courses = courses.filter((c) => c.price > 500000);
   }
 
+  // Lọc theo số sao
   if (ratingParam > 0) {
     courses = courses.filter((c) => (c.avgRating ?? 0) >= ratingParam);
   }
+
+  // Kiểm tra người dùng có đang áp dụng bộ lọc/tìm kiếm hay không
+  const isFiltering =
+    Boolean(keyword) ||
+    levelParam !== "all" ||
+    priceParam !== "all" ||
+    ratingParam > 0 ||
+    categoryParam !== "all";
 
   // Helper build URL cho bộ lọc
   function getFilterUrl(overrides: Record<string, string | number | undefined>) {
@@ -192,6 +255,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
       level: levelParam !== "all" ? levelParam : undefined,
       price: priceParam !== "all" ? priceParam : undefined,
       rating: ratingParam > 0 ? String(ratingParam) : undefined,
+      category: categoryParam !== "all" ? categoryParam : undefined,
       ...overrides,
     };
 
@@ -236,6 +300,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                 {levelParam !== "all" && <input type="hidden" name="level" value={levelParam} />}
                 {priceParam !== "all" && <input type="hidden" name="price" value={priceParam} />}
                 {ratingParam > 0 && <input type="hidden" name="rating" value={ratingParam} />}
+                {categoryParam !== "all" && <input type="hidden" name="category" value={categoryParam} />}
 
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
@@ -250,7 +315,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
           </div>
         </div>
 
-        {/* CONTENT LAYOUT: SIDEBAR FILTERS + COURSES GRID */}
+        {/* CONTENT LAYOUT: SIDEBAR FILTERS + COURSES */}
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-8">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
             {/* SIDEBAR BỘ LỌC */}
@@ -261,7 +326,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                     <SlidersHorizontal className="h-4 w-4 text-blue-600" />
                     <span>Bộ lọc tìm kiếm</span>
                   </div>
-                  {(keyword || levelParam !== "all" || priceParam !== "all" || ratingParam > 0) && (
+                  {isFiltering && (
                     <Link
                       href="/courses"
                       className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:underline"
@@ -272,8 +337,38 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                   )}
                 </div>
 
-                {/* LỌC THEO CẤP ĐỘ */}
+                {/* LỌC THEO DANH MỤC */}
                 <div className="space-y-2.5">
+                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Danh mục khóa học
+                  </h3>
+                  <div className="flex flex-col gap-1 text-xs">
+                    {[
+                      { id: "all", label: "Tất cả danh mục" },
+                      { id: "lap-trinh-web", label: "Python & Lập trình" },
+                      { id: "du-lieu-va-ai", label: "Data Analytics & AI" },
+                      { id: "ky-nang-nghe-nghiep", label: "Project Management & DevOps" },
+                    ].map((cat) => {
+                      const isSelected = categoryParam === cat.id;
+                      return (
+                        <Link
+                          key={cat.id}
+                          href={getFilterUrl({ category: cat.id })}
+                          className={`rounded-xl px-3 py-2 text-xs font-bold transition-all ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-600 shadow-xs"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {cat.label}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* LỌC THEO CẤP ĐỘ */}
+                <div className="space-y-2.5 pt-4 border-t border-slate-100">
                   <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
                     Trình độ học
                   </h3>
@@ -367,8 +462,15 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
             <div className="lg:col-span-3">
               <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200/80 text-xs text-slate-500">
                 <span>
-                  Tìm thấy <strong className="text-slate-900 font-bold">{courses.length}</strong> khóa học
-                  phù hợp
+                  {isFiltering ? (
+                    <>
+                      Tìm thấy <strong className="text-slate-900 font-bold">{courses.length}</strong> khóa học phù hợp
+                    </>
+                  ) : (
+                    <>
+                      Hiển thị khóa học theo từng danh mục chuẩn đầu ra
+                    </>
+                  )}
                 </span>
 
                 {keyword && (
@@ -378,33 +480,62 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                 )}
               </div>
 
-              {courses.length > 0 ? (
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {courses.map((course) => (
-                    <CourseCard key={course.id} course={course} />
-                  ))}
-                </div>
+              {isFiltering ? (
+                /* CHẾ ĐỘ TÌM KIẾM / LỌC: HIỂN THỊ CÁC THẺ CARD NGANG */
+                courses.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
+                    {courses.map((course) => (
+                      <CourseCard key={course.id} course={course} />
+                    ))}
+                  </div>
+                ) : (
+                  /* EMPTY STATE */
+                  <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-4 shadow-sm">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                      <BookOpen className="h-7 w-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base font-bold text-slate-900">
+                        Không tìm thấy khóa học nào phù hợp
+                      </h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Hãy thử đổi từ khóa tìm kiếm hoặc bấm đặt lại bộ lọc để xem danh sách toàn bộ khóa học.
+                      </p>
+                    </div>
+                    <Link
+                      href="/courses"
+                      className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Xem lại tất cả khóa học</span>
+                    </Link>
+                  </div>
+                )
               ) : (
-                /* EMPTY STATE */
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center space-y-4 shadow-sm">
-                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-                    <BookOpen className="h-7 w-7" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Không tìm thấy khóa học nào phù hợp
-                    </h3>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      Hãy thử đổi từ khóa tìm kiếm hoặc bấm đặt lại bộ lọc để xem danh sách toàn bộ khóa học.
-                    </p>
-                  </div>
-                  <Link
-                    href="/courses"
-                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    <span>Xem lại tất cả khóa học</span>
-                  </Link>
+                /* CHẾ ĐỘ XEM MẶC ĐỊNH: CHIA THEO TỪNG DANH MỤC (MỖI DANH MỤC 3 CARDS NGANG) */
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 2xl:grid-cols-3">
+                  {categoryGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex flex-col justify-between rounded-2xl border border-blue-100/70 bg-[#F0F5FF] p-4 sm:p-5 shadow-xs"
+                    >
+                      <div>
+                        <Link
+                          href={`/courses?category=${group.slug}`}
+                          className="group/cat mb-4 flex items-center gap-1.5 text-base font-bold text-slate-900 transition-colors hover:text-blue-600"
+                        >
+                          <span>{group.name}</span>
+                          <ArrowRight className="h-4 w-4 text-slate-700 transition-transform group-hover/cat:translate-x-1 group-hover/cat:text-blue-600" />
+                        </Link>
+
+                        <div className="flex flex-col gap-3">
+                          {group.courses.slice(0, 3).map((course) => (
+                            <CourseCard key={course.id} course={course} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
