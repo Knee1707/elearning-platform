@@ -35,6 +35,14 @@ function saveLocalCertificate(cert: Certificate) {
   } catch {}
 }
 
+export interface AutoCertificateOptions {
+  courseTitle?: string;
+  instructorName?: string;
+  allVideosDone?: boolean;
+  allQuizzesDone?: boolean;
+  finalExamPassed?: boolean;
+}
+
 /**
  * Kiểm tra điều kiện và tự động cấp chứng chỉ:
  * - Điều kiện 1: Hoàn thành 100% video/bài học trong khóa học.
@@ -45,9 +53,17 @@ function saveLocalCertificate(cert: Certificate) {
  */
 export async function checkAndAutoIssueCertificate(
   courseId: string,
-  courseTitle?: string,
-  instructorName?: string
+  optsOrTitle?: string | AutoCertificateOptions,
+  maybeInstructorName?: string
 ): Promise<AutoCertificateResult> {
+  const opts: AutoCertificateOptions =
+    typeof optsOrTitle === "string"
+      ? { courseTitle: optsOrTitle, instructorName: maybeInstructorName }
+      : optsOrTitle || {};
+
+  const courseTitle = opts.courseTitle;
+  const instructorName = opts.instructorName;
+
   const supabase = createClient();
 
   // 1. Kiểm tra session người dùng
@@ -190,6 +206,17 @@ export async function checkAndAutoIssueCertificate(
     allVideosDone = true;
     allQuizzesDone = true;
     finalExamPassed = true;
+  }
+
+  // Ghi đè điều kiện nếu caller truyền trực tiếp
+  if (opts.allVideosDone !== undefined) {
+    allVideosDone = opts.allVideosDone;
+  }
+  if (opts.allQuizzesDone !== undefined) {
+    allQuizzesDone = opts.allQuizzesDone;
+  }
+  if (opts.finalExamPassed !== undefined) {
+    finalExamPassed = opts.finalExamPassed;
   }
 
   // Đánh giá tổng thể điều kiện

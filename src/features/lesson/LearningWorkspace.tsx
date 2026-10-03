@@ -145,13 +145,18 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
     const allQuizzesFinished = quizIdsInCourse.every((id) => quizPassedLessonIds.includes(id));
 
     if (allVideosFinished && allQuizzesFinished) {
-      checkAndAutoIssueCertificate(course.id, course.title).then((res) => {
+      checkAndAutoIssueCertificate(course.id, {
+        courseTitle: course.title,
+        instructorName: course.instructorName,
+        allVideosDone: allVideosFinished,
+        allQuizzesDone: allQuizzesFinished,
+      }).then((res) => {
         if (res.certificate) {
           setIssuedCertificate(res.certificate);
         }
       });
     }
-  }, [allLessons, completedLessonIds, quizzesMap, quizPassedLessonIds, course.id, course.title]);
+  }, [allLessons, completedLessonIds, quizzesMap, quizPassedLessonIds, course.id, course.title, course.instructorName]);
 
   useEffect(() => {
     const supabase = createClient();
