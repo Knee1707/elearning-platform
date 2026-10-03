@@ -12,11 +12,13 @@ import {
   Calendar,
   Eye,
   X,
+  QrCode,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyCertificates, type Certificate } from "@/lib/queries/quiz";
 import { CertificateView } from "@/features/certificate/CertificateView";
 import { CertificateRequests } from "@/features/certificate/CertificateRequests";
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
 
 const FALLBACK_CERTIFICATES: Certificate[] = [
   {
@@ -32,6 +34,7 @@ const FALLBACK_CERTIFICATES: Certificate[] = [
 export default function MyCertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [selectedQrCert, setSelectedQrCert] = useState<Certificate | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -160,7 +163,7 @@ export default function MyCertificatesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                     <Link
                       href={`/verify/${cert.code}`}
                       target="_blank"
@@ -170,20 +173,38 @@ export default function MyCertificatesPage() {
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCert(cert)}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#c5a059] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#c5a059]/25 transition-all hover:bg-[#aa7c11] active:scale-95"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>Xem & In chứng chỉ</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQrCert(cert)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <QrCode className="h-3.5 w-3.5 text-amber-600" />
+                        <span>Mã QR</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCert(cert)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#c5a059] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#c5a059]/25 transition-all hover:bg-[#aa7c11] active:scale-95"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>Xem & In chứng chỉ</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* MODAL HIỂN THỊ MÃ QR */}
+        <CertificateQrModal
+          isOpen={Boolean(selectedQrCert)}
+          onClose={() => setSelectedQrCert(null)}
+          certificate={selectedQrCert}
+        />
 
         {/* MODAL XEM CHI TIẾT CHỨNG CHỈ */}
         {selectedCert && (

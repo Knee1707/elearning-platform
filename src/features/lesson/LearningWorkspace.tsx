@@ -21,6 +21,8 @@ import {
   Trophy,
   Loader2,
   Check,
+  QrCode,
+  Eye,
 } from "lucide-react";
 import type { Lesson } from "@/types/domain";
 import type { CourseDetail } from "@/lib/queries/courses";
@@ -34,8 +36,11 @@ import {
   getQuizzesForLessons,
   submitLessonQuiz,
   type QuizData,
+  type Certificate,
 } from "@/lib/queries/quiz";
 import { createClient } from "@/lib/supabase/client";
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
 export interface LearningWorkspaceProps {
   course: CourseDetail;
@@ -114,6 +119,10 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
     passed: boolean;
   } | null>(null);
 
+  // Dữ liệu chứng chỉ chính quy tự động cấp
+  const [issuedCertificate, setIssuedCertificate] = useState<Certificate | null>(null);
+  const [showCertificateQr, setShowCertificateQr] = useState<boolean>(false);
+
   // Bài học hiện tại
   const currentLesson: Lesson | undefined = useMemo(() => {
     return allLessons.find((l) => l.id === currentLessonId) || allLessons[0];
@@ -126,6 +135,23 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson = currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
   const allLessonsCompleted = allLessons.length > 0 && allLessons.every((lesson) => completedLessonIds.includes(lesson.id));
+
+  // Tự động kiểm tra và cấp chứng chỉ khi thỏa mãn điều kiện video + quiz + bài thi
+  useEffect(() => {
+    if (allLessons.length === 0) return;
+
+    const allVideosFinished = allLessons.every((l) => completedLessonIds.includes(l.id));
+    const quizIdsInCourse = Object.keys(quizzesMap);
+    const allQuizzesFinished = quizIdsInCourse.every((id) => quizPassedLessonIds.includes(id));
+
+    if (allVideosFinished && allQuizzesFinished) {
+      checkAndAutoIssueCertificate(course.id, course.title).then((res) => {
+        if (res.certificate) {
+          setIssuedCertificate(res.certificate);
+        }
+      });
+    }
+  }, [allLessons, completedLessonIds, quizzesMap, quizPassedLessonIds, course.id, course.title]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -706,13 +732,54 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             </div>
           )}
 
+          {/* BANNER VINH DANH CHỨNG CHỈ ĐÃ ĐƯỢC TỰ ĐỘNG CẤP */}
+          {issuedCertificate && (
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 p-4 shadow-sm animate-in fade-in">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-xs">
+                  <Award className="h-6 w-6" />
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 block">
+                    Chứng chỉ chính quy đã được cấp tự động
+                  </span>
+                  <h4 className="text-sm font-black text-slate-900">
+                    Chúc mừng bạn đã hoàn thành xuất sắc khóa học!
+                  </h4>
+                  <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    Mã chứng chỉ: <strong>{issuedCertificate.code}</strong>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCertificateQr(true)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-white px-4 py-2 text-xs font-bold text-amber-900 shadow-2xs hover:bg-amber-50 transition-all active:scale-95 cursor-pointer"
+                >
+                  <QrCode className="h-4 w-4 text-amber-600" />
+                  <span>Hiển thị mã QR</span>
+                </button>
+
+                <Link
+                  href="/certificates"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-emerald-500/25 hover:bg-emerald-700 transition-all active:scale-95"
+                >
+                  <Eye className="h-4 w-4" />
+                  <span>Xem chứng chỉ</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* HỆ THỐNG CÁC TABS TƯƠNG TÁC (TỔNG QUAN / BÀI QUIZ / GHI CHÚ / HỎI ĐÁP) */}
 
           {finalExam && (
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-xs">
               <div>
                 <h4 className="text-xs font-bold text-slate-900">{finalExam.title}</h4>
-                <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học và đạt từ {finalExam.passScore}/100 để gửi yêu cầu chứng nhận.</p>
+                <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học và đạt từ {finalExam.passScore}/100 để được cấp chứng chỉ tự động.</p>
               </div>
               {allLessonsCompleted ? (
                 <Link
@@ -1037,6 +1104,13 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
           </div>
         </div>
       </main>
+
+      {/* MODAL MÃ QR CHỨNG CHỈ ĐỂ NGƯỜI KHÁC QUÉT */}
+      <CertificateQrModal
+        isOpen={showCertificateQr}
+        onClose={() => setShowCertificateQr(false)}
+        certificate={issuedCertificate}
+      />
     </div>
   );
 }
