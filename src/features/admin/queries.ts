@@ -65,6 +65,7 @@ export type PendingVideo = {
   courseId: string;
   courseTitle: string | null;
   instructorName: string | null;
+  attachments: Array<{ id: string; name: string; type: string | null }>;
 };
 
 export async function getPendingVideos(): Promise<PendingVideo[]> {
@@ -72,7 +73,7 @@ export async function getPendingVideos(): Promise<PendingVideo[]> {
   const { data, error } = await supabase
     .from("lessons")
     .select(
-      "id, title, duration_seconds, is_free, chapters!inner(course_id, courses!inner(id, title, profiles!courses_instructor_id_fkey(full_name)))",
+      "id, title, duration_seconds, is_free, attachments(id, name, type), chapters!inner(course_id, courses!inner(id, title, profiles!courses_instructor_id_fkey(full_name)))",
     )
     .eq("video_review", "pending")
     .order("id", { ascending: true });
@@ -89,6 +90,13 @@ export async function getPendingVideos(): Promise<PendingVideo[]> {
       courseId: String(course.id ?? ""),
       courseTitle: titleOf(course),
       instructorName: nameOf(course.profiles),
+      attachments: Array.isArray(row.attachments)
+        ? row.attachments.map((attachment: Row) => ({
+            id: String(attachment.id),
+            name: String(attachment.name),
+            type: typeof attachment.type === "string" ? attachment.type : null,
+          }))
+        : [],
     };
   });
 }
