@@ -80,17 +80,57 @@ export default function MyLearningPage() {
             setCourses(FALLBACK_MY_COURSES);
           }
         } else if (isMounted) {
-          const mapped: EnrolledCourseItem[] = (data as Array<Record<string, unknown>>).map((row) => ({
-            courseId: row.course_id as string,
-            slug: (row.slug as string) || (row.course_id as string),
-            title: row.course_title as string,
-            instructorName: (row.instructor_name as string) || "Giảng viên",
-            totalLessons: Number(row.total_lessons || 0),
-            completedLessons: Number(row.completed_lessons || 0),
-            progressPercent: Number(row.progress_percent || 0),
-            thumbnailUrl: (row.thumbnail_url as string) || null,
-          }));
-          setCourses(mapped);
+          // 2. Tra cứu thêm thông tin slug và thumbnail từ bảng courses để bảo đảm link chính xác
+          const courseIds = Array.from(new Set((data as Array<Record<string, unknown>>).map((r) => r.course_id as string)));
+          const { data: coursesInfo } = await supabase
+            .from("courses")
+            .select("id, slug, thumbnail_url, profiles!courses_instructor_id_fkey(full_name)")
+            .in("id", courseIds);
+
+          const courseMetaMap = new Map<string, { slug: string; thumbnail: string | null; instructor: string }>();
+          if (coursesInfo) {
+            for (const c of coursesInfo as Array<Record<string, unknown>>) {
+              const prof = c.profiles as Record<string, unknown> | null;
+              courseMetaMap.set(c.id as string, {
+                slug: c.slug as string,
+                thumbnail: (c.thumbnail_url as string) || null,
+                instructor: (prof?.full_name as string) || "Giảng viên LMS",
+              });
+            }
+          }
+
+          // 3. Gom nhóm theo course_id để triệt tiêu hoàn toàn trùng lặp thẻ khóa học
+          const courseMap = new Map<string, EnrolledCourseItem>();
+          for (const row of data as Array<Record<string, unknown>>) {
+            const cid = row.course_id as string;
+            const meta = courseMetaMap.get(cid);
+            const total = Number(row.total_lessons || 0);
+            const completed = Number(row.completed_lessons || 0);
+
+            const existing = courseMap.get(cid);
+            if (!existing) {
+              courseMap.set(cid, {
+                courseId: cid,
+                slug: meta?.slug || (row.slug as string) || cid,
+                title: (row.course_title as string) || "Khóa học",
+                instructorName: meta?.instructor || (row.instructor_name as string) || "Giảng viên LMS",
+                totalLessons: total,
+                completedLessons: completed,
+                progressPercent: Number(row.progress_percent || 0),
+                thumbnailUrl: meta?.thumbnail || (row.thumbnail_url as string) || null,
+              });
+            } else {
+              // Gộp tiến độ nếu DB view cũ tách thành 2 dòng (do lp.user_id null)
+              const newTotal = Math.max(existing.totalLessons, total);
+              const newCompleted = Math.max(existing.completedLessons, completed);
+              const newPercent = newTotal > 0 ? Math.round((newCompleted / newTotal) * 100) : existing.progressPercent;
+              existing.totalLessons = newTotal;
+              existing.completedLessons = newCompleted;
+              existing.progressPercent = Math.max(existing.progressPercent, newPercent);
+            }
+          }
+
+          setCourses(Array.from(courseMap.values()));
         }
       } catch {
         if (isMounted) {
