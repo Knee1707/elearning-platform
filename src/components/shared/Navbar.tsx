@@ -352,7 +352,7 @@ export function Navbar() {
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
                     >
                       <ReceiptText className="h-4 w-4 text-slate-400" />
-                      <span>Lịch sử mua &amp; hoàn tiền</span>
+                      <span>Lịch sử mua khóa học</span>
                     </Link>
 
                     <Link

@@ -1,20 +1,19 @@
 "use server";
 
-import { requestRefund } from "@/lib/queries/commerce";
 import { runAction } from "@/features/admin/runAction";
 import type { UserRole } from "@/types/domain";
 
-// Ai đăng nhập cũng gửi được cho giao dịch CỦA MÌNH (fn_request_refund kiểm quyền sở hữu,
-// hạn hoàn tiền, trùng yêu cầu; trigger chặn tài khoản bị khóa).
+// Chính sách: Khóa học một khi đã mua sẽ không được hoàn tiền ở bất kỳ vai trò nào.
 const ANY_ROLE: UserRole[] = ["student", "instructor", "admin", "super_admin"];
 
-export async function requestRefundAction(formData: FormData) {
-  const paymentId = String(formData.get("paymentId") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+export async function requestRefundAction(_formData: FormData) {
   await runAction({
     path: "/my/purchases",
     roles: ANY_ROLE,
-    success: "Đã gửi yêu cầu hoàn tiền. Bạn sẽ nhận thông báo khi có kết quả.",
-    task: () => requestRefund(paymentId, reason),
+    success: "",
+    task: async () => {
+      throw new Error("Chính sách hệ thống: Khóa học một khi đã mua sẽ không được hoàn tiền.");
+    },
   });
 }
+
