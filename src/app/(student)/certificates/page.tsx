@@ -17,8 +17,9 @@ import {
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyCertificates, type Certificate } from "@/lib/queries/quiz";
 import { CertificateView } from "@/features/certificate/CertificateView";
-import { CertificateRequests } from "@/features/certificate/CertificateRequests";
 import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { createClient } from "@/lib/supabase/client";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
 const FALLBACK_CERTIFICATES: Certificate[] = [
   {
@@ -44,8 +45,55 @@ export default function MyCertificatesPage() {
       setIsLoading(true);
       try {
         const data = await getMyCertificates();
+        let list: Certificate[] = data ?? [];
+
+        // Hợp nhất với chứng chỉ được cấp tự động lưu ở local storage (hỗ trợ offline/mock)
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("lms_approved_certificates");
+            if (raw) {
+              const localList: Certificate[] = JSON.parse(raw);
+              const existingIds = new Set(list.map((c) => c.id));
+              const existingCourseIds = new Set(list.map((c) => c.courseId));
+              for (const loc of localList) {
+                if (!existingIds.has(loc.id) && !existingCourseIds.has(loc.courseId)) {
+                  list = [loc, ...list];
+                  existingIds.add(loc.id);
+                  existingCourseIds.add(loc.courseId);
+                }
+              }
+            }
+          } catch {}
+        }
+
+        // Tự động kiểm tra và cấp chứng chỉ cho các khóa học đã hoàn thành 100%
+        try {
+          const supabase = createClient();
+          const { data: myCourses } = await supabase
+            .from("view_course_progress")
+            .select("course_id, course_title, progress_percent, total_lessons, completed_lessons");
+
+          if (myCourses && myCourses.length > 0) {
+            const existingCourseIds = new Set(list.map((c) => c.courseId));
+            for (const c of myCourses) {
+              const percent = Number(c.progress_percent || 0);
+              const total = Number(c.total_lessons || 0);
+              const completed = Number(c.completed_lessons || 0);
+              const isFinished = (total > 0 && completed >= total) || percent >= 100;
+
+              if (isFinished && !existingCourseIds.has(c.course_id)) {
+                const autoRes = await checkAndAutoIssueCertificate(c.course_id, c.course_title);
+                if (autoRes.certificate) {
+                  list = [autoRes.certificate, ...list];
+                  existingCourseIds.add(c.course_id);
+                }
+              }
+            }
+          }
+        } catch {}
+
         if (isMounted) {
-          setCertificates(data ?? []);
+          setCertificates(list);
         }
       } catch {
         if (isMounted) {
@@ -94,13 +142,8 @@ export default function MyCertificatesPage() {
           </Link>
         </div>
 
-        {/* Xin cấp chứng chỉ (khóa đã học → xin → admin duyệt) */}
+        {/* Danh sách chứng chỉ đã nhận */}
         <div className="mt-8">
-          <CertificateRequests />
-        </div>
-
-        {/* Danh sách chứng chỉ */}
-        <div className="mt-2">
           {isLoading ? (
             <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách chứng chỉ của bạn...
