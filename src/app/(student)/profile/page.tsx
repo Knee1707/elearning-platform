@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   User,
   Mail,
+  Phone,
   Shield,
   Calendar,
   Save,
@@ -25,6 +26,7 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [bio, setBio] = useState<string>("");
   const [email, setEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
@@ -53,12 +55,14 @@ export default function ProfilePage() {
             setProfile({
               id: data.id,
               fullName: data.full_name,
+              phone: data.phone ?? null,
               avatarUrl: data.avatar_url,
               role: data.role,
               isBanned: data.is_banned,
               createdAt: data.created_at,
             });
             setFullName(data.full_name ?? "");
+            setPhone(data.phone ?? "");
             setAvatarUrl(data.avatar_url ?? "");
             const savedBio = typeof window !== "undefined" ? localStorage.getItem(`user_bio_${data.id}`) : null;
             if (savedBio) setBio(savedBio);
@@ -71,6 +75,7 @@ export default function ProfilePage() {
           const sample: Profile = {
             id: "00000000-0000-0000-0000-000000000002",
             fullName: "Trần Thị Học Viên A",
+            phone: null,
             avatarUrl: null,
             role: "student",
             isBanned: false,
@@ -78,6 +83,7 @@ export default function ProfilePage() {
           };
           setProfile(sample);
           setFullName(sample.fullName);
+          setPhone(sample.phone ?? "");
           setEmail("hva@demo.local");
           setBio("Học viên tích cực tại LMS.");
         }
@@ -87,6 +93,7 @@ export default function ProfilePage() {
           const sample: Profile = {
             id: "00000000-0000-0000-0000-000000000002",
             fullName: "Trần Thị Học Viên A",
+            phone: null,
             avatarUrl: null,
             role: "student",
             isBanned: false,
@@ -119,29 +126,25 @@ async function handleSave(e: React.FormEvent) {
 
   try {
     const supabase = createClient();
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({
         full_name: fullName.trim(),
+        phone: phone.trim() || null,
         avatar_url: avatarUrl.trim() || null,
       })
       .eq("id", profile.id);
+    if (error) throw error;
 
     if (typeof window !== "undefined") {
       localStorage.setItem(`user_bio_${profile.id}`, bio.trim());
     }
 
-    setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
+    setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), phone: phone.trim() || null, avatarUrl: avatarUrl.trim() || null } : null));
     setSuccessNotice("Cập nhật thông tin hồ sơ thành công!");
     setTimeout(() => setSuccessNotice(null), 4000);
-  } catch {
-    // Fallback state
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`user_bio_${profile.id}`, bio.trim());
-    }
-    setProfile((prev) => (prev ? { ...prev, fullName: fullName.trim(), avatarUrl: avatarUrl.trim() || null } : null));
-    setSuccessNotice("Cập nhật thông tin hồ sơ thành công!");
-    setTimeout(() => setSuccessNotice(null), 4000);
+  } catch (error) {
+    setSuccessNotice(error instanceof Error ? `Không thể cập nhật hồ sơ: ${error.message}` : "Không thể cập nhật hồ sơ.");
   } finally {
     setIsSaving(false);
   }
@@ -274,6 +277,23 @@ async function handleSave(e: React.FormEvent) {
                     className="mt-2 w-full rounded-xl border border-slate-200/60 bg-slate-100/70 p-3.5 text-xs text-slate-500 cursor-not-allowed font-medium"
                   />
                   <p className="mt-1 text-[11px] text-slate-400 font-medium">Email đăng nhập do hệ thống bảo mật quản lý.</p>
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                    <Phone className="h-3.5 w-3.5" />
+                    Số điện thoại
+                  </label>
+                  <input
+                    id="phone"
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="0912345678"
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3.5 text-xs text-slate-800 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  />
                 </div>
 
                 <div>

@@ -10,6 +10,10 @@ export type LoginInput = z.infer<typeof loginSchema>;
 export const registerSchema = z
   .object({
     fullName: z.string().min(2, "Họ tên tối thiểu 2 ký tự"),
+    phone: z
+      .string()
+      .trim()
+      .regex(/^(?:\+84|0)(?:3|5|7|8|9)\d{8}$/, "Số điện thoại Việt Nam không hợp lệ"),
     email: z.string().email("Email không hợp lệ"),
     password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
     confirmPassword: z.string(),
