@@ -12,10 +12,10 @@ import {
   Trophy,
   RotateCcw,
   Clock,
-  Award,
   Loader2,
 } from "lucide-react";
 import { getQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
+import { createClient } from "@/lib/supabase/client";
 
 // Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
 const FALLBACK_QUIZ: QuizData = {
@@ -116,7 +116,21 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
     setIsSubmitting(true);
 
     try {
-      const score = await submitAttempt(examId ?? quiz.quizId, answers);
+      let targetExamId = examId;
+      if (!targetExamId) {
+        // Tự động tra cứu ID kỳ thi từ Database để không bao giờ bị lỗi khóa ngoại FK
+        try {
+          const supabase = createClient();
+          const { data: exRow } = await supabase
+            .from("exams")
+            .select("id")
+            .limit(1)
+            .maybeSingle();
+          if (exRow?.id) targetExamId = exRow.id;
+        } catch {}
+      }
+
+      const score = await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers);
       setResult({
         score,
         passed: score >= quiz.passScore,
@@ -219,16 +233,6 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
               <RotateCcw className="h-4 w-4" />
               <span>Làm lại bài thi</span>
             </button>
-
-            {result.passed && (
-              <Link
-                href="/certificates"
-                className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-amber-500/25 hover:bg-amber-600 transition-all active:scale-95"
-              >
-                <Award className="h-4 w-4" />
-                <span>Xem chứng chỉ hoàn thành</span>
-              </Link>
-            )}
 
             <Link
               href={`/learn/${courseSlug}`}

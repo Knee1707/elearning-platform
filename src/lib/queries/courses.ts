@@ -55,15 +55,31 @@ export async function searchCourses(filter: CourseFilter): Promise<CourseCatalog
   return (data as DatabaseRow[]).map(mapCatalogCourse);
 }
 
-// khai báo hàm lấy thông tin chi tiết của từng khoa học
-export async function getCourseDetail(slug: string): Promise<CourseDetail | null> {
+// khai báo hàm lấy thông tin chi tiết của từng khóa học (hỗ trợ cả slug lẫn UUID id)
+export async function getCourseDetail(slugOrId: string): Promise<CourseDetail | null> {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("view_course_detail")
-    .select("*")
-    .eq("slug", slug)
-    .maybeSingle();
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+
+  let query = supabase.from("view_course_detail").select("*");
+  if (isUuid) {
+    query = query.eq("id", slugOrId);
+  } else {
+    query = query.eq("slug", slugOrId);
+  }
+
+  let { data, error } = await query.maybeSingle();
   if (error) throw error;
+
+  // Nếu là UUID nhưng view_course_detail chưa tìm thấy theo id, thử tìm theo slug
+  if (!data && isUuid) {
+    const fallbackRes = await supabase
+      .from("view_course_detail")
+      .select("*")
+      .eq("slug", slugOrId)
+      .maybeSingle();
+    data = fallbackRes.data;
+  }
+
   if (!data) return null;
 
   const course = data as DatabaseRow;
