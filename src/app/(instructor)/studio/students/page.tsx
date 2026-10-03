@@ -1,8 +1,9 @@
 import { CheckCircle2, AlertTriangle, Users, Clock } from "lucide-react";
 import { getInstructorClassData } from "@/features/course/queries";
-import { reviewEnrollAction, sendFeedbackAction } from "@/features/instructor/actions";
+import { requestStudentDisciplineAction, reviewEnrollAction, sendFeedbackAction } from "@/features/instructor/actions";
 
 const dt = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short" });
+const dateTime = new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" });
 
 export default async function StudioStudentsPage({
   searchParams,
@@ -126,6 +127,35 @@ export default async function StudioStudentsPage({
                             Gửi cho học viên
                           </button>
                         </form>
+                        <div className="mt-3 w-64 rounded-lg border border-border bg-muted/20 p-3">
+                          <p className="text-xs font-semibold text-foreground">
+                            Lịch sử nhận xét ({m.feedbackHistory.length})
+                          </p>
+                          {m.feedbackHistory.length ? (
+                            <div className="mt-2 max-h-64 space-y-2 overflow-y-auto">
+                              {m.feedbackHistory.map((feedback) => (
+                                <article key={feedback.id} className="rounded border border-border bg-white p-2 text-xs">
+                                  <time className="text-[11px] text-muted-foreground">
+                                    {dateTime.format(new Date(feedback.createdAt))}
+                                  </time>
+                                  <p className="mt-1 whitespace-pre-wrap text-foreground">{feedback.content}</p>
+                                </article>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">Chưa gửi nhận xét nào.</p>
+                          )}
+                        </div>
+                        <details className="mt-3">
+                          <summary className="cursor-pointer list-none text-xs font-semibold text-red-700 underline [&::-webkit-details-marker]:hidden">Đề xuất xử lý</summary>
+                          <form action={requestStudentDisciplineAction} className="mt-2 w-64 space-y-2 rounded-lg border border-red-200 bg-red-50 p-3">
+                            <input type="hidden" name="enrollmentId" value={m.enrollmentId} />
+                            <select name="action" required className="w-full rounded border border-border bg-white px-2 py-1.5 text-sm"><option value="warning">Cảnh cáo</option><option value="suspend">Đình chỉ học</option><option value="expel">Đuổi học</option></select>
+                            <textarea name="reason" required minLength={3} maxLength={500} rows={3} placeholder="Lý do gửi admin…" className="w-full rounded border border-border bg-white px-2 py-1.5 text-sm" />
+                            <button className="w-full rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Gửi admin phê duyệt</button>
+                          </form>
+                          {m.disciplineHistory.length > 0 && <div className="mt-2 space-y-1 text-[11px] text-muted-foreground">{m.disciplineHistory.slice(0, 3).map((item) => <p key={item.id}>{item.action === "warning" ? "Cảnh cáo" : item.action === "suspend" ? "Đình chỉ" : "Đuổi học"} · {item.status === "pending" ? "Chờ admin" : item.status === "approved" ? "Đã duyệt" : "Từ chối"}</p>)}</div>}
+                        </details>
                       </details>
                     </td>
                   </tr>

@@ -82,6 +82,7 @@
 | `attendance` | `id` · `user_id`(FK→profiles) · `course_id`(FK→courses) · `source`(attendance_source) · `lesson_id`(FK→lessons) · `live_session_id`(FK→live_sessions) · `attended_at` |
 | `notification` | `id` · `user_id`(FK→profiles) · `type`(notif_type) · `title` · `body` · `is_read` · `created_at` |
 | `report` | `id` · `reporter_id`(FK→profiles) · `entity` · `entity_id` · `reason` · `status`(report_status) · `created_at` |
+| `student_discipline_request` **[0022]** | `id` · `enrollment_id`(FK→enrollments) · `student_id`(FK→profiles) · `course_id`(FK→courses) · `requested_by`(FK→profiles) · `action`(`warning`/`suspend`/`expel`) · `reason` · `status`(`pending`/`approved`/`rejected`) · `reviewed_by`(FK→profiles) · `reviewed_at` · `review_reason` · `created_at` |
 
 ---
 
@@ -181,6 +182,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_log_setting_change` **[0011]** | trigger function cho `trg_system_setting_audit`: ghi `activity_log` khi `system_setting` đổi |
 | `fn_review_lesson_video` **[0015]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text` (bắt buộc khi từ chối). Admin duyệt/từ chối video bài giảng, báo giảng viên, ghi log |
 | `fn_lesson_video_review_guard` **[0015]** | trigger function cho `trg_lesson_video_review`: `video_url` đổi → `lessons.video_review = 'pending'` (hoặc `'none'` nếu gỡ video) |
+| `fn_validate_live_session_date` **[0020]** | trigger function cho `trg_live_sessions_validate_date`: chặn tạo/cập nhật buổi live có ngày trước ngày hiện tại |
 | `fn_get_lesson_video` **[sửa 0015]** | thêm điều kiện: học viên chỉ nhận URL khi `video_review = 'approved'` (chủ khóa/admin xem mọi trạng thái) |
 | `fn_request_enroll` **[0017]** | `p_course uuid`. Học viên xin vào lớp khóa MIỄN PHÍ (đã publish) → enrollment `pending`; khóa trả phí báo lỗi |
 | `fn_review_enroll` **[0017]** | `p_enrollment uuid`, `p_approve boolean`. Chủ khóa/admin duyệt (`pending→active`) hoặc từ chối (xóa), báo học viên |
@@ -193,14 +195,18 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 | `fn_request_certificate` **[0019]** | `p_course uuid`. Học viên xin cấp chứng chỉ khi đã ĐẠT bài thi → `certificates.status='pending'` |
 | `fn_review_certificate` **[0019]** | `p_certificate uuid`, `p_approve boolean`. Admin duyệt (`pending→approved`, cấp) hoặc từ chối (xóa), báo học viên |
+| `fn_create_final_exam` **[0021]** | `p_course uuid`, `p_title text`, `p_time_limit integer`, `p_pass_score integer` → `exam_id`, `quiz_id`; GV tạo kỳ thi cuối khóa |
+| `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
+| `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
 | `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
 
-**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`/`rejected`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+**Cột [0021]:** `quizzes.course_id`, `quizzes.is_final`, `exams.quiz_id`, `exams.is_final` — kỳ thi cuối khóa và bộ câu hỏi độc lập với bài học.
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
-**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
+**Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_live_sessions_validate_date` (live_sessions) **[0020]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.
 
 ---
 

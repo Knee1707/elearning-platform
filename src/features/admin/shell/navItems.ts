@@ -12,6 +12,7 @@ import {
   ScrollText,
   Settings,
   ShieldCheck,
+  ShieldAlert,
   Tag,
   Undo2,
   Users,
@@ -57,6 +58,7 @@ const MODERATION_GROUPS: NavGroup[] = [
       { href: "/admin/users", label: "Người dùng", icon: Users },
       { href: "/admin/categories", label: "Danh mục & tag", icon: FolderTree },
       { href: "/admin/certificates", label: "Chứng chỉ", icon: Award },
+      { href: "/admin/student-discipline", label: "Xử lý học viên", icon: ShieldAlert },
     ],
   },
   {

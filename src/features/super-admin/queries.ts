@@ -22,13 +22,21 @@ export interface ActivityEntry {
 
 export const AUDIT_PAGE_SIZE = 30;
 
+export async function getAuditCourseOptions() {
+  const supabase = createClient();
+  const { data, error } = await supabase.from("courses").select("id, title").order("title");
+  if (error) throw error;
+  return (data ?? []).map((row: Row) => ({ id: String(row.id), title: String(row.title) }));
+}
+
 export async function getActivityLog({
   page = 1,
   pageSize = AUDIT_PAGE_SIZE,
   action,
   entity,
   entityId,
-}: { page?: number; pageSize?: number; action?: string; entity?: string; entityId?: string } = {}) {
+  courseId,
+}: { page?: number; pageSize?: number; action?: string; entity?: string; entityId?: string; courseId?: string } = {}) {
   const supabase = createClient();
   let query = supabase
     .from("activity_log")
@@ -39,6 +47,7 @@ export async function getActivityLog({
   if (action) query = query.like("action", `${action}%`);
   if (entity) query = query.eq("entity", entity);
   if (entityId) query = query.eq("entity_id", entityId);
+  if (courseId) query = query.eq("metadata->>course_id", courseId);
 
   const { data, count, error } = await query;
   if (error) throw error;
