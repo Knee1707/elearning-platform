@@ -188,3 +188,244 @@ function mapLesson(row: DatabaseRow): Lesson {
     position: Number(row.position),
   };
 }
+
+// Nhóm danh mục chứa danh sách khóa học (mỗi danh mục hiển thị tối đa 3 thẻ ngang)
+export interface CategoryGroup {
+  id: string;
+  name: string;
+  slug: string;
+  courses: CourseCatalog[];
+}
+
+export const FALLBACK_CATEGORY_GROUPS: CategoryGroup[] = [
+  {
+    id: "cat-python-web",
+    name: "Python & Lập trình",
+    slug: "lap-trinh-web",
+    courses: [
+      {
+        id: "demo-course-py-1",
+        instructorId: "demo-inst-1",
+        categoryId: "cat-python-web",
+        title: "Microsoft Python Development",
+        slug: "lap-trinh-web-nextjs",
+        description: "Khóa học lập trình Python toàn diện từ cơ bản đến xây dựng ứng dụng thực tế.",
+        level: "beginner",
+        price: 499000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "Microsoft",
+        avgRating: 4.8,
+        ratingCount: 142,
+      },
+      {
+        id: "demo-course-py-2",
+        instructorId: "demo-inst-1",
+        categoryId: "cat-python-web",
+        title: "Python for Everybody: Nhập môn đến chuyên sâu",
+        slug: "nhap-mon-frontend",
+        description: "Làm chủ cấu trúc dữ liệu, thuật toán và xử lý tự động hóa với Python.",
+        level: "beginner",
+        price: 0,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "University of Michigan",
+        avgRating: 4.9,
+        ratingCount: 230,
+      },
+      {
+        id: "demo-course-py-3",
+        instructorId: "demo-inst-1",
+        categoryId: "cat-python-web",
+        title: "Khóa học Next.js 14 & TypeScript Thực chiến",
+        slug: "nextjs-co-ban-nang-cao",
+        description: "Xây dựng ứng dụng Web hiện đại chuẩn doanh nghiệp cùng Next.js và Supabase.",
+        level: "intermediate",
+        price: 599000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "ThS. Nguyễn Văn A",
+        avgRating: 5.0,
+        ratingCount: 95,
+      },
+    ],
+  },
+  {
+    id: "cat-data-analytics",
+    name: "Data Analytics & AI",
+    slug: "du-lieu-va-ai",
+    courses: [
+      {
+        id: "demo-course-da-1",
+        instructorId: "demo-inst-2",
+        categoryId: "cat-data-analytics",
+        title: "Google Data Analytics & Trực quan hóa dữ liệu",
+        slug: "phan-tich-du-lieu-python",
+        description: "Học quy trình chuẩn quốc tế về thu thập, làm sạch và phân tích dữ liệu cùng Google.",
+        level: "intermediate",
+        price: 699000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "Google",
+        avgRating: 4.8,
+        ratingCount: 180,
+      },
+      {
+        id: "demo-course-da-2",
+        instructorId: "demo-inst-2",
+        categoryId: "cat-data-analytics",
+        title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
+        slug: "postgresql-supabase-chuyen-sau",
+        description: "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng.",
+        level: "advanced",
+        price: 399000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "TS. Trần Thị B",
+        avgRating: 4.8,
+        ratingCount: 96,
+      },
+      {
+        id: "demo-course-da-3",
+        instructorId: "demo-inst-2",
+        categoryId: "cat-data-analytics",
+        title: "Excel & Power BI Skills for Business Analytics",
+        slug: "nodejs-restful-api",
+        description: "Trực quan hóa chỉ số kinh doanh và dashboard báo cáo tự động cho quản trị viên.",
+        level: "beginner",
+        price: 350000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "Macquarie University",
+        avgRating: 4.9,
+        ratingCount: 112,
+      },
+    ],
+  },
+  {
+    id: "cat-pm-devops",
+    name: "Project Management & DevOps",
+    slug: "ky-nang-nghe-nghiep",
+    courses: [
+      {
+        id: "demo-course-pm-1",
+        instructorId: "demo-inst-3",
+        categoryId: "cat-pm-devops",
+        title: "Microsoft Project Management: Job-Ready Skills",
+        slug: "devops-docker-cicd",
+        description: "Quản trị dự án công nghệ, vận hành Agile Scrum và kiểm soát tiến độ đội ngũ.",
+        level: "intermediate",
+        price: 600000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "Microsoft",
+        avgRating: 4.6,
+        ratingCount: 88,
+      },
+      {
+        id: "demo-course-pm-2",
+        instructorId: "demo-inst-3",
+        categoryId: "cat-pm-devops",
+        title: "Foundations of Agile Project Management",
+        slug: "xay-dung-ung-dung-nextjs-thuc-chien",
+        description: "Nền tảng quản lý dự án linh hoạt chuẩn đầu ra cho quản lý và trưởng nhóm kỹ thuật.",
+        level: "beginner",
+        price: 450000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "Google",
+        avgRating: 4.9,
+        ratingCount: 160,
+      },
+      {
+        id: "demo-course-pm-3",
+        instructorId: "demo-inst-3",
+        categoryId: "cat-pm-devops",
+        title: "DevOps Thực Chiến: Docker, Kubernetes & CI/CD Pipeline",
+        slug: "lap-trinh-flutter-dart",
+        description: "Tự động hóa triển khai, giám sát hệ thống và tối ưu hóa quy trình release phần mềm.",
+        level: "advanced",
+        price: 550000,
+        status: "published",
+        thumbnailUrl: null,
+        isFeatured: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        instructorName: "IBM Skills",
+        avgRating: 4.8,
+        ratingCount: 75,
+      },
+    ],
+  },
+];
+
+// Lấy danh mục kèm tối đa 3 khóa học cho mỗi danh mục
+export async function getCoursesByCategories(): Promise<CategoryGroup[]> {
+  const supabase = createClient();
+  try {
+    const [categoriesRes, coursesRes] = await Promise.all([
+      supabase.from("categories").select("id, name, slug").order("name"),
+      getCourseCatalog(),
+    ]);
+
+    const categories = categoriesRes.data ?? [];
+    const courses = coursesRes ?? [];
+
+    if (categories.length > 0 && courses.length > 0) {
+      const groups: CategoryGroup[] = categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        courses: courses.filter((c) => c.categoryId === cat.id),
+      }));
+
+      // Phân bổ các khóa học chưa có category_id vào các nhóm còn thiếu
+      const unassigned = courses.filter((c) => !categories.some((cat) => cat.id === c.categoryId));
+      if (unassigned.length > 0) {
+        let uIdx = 0;
+        for (const g of groups) {
+          while (g.courses.length < 3 && uIdx < unassigned.length) {
+            g.courses.push(unassigned[uIdx++]);
+          }
+        }
+      }
+
+      // Giới hạn tối đa 3 khóa mỗi danh mục và lọc các danh mục có khóa
+      const validGroups = groups
+        .filter((g) => g.courses.length > 0)
+        .map((g) => ({ ...g, courses: g.courses.slice(0, 3) }));
+
+      if (validGroups.length > 0) {
+        return validGroups;
+      }
+    }
+  } catch {
+    // Dùng fallback nếu DB lỗi hoặc trống
+  }
+
+  return FALLBACK_CATEGORY_GROUPS;
+}

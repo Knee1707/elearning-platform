@@ -12,79 +12,24 @@ import {
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { CourseCard } from "@/components/shared/CourseCard";
-import { getCourseCatalog, type CourseCatalog } from "@/lib/queries/courses";
-
-// Dữ liệu mẫu dự phòng (được dùng khi DB chưa có khóa học hoặc chưa seed)
-const FALLBACK_COURSES: CourseCatalog[] = [
-  {
-    id: "demo-course-1",
-    instructorId: "demo-inst-1",
-    categoryId: "cat-it",
-    title: "Lập trình Web hiện đại với Next.js 14, React & TypeScript",
-    slug: "lap-trinh-web-nextjs",
-    description: "Xây dựng ứng dụng web chuẩn Production từ cơ bản đến nâng cao cùng SSR, RLS và Server Actions.",
-    level: "intermediate",
-    price: 499000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "ThS. Nguyễn Văn A",
-    avgRating: 4.9,
-    ratingCount: 142,
-  },
-  {
-    id: "demo-course-2",
-    instructorId: "demo-inst-2",
-    categoryId: "cat-db",
-    title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
-    slug: "postgresql-supabase-chuyen-sau",
-    description: "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng cho ứng dụng lớn.",
-    level: "advanced",
-    price: 399000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "TS. Trần Thị B",
-    avgRating: 4.8,
-    ratingCount: 96,
-  },
-  {
-    id: "demo-course-3",
-    instructorId: "demo-inst-3",
-    categoryId: "cat-fe",
-    title: "Nhập môn Lập trình Giao diện Web (HTML5, CSS3, Tailwind)",
-    slug: "nhap-mon-frontend",
-    description: "Khóa học miễn phí dành cho người mới bắt đầu muốn tạo dựng các trang web đẹp mắt và responsive.",
-    level: "beginner",
-    price: 0,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "Kỹ sư Lê Hoàng C",
-    avgRating: 4.7,
-    ratingCount: 215,
-  },
-];
+import {
+  getCoursesByCategories,
+  type CategoryGroup,
+  FALLBACK_CATEGORY_GROUPS,
+} from "@/lib/queries/courses";
 
 export default async function HomePage() {
-  let courses: CourseCatalog[] = [];
+  let categoryGroups: CategoryGroup[] = [];
 
   try {
-    courses = await getCourseCatalog();
+    categoryGroups = await getCoursesByCategories();
   } catch {
-    // Nếu chưa cấu hình Supabase hoặc DB trống, dùng dữ liệu demo để trang luôn hiển thị đẹp
-    courses = [];
+    categoryGroups = FALLBACK_CATEGORY_GROUPS;
   }
 
-  const displayCourses = courses.length > 0 ? courses : FALLBACK_COURSES;
-  const featuredCourses = displayCourses.filter((c) => c.isFeatured);
-  const spotlightList = featuredCourses.length > 0 ? featuredCourses : displayCourses.slice(0, 3);
+  if (!categoryGroups || categoryGroups.length === 0) {
+    categoryGroups = FALLBACK_CATEGORY_GROUPS;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
@@ -212,7 +157,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* FEATURED COURSES SECTION */}
+        {/* COURSES BY CATEGORY SECTION (Coursera Style: 3 Columns x 3 Cards) */}
         <section className="py-14 sm:py-20 bg-white border-y border-slate-200/80">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
@@ -222,7 +167,7 @@ export default async function HomePage() {
                   <span>Khóa học được yêu thích</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 mt-2">
-                  Khóa học Tiêu biểu & Nổi bật
+                  Khóa học theo Danh mục
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
                   Được thiết kế bám sát thực tế tuyển dụng, cập nhật công nghệ mới nhất 2026
@@ -238,10 +183,29 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* GRID COURSES */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {spotlightList.map((course) => (
-                <CourseCard key={course.id} course={course} />
+            {/* 3 CỘT DANH MỤC X 3 THẺ CARD NGANG */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {categoryGroups.slice(0, 3).map((group) => (
+                <div
+                  key={group.id}
+                  className="flex flex-col justify-between rounded-2xl border border-blue-100/70 bg-[#F0F5FF] p-4 sm:p-5 shadow-xs"
+                >
+                  <div>
+                    <Link
+                      href={`/courses?category=${group.slug}`}
+                      className="group/cat mb-4 flex items-center gap-1.5 text-base sm:text-lg font-bold text-slate-900 transition-colors hover:text-blue-600"
+                    >
+                      <span>{group.name}</span>
+                      <ArrowRight className="h-4 w-4 text-slate-700 transition-transform group-hover/cat:translate-x-1 group-hover/cat:text-blue-600" />
+                    </Link>
+
+                    <div className="flex flex-col gap-3">
+                      {group.courses.slice(0, 3).map((course) => (
+                        <CourseCard key={course.id} course={course} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
