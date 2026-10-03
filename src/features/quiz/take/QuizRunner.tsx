@@ -65,13 +65,59 @@ export interface QuizRunnerProps {
   courseSlug?: string;
 }
 
-export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-cao" }: QuizRunnerProps) {
+export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   const [quiz, setQuiz] = useState<QuizData | null>(null);
+  const [resolvedSlug, setResolvedSlug] = useState<string | null>(courseSlug || null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+
+  // Tự động tìm slug khóa học tương ứng nếu không được truyền trực tiếp
+  useEffect(() => {
+    if (courseSlug) {
+      setResolvedSlug(courseSlug);
+      return;
+    }
+
+    const supabase = createClient();
+    async function resolveCourseSlug() {
+      try {
+        if (examId) {
+          const { data: exData } = await supabase
+            .from("exams")
+            .select("courses(slug)")
+            .eq("id", examId)
+            .maybeSingle();
+
+          const slug = (exData as any)?.courses?.slug;
+          if (slug) {
+            setResolvedSlug(slug);
+            return;
+          }
+        }
+
+        const { data: qData } = await supabase
+          .from("quizzes")
+          .select("lessons(chapters(courses(slug)))")
+          .eq("id", quizId)
+          .maybeSingle();
+
+        const slug = (qData as any)?.lessons?.chapters?.courses?.slug;
+        if (slug) {
+          setResolvedSlug(slug);
+        }
+      } catch {
+        // Dự phòng về trang khóa học của tôi
+      }
+    }
+
+    resolveCourseSlug();
+  }, [courseSlug, examId, quizId]);
+
+  const effectiveCourseSlug = resolvedSlug || courseSlug || "";
+  const backCourseUrl = effectiveCourseSlug ? `/learn/${effectiveCourseSlug}` : "/my";
 
   useEffect(() => {
     let isMounted = true;
@@ -176,7 +222,7 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
         <h3 className="mt-3 text-base font-semibold">Không tìm thấy bài quiz</h3>
         <p className="mt-1 text-xs text-muted-foreground">Vui lòng kiểm tra lại đường dẫn bài kiểm tra.</p>
         <Link
-          href={`/learn/${courseSlug}`}
+          href={backCourseUrl}
           className="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground"
         >
           Quay lại khóa học
@@ -235,7 +281,7 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
             </button>
 
             <Link
-              href={`/learn/${courseSlug}`}
+              href={backCourseUrl}
               className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
             >
               <span>Tiếp tục bài học</span>

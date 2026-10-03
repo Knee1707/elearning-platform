@@ -77,7 +77,7 @@ export default function MyLearningPage() {
 
         if (error || !data || data.length === 0) {
           if (isMounted) {
-            setCourses(FALLBACK_MY_COURSES);
+            setCourses([]);
           }
         } else if (isMounted) {
           // 2. Tra cứu thêm thông tin slug và thumbnail từ bảng courses để bảo đảm link chính xác

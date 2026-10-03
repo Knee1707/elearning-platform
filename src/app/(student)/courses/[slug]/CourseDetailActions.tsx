@@ -64,6 +64,48 @@ export function CourseDetailActions({
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  // Tải trạng thái yêu thích từ Database khi mở trang
+  useEffect(() => {
+    let isMounted = true;
+    async function checkWishlist() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session?.user) {
+          try {
+            const list: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+            if (list.includes(courseId) && isMounted) {
+              setIsWishlisted(true);
+            }
+          } catch {}
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from("wishlist")
+          .select("course_id")
+          .eq("user_id", session.user.id)
+          .eq("course_id", courseId)
+          .maybeSingle();
+
+        if (!error && data && isMounted) {
+          setIsWishlisted(true);
+        }
+      } catch {
+        // Dự phòng
+      }
+    }
+
+    checkWishlist();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [courseId]);
+
   function showToast(msg: string) {
     setToastMessage(msg);
     setTimeout(() => {
@@ -132,9 +174,15 @@ export function CourseDetailActions({
       } = await supabase.auth.getSession();
 
       if (!session) {
-        setIsWishlisted((prev) => !prev);
+        const next = !isWishlisted;
+        setIsWishlisted(next);
+        try {
+          const list: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+          const updated = next ? Array.from(new Set([...list, courseId])) : list.filter((id) => id !== courseId);
+          localStorage.setItem("demo_wishlist", JSON.stringify(updated));
+        } catch {}
         showToast(
-          !isWishlisted
+          next
             ? "Đã lưu khóa học vào danh sách yêu thích!"
             : "Đã xóa khỏi danh sách yêu thích",
         );

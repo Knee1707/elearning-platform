@@ -42,15 +42,11 @@ export default function MyCertificatesPage() {
       try {
         const data = await getMyCertificates();
         if (isMounted) {
-          if (data && data.length > 0) {
-            setCertificates(data);
-          } else {
-            setCertificates(FALLBACK_CERTIFICATES);
-          }
+          setCertificates(data ?? []);
         }
       } catch {
         if (isMounted) {
-          setCertificates(FALLBACK_CERTIFICATES);
+          setCertificates([]);
         }
       } finally {
         if (isMounted) {
