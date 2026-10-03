@@ -564,28 +564,11 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               type="button"
               onClick={() => prevLesson && setCurrentLessonId(prevLesson.id)}
               disabled={!prevLesson}
-              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 shadow-xs active:scale-95"
+              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-blue-600 disabled:opacity-40 shadow-xs active:scale-95 cursor-pointer"
               title={prevLesson ? `Về bài: ${prevLesson.title}` : "Đây là bài đầu tiên"}
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Bài trước</span>
-            </button>
-
-            {/* Nút đánh dấu hoàn thành video bài học */}
-            <button
-              type="button"
-              onClick={handleCompleteLesson}
-              disabled={!isCurrentLessonUnlocked}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold shadow-xs transition-all active:scale-95 disabled:opacity-50 ${
-                completedLessonIds.includes(currentLesson?.id ?? "")
-                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                  : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-500/20"
-              }`}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              <span>
-                {completedLessonIds.includes(currentLesson?.id ?? "") ? "Đã xong video" : "Hoàn thành video"}
-              </span>
             </button>
 
             {/* Nút bài tiếp theo */}
@@ -696,39 +679,54 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("quiz")}
-                  className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-white shadow-sm transition-all active:scale-95 ${
-                    isCurrentQuizPassed
-                      ? "bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20"
-                      : "bg-blue-600 hover:bg-blue-700 shadow-blue-500/20"
-                  }`}
-                >
-                  <FileQuestion className="h-3.5 w-3.5" />
-                  <span>{isCurrentQuizPassed ? "Xem lại bài Quiz" : "Làm bài Quiz ngay"}</span>
-                </button>
-
-                {isCurrentQuizPassed && nextLesson && (
+              {/* Chỉ hiển thị 1 button duy nhất ở ngoài cùng */}
+              <div className="flex items-center">
+                {isCurrentQuizPassed ? (
+                  nextLesson ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentLessonId(nextLesson.id);
+                        setActiveTab("overview");
+                      }}
+                      className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <span>Tiếp tục bài tập</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTab("quiz");
+                        const tabSection = document.getElementById("lesson-tabs-section");
+                        if (tabSection) {
+                          tabSection.scrollIntoView({ behavior: "smooth" });
+                        }
+                      }}
+                      className="flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 transition-all active:scale-95 cursor-pointer"
+                    >
+                      <FileQuestion className="h-3.5 w-3.5" />
+                      <span>Xem lại bài Quiz</span>
+                    </button>
+                  )
+                ) : (
                   <button
                     type="button"
-                    onClick={() => setCurrentLessonId(nextLesson.id)}
-                    className="flex items-center gap-1.5 rounded-full bg-slate-900 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-slate-800 transition-all active:scale-95"
+                    onClick={() => {
+                      setActiveTab("quiz");
+                      const tabSection = document.getElementById("lesson-tabs-section");
+                      if (tabSection) {
+                        tabSection.scrollIntoView({ behavior: "smooth" });
+                      }
+                    }}
+                    className="flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95 cursor-pointer"
                   >
-                    <span>Bài tiếp</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
+                    <FileQuestion className="h-4 w-4" />
+                    <span>Làm bài Quiz ngay</span>
                   </button>
                 )}
               </div>
-
-              <Link
-                href={`/quiz/${currentLessonQuiz?.id || "50000000-0000-0000-0000-000000000001"}?exam=${finalExam?.examId || "60000000-0000-0000-0000-000000000001"}&course=${course.slug}`}
-                className="flex items-center gap-1.5 rounded-full bg-blue-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
-              >
-                <span>{currentLessonQuiz ? "Làm Quiz bài học" : "Làm Quiz ngay"}</span>
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Link>
             </div>
           )}
 
@@ -797,7 +795,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
           )}
 
           {/* HỆ THỐNG CÁC TABS TƯƠNG TÁC (TỔNG QUAN / GHI CHÚ / HỎI ĐÁP) */}
-          <div className="mt-8">
+          <div id="lesson-tabs-section" className="mt-8">
             {/* Header Tabs */}
             <div className="flex border-b border-slate-200 gap-1 sm:gap-2">
               <button
@@ -970,10 +968,13 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                                   {quizResult.passed && nextLesson && (
                                     <button
                                       type="button"
-                                      onClick={() => setCurrentLessonId(nextLesson.id)}
-                                      className="flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95"
+                                      onClick={() => {
+                                        setCurrentLessonId(nextLesson.id);
+                                        setActiveTab("overview");
+                                      }}
+                                      className="flex items-center gap-1.5 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
                                     >
-                                      <span>Học tiếp bài sau</span>
+                                      <span>Tiếp tục bài tập</span>
                                       <ChevronRight className="h-3.5 w-3.5" />
                                     </button>
                                   )}
@@ -1049,38 +1050,66 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
                         ))}
                       </div>
 
-                      {/* Nút nộp bài */}
+                      {/* Nút nộp bài / Tiếp tục bài tập */}
                       <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
                         <span className="text-xs text-slate-500 font-medium">
-                          Đã chọn:{" "}
-                          <strong className="text-slate-800">
-                            {Object.keys(quizAnswers).length}/{currentQuiz.questions.length}
-                          </strong>{" "}
-                          câu
-                        </span>
-
-                        <button
-                          type="button"
-                          onClick={handleQuizSubmit}
-                          disabled={
-                            isSubmittingQuiz ||
-                            Object.keys(quizAnswers).length === 0 ||
-                            Boolean(quizResult?.passed)
-                          }
-                          className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95"
-                        >
-                          {isSubmittingQuiz ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span>Đang chấm điểm...</span>
-                            </>
+                          {quizResult?.passed || isCurrentQuizPassed ? (
+                            <span className="flex items-center gap-1.5 font-bold text-emerald-700">
+                              <CheckCircle2 className="h-4 w-4" />
+                              Đã vượt qua bài quiz kiểm tra
+                            </span>
                           ) : (
                             <>
-                              <CheckCircle2 className="h-4 w-4" />
-                              <span>Nộp bài Quiz</span>
+                              Đã chọn:{" "}
+                              <strong className="text-slate-800">
+                                {Object.keys(quizAnswers).length}/{currentQuiz.questions.length}
+                              </strong>{" "}
+                              câu
                             </>
                           )}
-                        </button>
+                        </span>
+
+                        {quizResult?.passed || isCurrentQuizPassed ? (
+                          nextLesson ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCurrentLessonId(nextLesson.id);
+                                setActiveTab("overview");
+                              }}
+                              className="flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95 cursor-pointer"
+                            >
+                              <span>Tiếp tục bài tập</span>
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-full">
+                              Đã hoàn thành toàn bộ khóa học
+                            </span>
+                          )
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleQuizSubmit}
+                            disabled={
+                              isSubmittingQuiz ||
+                              Object.keys(quizAnswers).length === 0
+                            }
+                            className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 disabled:opacity-50 transition-all active:scale-95 cursor-pointer"
+                          >
+                            {isSubmittingQuiz ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span>Đang chấm điểm...</span>
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle2 className="h-4 w-4" />
+                                <span>Nộp bài Quiz</span>
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

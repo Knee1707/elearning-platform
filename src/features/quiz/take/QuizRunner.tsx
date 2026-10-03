@@ -384,19 +384,28 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
             <button
               type="button"
               onClick={handleRetake}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Làm lại bài thi</span>
             </button>
 
-            <Link
-              href={backCourseUrl}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
-            >
-              <span>Tiếp tục bài học</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {result.passed ? (
+              <Link
+                href={backCourseUrl}
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>Tiếp tục bài tập</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                href={backCourseUrl}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 shadow-xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>Quay lại bài giảng</span>
+              </Link>
+            )}
           </div>
         </div>
 
