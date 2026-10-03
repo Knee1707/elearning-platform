@@ -4,11 +4,9 @@ import {
   BookOpen,
   Award,
   Video,
-  ShieldCheck,
   CheckCircle2,
   ArrowRight,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { CourseCard } from "@/components/shared/CourseCard";
@@ -211,61 +209,58 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* WHY CHOOSE US SECTION (Bento Style Sáng sủa) */}
+        {/* WHY CHOOSE US SECTION (Coursera & DataCamp Style: Tự định độ, Quiz thực hành, Chứng chỉ số) */}
         <section className="py-16 sm:py-24 bg-[#F8FAFC]">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-14 space-y-2">
               <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                Trải nghiệm vượt trội
+                Trải nghiệm học tập chuẩn quốc tế
               </span>
               <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-                Tại sao bạn nên chọn học tại Nhom7Edu?
+                Phương pháp học tập hiệu quả tại Nhom7Edu
               </h2>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Hệ sinh thái học tập khép kín với các công cụ hỗ trợ thông minh giúp bạn tiếp thu kiến thức nhanh hơn.
+                Mô hình học tập tự định độ kết hợp video bài giảng chuyên sâu, bài tập trắc nghiệm thực hành và chứng chỉ số hóa chuẩn đầu ra.
               </p>
             </div>
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              {/* FEATURE 1 */}
+              {/* FEATURE 1: VIDEO ON-DEMAND & SELF-PACED */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-blue-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
                   <Video className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Học qua Video & Điểm danh tự động
+                  Video Bài giảng & Tự định độ (Self-Paced)
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Trình phát video thông minh nhớ vị trí đang xem dở, cho phép tua tốc độ 1.5x, tự động ghi nhận điểm danh
-                  chuyên cần khi bạn theo dõi đạt từ 95% thời lượng.
+                  Chủ động học tập mọi lúc, mọi nơi theo lịch trình cá nhân. Trình phát video chuyên nghiệp hỗ trợ tùy chỉnh tốc độ, tự động lưu mốc học dở dang và mở khóa bài học tuần tự theo lộ trình rõ ràng.
                 </p>
               </div>
 
-              {/* FEATURE 2 */}
+              {/* FEATURE 2: INTERACTIVE PRACTICE & QUIZZES */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <Users className="h-6 w-6" />
+                  <CheckCircle2 className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Lớp học Trực tiếp (Live Meet)
+                  Thực hành Tương tác & Đánh giá qua Quiz
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Tham gia các buổi trao đổi, giải đáp đồ án trực tiếp cùng giảng viên qua Google Meet chỉ với 1 click, hệ
-                  thống tự động gác quyền bảo mật theo vai trò.
+                  Củng cố và kiểm tra kiến thức ngay sau mỗi bài học với hệ thống câu hỏi trắc nghiệm tương tác, nhận phản hồi và chấm điểm tự động tức thì giúp bạn nắm vững kiến thức từ lý thuyết đến ứng dụng.
                 </p>
               </div>
 
-              {/* FEATURE 3 */}
+              {/* FEATURE 3: VERIFIABLE CERTIFICATE */}
               <div className="rounded-2xl border border-slate-200/90 bg-white p-7 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:border-amber-300 space-y-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
                   <Award className="h-6 w-6" />
                 </div>
                 <h3 className="font-bold text-base text-slate-900">
-                  Chứng chỉ Tốt nghiệp Xác thực QR
+                  Chứng chỉ Chuyên nghiệp Xác thực QR
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
-                  Vượt qua bài thi trắc nghiệm chống gian lận để nhận chứng chỉ danh dự. Bất kỳ nhà tuyển
-                  dụng nào cũng có thể quét mã QR để tra cứu kết quả xác thực công khai.
+                  Hoàn thành toàn bộ lộ trình và vượt qua bài thi chuẩn đầu ra để nhận chứng chỉ điện tử chính thức. Tích hợp mã định danh QR tra cứu công khai, dễ dàng chia sẻ lên hồ sơ LinkedIn và CV xin việc.
                 </p>
               </div>
             </div>
