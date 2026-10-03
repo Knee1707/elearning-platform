@@ -1,9 +1,9 @@
-import Link from "next/link";
-import { CornerDownRight, Search } from "lucide-react";
+import { CornerDownRight } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import { QA_PAGE_SIZE, getQaThreads } from "@/features/admin/queries";
 import { deleteQaAction } from "@/features/admin/actions";
+import { QaFilterBar } from "@/features/admin/QaFilterBar";
 import { FlashMessage, PageHeader, Pagination, ReasonAction, buildHref, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function AdminQaPage({ searchParams }: { searchParams: SearchParams }) {
@@ -13,6 +13,7 @@ export default async function AdminQaPage({ searchParams }: { searchParams: Sear
   const { threads, total } = await getQaThreads({ keyword, page });
   const pageCount = Math.max(1, Math.ceil(total / QA_PAGE_SIZE));
   const here = buildHref("/admin/qa", { q: keyword, page });
+  const hasActiveFilter = Boolean(keyword) || page > 1;
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -22,14 +23,7 @@ export default async function AdminQaPage({ searchParams }: { searchParams: Sear
       />
       <FlashMessage searchParams={searchParams} />
 
-      <form className="mt-6 flex flex-wrap items-center gap-2" role="search">
-        <span className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input name="q" defaultValue={keyword} placeholder="Tìm trong nội dung câu hỏi…" aria-label="Tìm câu hỏi" className="w-72 rounded border border-border bg-background py-2 pl-9 pr-3 text-sm" />
-        </span>
-        <button type="submit" className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Tìm</button>
-        {keyword && <Link href="/admin/qa" className="px-2 text-sm underline">Bỏ lọc</Link>}
-      </form>
+      <QaFilterBar initialKeyword={keyword} hasActiveFilter={hasActiveFilter} />
 
       <div className="mt-6 space-y-4">
         {threads.length ? (

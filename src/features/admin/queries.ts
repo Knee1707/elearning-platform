@@ -12,8 +12,16 @@ import type {
 // Truy vấn đọc cho khu Admin. Quyền đọc do RLS (fn_is_admin) quyết định.
 
 type Row = Record<string, unknown>;
-const nameOf = (rel: unknown) => ((rel as { full_name?: string } | null)?.full_name ?? null) || null;
-const titleOf = (rel: unknown) => ((rel as { title?: string } | null)?.title ?? null) || null;
+const nameOf = (rel: unknown) => {
+  if (!rel) return null;
+  if (Array.isArray(rel)) return ((rel[0] as { full_name?: string } | null)?.full_name ?? null) || null;
+  return ((rel as { full_name?: string } | null)?.full_name ?? null) || null;
+};
+const titleOf = (rel: unknown) => {
+  if (!rel) return null;
+  if (Array.isArray(rel)) return ((rel[0] as { title?: string } | null)?.title ?? null) || null;
+  return ((rel as { title?: string } | null)?.title ?? null) || null;
+};
 // Bỏ ký tự có nghĩa trong cú pháp lọc PostgREST trước khi đưa vào ilike.
 const cleanKeyword = (keyword: string) => keyword.replace(/[%_,()*\\]/g, " ").trim();
 
@@ -475,35 +483,45 @@ export interface QaThreadRow {
 export const QA_PAGE_SIZE = 20;
 
 export async function getQaThreads(filters: { keyword?: string; page?: number }) {
-  const supabase = createClient();
-  const page = filters.page ?? 1;
-  let query = supabase
-    .from("qa_question")
-    .select(
-      "id, content, created_at, profiles(full_name), lessons(title, chapters(courses(title))), qa_answer(id, content, created_at, profiles(full_name))",
-      { count: "exact" },
-    )
-    .order("created_at", { ascending: false })
-    .range((page - 1) * QA_PAGE_SIZE, page * QA_PAGE_SIZE - 1);
-  const cleaned = cleanKeyword(filters.keyword ?? "");
-  if (cleaned) query = query.ilike("content", `%${cleaned}%`);
-  const { data, count, error } = await query;
-  if (error) throw error;
-  const threads = (data ?? []).map((row: Row): QaThreadRow => {
-    const lesson = row.lessons as { title?: string; chapters?: { courses?: { title?: string } | null } | null } | null;
-    return {
-      id: String(row.id),
-      content: String(row.content),
-      createdAt: String(row.created_at),
-      authorName: nameOf(row.profiles),
-      lessonTitle: lesson?.title ?? null,
-      courseTitle: lesson?.chapters?.courses?.title ?? null,
-      answers: ((row.qa_answer as Row[] | null) ?? [])
-        .map((a) => ({ id: String(a.id), content: String(a.content), createdAt: String(a.created_at), authorName: nameOf(a.profiles) }))
-        .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-    };
-  });
-  return { threads, total: count ?? 0 };
+  try {
+    const supabase = createClient();
+    const page = filters.page ?? 1;
+    let query = supabase
+      .from("qa_question")
+      .select(
+        "id, content, created_at, profiles(full_name), lessons(title, chapters(courses(title))), qa_answer(id, content, created_at, profiles(full_name))",
+        { count: "exact" },
+      )
+      .order("created_at", { ascending: false })
+      .range((page - 1) * QA_PAGE_SIZE, page * QA_PAGE_SIZE - 1);
+    const cleaned = cleanKeyword(filters.keyword ?? "");
+    if (cleaned) query = query.ilike("content", `%${cleaned}%`);
+    const { data, count, error } = await query;
+    if (error) {
+      console.error("[getQaThreads] query error:", error);
+      return { threads: [], total: 0 };
+    }
+    const threads = (data ?? []).map((row: Row): QaThreadRow => {
+      const lesson = (Array.isArray(row.lessons) ? row.lessons[0] : row.lessons) as Row | null | undefined;
+      const chapter = (Array.isArray(lesson?.chapters) ? lesson?.chapters[0] : lesson?.chapters) as Row | null | undefined;
+      const course = (Array.isArray(chapter?.courses) ? chapter?.courses[0] : chapter?.courses) as Row | null | undefined;
+      return {
+        id: String(row.id),
+        content: String(row.content),
+        createdAt: String(row.created_at),
+        authorName: nameOf(row.profiles),
+        lessonTitle: typeof lesson?.title === "string" ? lesson.title : null,
+        courseTitle: typeof course?.title === "string" ? course.title : null,
+        answers: ((row.qa_answer as Row[] | null) ?? [])
+          .map((a) => ({ id: String(a.id), content: String(a.content), createdAt: String(a.created_at), authorName: nameOf(a.profiles) }))
+          .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
+      };
+    });
+    return { threads, total: count ?? 0 };
+  } catch (err) {
+    console.error("[getQaThreads] unexpected error:", err);
+    return { threads: [], total: 0 };
+  }
 }
 
 // ------------------------------------------------------------------ //
@@ -532,15 +550,74 @@ export type PendingDisciplineRequest = {
 };
 
 export async function getPendingStudentDiscipline(): Promise<PendingDisciplineRequest[]> {
-  const supabase = createClient();
-  const { data, error } = await supabase.from("student_discipline_request")
-    .select("id, enrollment_id, action, reason, created_at, profiles(full_name), courses(title)")
-    .eq("status", "pending").order("created_at", { ascending: false });
-  if (error) throw error;
-  return (data ?? []).map((row: Row) => ({
-    id: String(row.id), enrollmentId: String(row.enrollment_id), studentName: nameOf(row.profiles), courseTitle: titleOf(row.courses),
-    action: String(row.action), reason: String(row.reason), createdAt: String(row.created_at),
-  }));
+  try {
+    const supabase = createClient();
+    // student_discipline_request có 3 khóa ngoại tới profiles (student_id, requested_by, reviewed_by).
+    // Dùng profiles!student_id(full_name) để PostgREST định hướng đúng quan hệ cần join.
+    let { data, error } = await supabase
+      .from("student_discipline_request")
+      .select("id, enrollment_id, action, reason, created_at, profiles!student_id(full_name), courses(title)")
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("[getPendingStudentDiscipline] primary embed failed, trying constraint fallback:", error.message);
+      const fallback = await supabase
+        .from("student_discipline_request")
+        .select("id, enrollment_id, action, reason, created_at, profiles!student_discipline_request_student_id_fkey(full_name), courses(title)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (fallback.error) {
+        console.warn("[getPendingStudentDiscipline] constraint fallback failed, trying separate lookups:", fallback.error.message);
+        const simple = await supabase
+          .from("student_discipline_request")
+          .select("id, enrollment_id, student_id, course_id, action, reason, created_at")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false });
+
+        if (simple.error || !simple.data) {
+          console.error("[getPendingStudentDiscipline] all queries failed:", simple.error);
+          return [];
+        }
+
+        const studentIds = Array.from(new Set(simple.data.map((r: Row) => String(r.student_id)).filter(Boolean)));
+        const courseIds = Array.from(new Set(simple.data.map((r: Row) => String(r.course_id)).filter(Boolean)));
+
+        const [profilesRes, coursesRes] = await Promise.all([
+          studentIds.length > 0 ? supabase.from("profiles").select("id, full_name").in("id", studentIds) : { data: [] },
+          courseIds.length > 0 ? supabase.from("courses").select("id, title").in("id", courseIds) : { data: [] },
+        ]);
+
+        const profileMap = new Map((profilesRes.data ?? []).map((p: Row) => [String(p.id), String(p.full_name ?? "")]));
+        const courseMap = new Map((coursesRes.data ?? []).map((c: Row) => [String(c.id), String(c.title ?? "")]));
+
+        return simple.data.map((row: Row) => ({
+          id: String(row.id),
+          enrollmentId: String(row.enrollment_id),
+          studentName: profileMap.get(String(row.student_id)) || null,
+          courseTitle: courseMap.get(String(row.course_id)) || null,
+          action: String(row.action),
+          reason: String(row.reason),
+          createdAt: String(row.created_at),
+        }));
+      }
+      data = fallback.data;
+    }
+
+    return (data ?? []).map((row: Row) => ({
+      id: String(row.id),
+      enrollmentId: String(row.enrollment_id),
+      studentName: nameOf(row.profiles),
+      courseTitle: titleOf(row.courses),
+      action: String(row.action),
+      reason: String(row.reason),
+      createdAt: String(row.created_at),
+    }));
+  } catch (err) {
+    console.error("[getPendingStudentDiscipline] unexpected error:", err);
+    return [];
+  }
 }
 
 const CERT_SELECT = "id, code, issued_at, revoked_at, revoked_reason, status, user_id, profiles!inner(full_name), courses(title)";
