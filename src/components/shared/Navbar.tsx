@@ -17,6 +17,7 @@ import {
   X,
   ChevronDown,
   ReceiptText,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/domain";
@@ -46,89 +47,128 @@ export function Navbar() {
   // Lắng nghe và tải thông tin đăng nhập, giỏ hàng, thông báo
   useEffect(() => {
     let isMounted = true;
+    const supabase = createClient();
 
     async function loadUserData() {
-      // 1. Kiểm tra nếu đang ở chế độ Demo Login
-      const isDemo = typeof window !== "undefined" && localStorage.getItem("demo_logged_in") === "true";
-      if (isDemo && isMounted) {
-        if (typeof document !== "undefined" && !document.cookie.includes("demo_logged_in=true")) {
-          document.cookie = "demo_logged_in=true; path=/; max-age=86400; SameSite=Lax";
-        }
-        setProfile({
-          id: "00000000-0000-0000-0000-000000000002",
-          fullName: "Trần Thị Học Viên A",
-          avatarUrl: null,
-          role: "student",
-          isBanned: false,
-          createdAt: new Date().toISOString(),
-        });
-        
-        // Đọc số lượng giỏ hàng từ localStorage (nếu có thêm vào giỏ trong demo mode)
-        try {
-          const demoCart = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
-          setCartCount(demoCart.length > 0 ? demoCart.length : 1);
-        } catch {
-          setCartCount(1);
-        }
-
-        setUnreadNotifsCount(2);
-        return;
-      }
-
       try {
-        const supabase = createClient();
         const {
           data: { session },
         } = await supabase.auth.getSession();
 
-        if (!session?.user || !isMounted) {
+        if (session?.user) {
+          // Xóa cờ demo_logged_in nếu người dùng đang có phiên thật
+          if (typeof window !== "undefined" && localStorage.getItem("demo_logged_in")) {
+            localStorage.removeItem("demo_logged_in");
+            document.cookie = "demo_logged_in=; path=/; max-age=0";
+          }
+
+          // Tải hồ sơ người dùng
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
+          if (profileData && isMounted) {
+            setProfile({
+              id: profileData.id,
+              fullName: profileData.full_name,
+              avatarUrl: profileData.avatar_url,
+              role: profileData.role,
+              isBanned: profileData.is_banned,
+              createdAt: profileData.created_at,
+            });
+          } else if (isMounted) {
+            setProfile({
+              id: session.user.id,
+              fullName:
+                session.user.user_metadata?.full_name ||
+                session.user.email?.split("@")[0] ||
+                "Học viên",
+              avatarUrl: session.user.user_metadata?.avatar_url || null,
+              role: session.user.user_metadata?.role || "student",
+              isBanned: false,
+              createdAt: session.user.created_at,
+            });
+          }
+
+          // Tải số lượng giỏ hàng thật
+          const { count: cartTotal } = await supabase
+            .from("cart_item")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", session.user.id);
+
           if (isMounted) {
+            setCartCount(cartTotal ?? 0);
+          }
+
+          // Tải số thông báo chưa đọc thật của chính học viên này
+          const { count: notifTotal } = await supabase
+            .from("notification")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", session.user.id)
+            .eq("is_read", false);
+
+          if (isMounted) {
+            setUnreadNotifsCount(notifTotal ?? 0);
+          }
+
+          return;
+        }
+
+        // 2. Nếu không có session Supabase, kiểm tra chế độ Demo Login
+        const isDemo =
+          typeof window !== "undefined" &&
+          localStorage.getItem("demo_logged_in") === "true";
+
+        if (isDemo && isMounted) {
+          if (
+            typeof document !== "undefined" &&
+            !document.cookie.includes("demo_logged_in=true")
+          ) {
+            document.cookie =
+              "demo_logged_in=true; path=/; max-age=86400; SameSite=Lax";
+          }
+          setProfile({
+            id: "00000000-0000-0000-0000-000000000002",
+            fullName: "Trần Thị Học Viên A",
+            avatarUrl: null,
+            role: "student",
+            isBanned: false,
+            createdAt: new Date().toISOString(),
+          });
+
+          try {
+            const demoCart = JSON.parse(
+              localStorage.getItem("demo_cart_items") || "[]"
+            );
+            setCartCount(demoCart.length);
+          } catch {
+            setCartCount(0);
+          }
+
+          setUnreadNotifsCount(0);
+          return;
+        }
+
+        // 3. Khách vãng lai (chưa đăng nhập)
+        if (isMounted) {
+          setProfile(null);
+          setCartCount(0);
+          setUnreadNotifsCount(0);
+        }
+      } catch {
+        // Dự phòng an toàn nếu Supabase chưa kết nối
+        if (isMounted) {
+          const isDemo =
+            typeof window !== "undefined" &&
+            localStorage.getItem("demo_logged_in") === "true";
+          if (!isDemo) {
             setProfile(null);
             setCartCount(0);
             setUnreadNotifsCount(0);
           }
-          return;
         }
-
-        // Tải hồ sơ người dùng
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .maybeSingle();
-
-        if (profileData && isMounted) {
-          setProfile({
-            id: profileData.id,
-            fullName: profileData.full_name,
-            avatarUrl: profileData.avatar_url,
-            role: profileData.role,
-            isBanned: profileData.is_banned,
-            createdAt: profileData.created_at,
-          });
-        }
-
-        // Tải số lượng giỏ hàng
-        const { count: cartTotal } = await supabase
-          .from("cart_item")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", session.user.id);
-
-        if (isMounted) {
-          setCartCount(cartTotal ?? 0);
-        }
-
-        // Tải số thông báo chưa đọc
-        const { count: notifTotal } = await supabase
-          .from("notification")
-          .select("id", { count: "exact", head: true })
-          .eq("is_read", false);
-
-        if (isMounted) {
-          setUnreadNotifsCount(notifTotal ?? 0);
-        }
-      } catch {
-        // Dự phòng an toàn nếu Supabase chưa kết nối
       }
     }
 
@@ -140,9 +180,17 @@ export function Navbar() {
     }
     window.addEventListener("cart-updated", handleCartUpdate);
 
+    // Lắng nghe thay đổi trạng thái phiên Auth
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      loadUserData();
+    });
+
     return () => {
       isMounted = false;
       window.removeEventListener("cart-updated", handleCartUpdate);
+      subscription?.unsubscribe();
     };
   }, [pathname]);
 
@@ -150,10 +198,14 @@ export function Navbar() {
   async function handleDemoLogin() {
     try {
       const supabase = createClient();
-      await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: "hva@demo.local",
         password: "Password123!",
       });
+      if (!error) {
+        window.dispatchEvent(new Event("cart-updated"));
+        return;
+      }
     } catch {
       // Bỏ qua lỗi nếu chưa có server Supabase thật
     }
@@ -171,8 +223,13 @@ export function Navbar() {
       isBanned: false,
       createdAt: new Date().toISOString(),
     });
-    setCartCount(1);
-    setUnreadNotifsCount(2);
+    try {
+      const demoCart = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+      setCartCount(demoCart.length);
+    } catch {
+      setCartCount(0);
+    }
+    setUnreadNotifsCount(0);
     window.dispatchEvent(new Event("cart-updated"));
   }
 
@@ -344,6 +401,15 @@ export function Navbar() {
                     >
                       <Award className="h-4 w-4 text-amber-500" />
                       <span>Chứng chỉ đã đạt</span>
+                    </Link>
+
+                    <Link
+                      href="/cart#wishlist"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                    >
+                      <Heart className="h-4 w-4 text-rose-500" />
+                      <span>Khóa học yêu thích (Wishlist)</span>
                     </Link>
 
                     <Link

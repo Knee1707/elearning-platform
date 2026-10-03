@@ -37,10 +37,16 @@ export function CourseDetailActions({
 }: CourseDetailActionsProps) {
   const router = useRouter();
   const free = price === 0;
-  const [isEnrolled] = useState(initialEnrolled || enrollStatus === "active");
+  const [isEnrolled, setIsEnrolled] = useState(initialEnrolled || enrollStatus === "active");
   const [requestState, setRequestState] = useState<"none" | "pending">(
     enrollStatus === "pending" ? "pending" : "none",
   );
+
+  // Đồng bộ lại state khi props từ server thay đổi
+  useEffect(() => {
+    setIsEnrolled(initialEnrolled || enrollStatus === "active");
+    setRequestState(enrollStatus === "pending" ? "pending" : "none");
+  }, [initialEnrolled, enrollStatus]);
 
   // Khóa miễn phí: học viên xin vào lớp, chờ giảng viên duyệt.
   async function handleRequestEnroll() {
@@ -64,10 +70,10 @@ export function CourseDetailActions({
   const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Tải trạng thái yêu thích từ Database khi mở trang
+  // Tải trạng thái yêu thích & ghi danh từ Database khi mở trang
   useEffect(() => {
     let isMounted = true;
-    async function checkWishlist() {
+    async function checkWishlistAndEnrollment() {
       try {
         const supabase = createClient();
         const {
@@ -84,22 +90,40 @@ export function CourseDetailActions({
           return;
         }
 
-        const { data, error } = await supabase
+        // 1. Kiểm tra Yêu thích
+        const { data: wishData } = await supabase
           .from("wishlist")
           .select("course_id")
           .eq("user_id", session.user.id)
           .eq("course_id", courseId)
           .maybeSingle();
 
-        if (!error && data && isMounted) {
+        if (wishData && isMounted) {
           setIsWishlisted(true);
+        }
+
+        // 2. Kiểm tra Trạng thái ghi danh (Enrollment)
+        const { data: enrData } = await supabase
+          .from("enrollments")
+          .select("status")
+          .eq("user_id", session.user.id)
+          .eq("course_id", courseId)
+          .maybeSingle();
+
+        if (enrData && isMounted) {
+          if (enrData.status === "active") {
+            setIsEnrolled(true);
+            setRequestState("none");
+          } else if (enrData.status === "pending") {
+            setRequestState("pending");
+          }
         }
       } catch {
         // Dự phòng
       }
     }
 
-    checkWishlist();
+    checkWishlistAndEnrollment();
 
     return () => {
       isMounted = false;
@@ -247,13 +271,30 @@ export function CourseDetailActions({
 
       {/* CÁC NÚT HÀNH ĐỘNG (Pill shapes) */}
       {isEnrolled ? (
-        <Link
-          href={`/learn/${courseSlug}`}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-500/20 transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95"
-        >
-          <PlayCircle className="h-5 w-5" />
-          <span>Vào không gian học ngay</span>
-        </Link>
+        <div className="space-y-2.5">
+          <Link
+            href={`/learn/${courseSlug}`}
+            className="flex w-full items-center justify-center gap-2 rounded-full bg-emerald-600 px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-emerald-500/20 transition-all hover:bg-emerald-700 hover:shadow-lg active:scale-95"
+          >
+            <PlayCircle className="h-5 w-5" />
+            <span>Vào không gian học ngay</span>
+          </Link>
+          <p className="text-center text-[11px] text-emerald-600 font-semibold flex items-center justify-center gap-1">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            <span>Bạn đã tham gia khóa học này</span>
+          </p>
+          <button
+            onClick={handleToggleWishlist}
+            className={`flex w-full items-center justify-center gap-2 rounded-full border px-4 py-2.5 text-xs font-bold transition-all ${
+              isWishlisted
+                ? "bg-rose-50 border-rose-200 text-rose-600"
+                : "border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <Heart className={`h-3.5 w-3.5 ${isWishlisted ? "fill-rose-600" : ""}`} />
+            <span>{isWishlisted ? "Đã lưu vào Yêu thích" : "Lưu vào danh sách yêu thích"}</span>
+          </button>
+        </div>
       ) : free ? (
         <div className="space-y-2.5">
           {/* KHÓA MIỄN PHÍ: XIN VÀO LỚP → CHỜ GIẢNG VIÊN DUYỆT */}

@@ -16,11 +16,23 @@ import {
   User,
   AlertCircle,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
 
 interface CartCourseItem {
+  id: string;
+  courseId: string;
+  title: string;
+  slug: string;
+  thumbnailUrl: string | null;
+  instructorName: string;
+  level: string;
+  price: number;
+}
+
+interface WishlistCourseItem {
   id: string;
   courseId: string;
   title: string;
@@ -48,6 +60,8 @@ const DEMO_CART_ITEMS: CartCourseItem[] = [
 export function CartView() {
   const router = useRouter();
   const [items, setItems] = useState<CartCourseItem[]>([]);
+  const [wishlistItems, setWishlistItems] = useState<WishlistCourseItem[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [couponCode, setCouponCode] = useState<string>("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
@@ -182,10 +196,95 @@ export function CartView() {
       }
     }
 
+    async function fetchWishlist() {
+      setWishlistLoading(true);
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          const { data, error } = await supabase
+            .from("wishlist")
+            .select(`
+              id,
+              course_id,
+              courses (
+                id,
+                title,
+                slug,
+                price,
+                thumbnail_url,
+                level,
+                profiles!courses_instructor_id_fkey (full_name)
+              )
+            `)
+            .eq("user_id", session.user.id);
+
+          if (!error && data && data.length > 0) {
+            const list: WishlistCourseItem[] = [];
+            for (const row of data as any[]) {
+              const c = row.courses;
+              if (c) {
+                list.push({
+                  id: row.id,
+                  courseId: c.id,
+                  title: c.title,
+                  slug: c.slug,
+                  thumbnailUrl: c.thumbnail_url,
+                  instructorName: c.profiles?.full_name || "Giảng viên LMS",
+                  level: c.level || "Cơ bản",
+                  price: Number(c.price || 0),
+                });
+              }
+            }
+            setWishlistItems(list);
+            return;
+          }
+        }
+
+        // Fallback demo từ localStorage
+        try {
+          const demoWishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+          if (demoWishIds.length > 0) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title, slug, price, thumbnail_url, level, profiles!courses_instructor_id_fkey(full_name)")
+              .in("id", demoWishIds);
+
+            if (cData && cData.length > 0) {
+              setWishlistItems(
+                cData.map((c: any) => ({
+                  id: c.id,
+                  courseId: c.id,
+                  title: c.title,
+                  slug: c.slug,
+                  thumbnailUrl: c.thumbnail_url,
+                  instructorName: c.profiles?.full_name || "Giảng viên LMS",
+                  level: c.level || "Cơ bản",
+                  price: Number(c.price || 0),
+                }))
+              );
+              return;
+            }
+          }
+        } catch {}
+
+        setWishlistItems([]);
+      } catch {
+        setWishlistItems([]);
+      } finally {
+        setWishlistLoading(false);
+      }
+    }
+
     fetchCart();
+    fetchWishlist();
 
     const handleCartUpdated = () => {
       fetchCart();
+      fetchWishlist();
     };
     window.addEventListener("cart-updated", handleCartUpdated);
     return () => {
@@ -198,6 +297,125 @@ export function CartView() {
     if (!loading) setSelectedIds(new Set(items.map((i) => i.courseId)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
+
+  // Chuyển khóa học từ Yêu thích vào Giỏ hàng
+  async function handleMoveToCart(wishItem: WishlistCourseItem) {
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        await supabase.rpc("fn_add_to_cart", { p_course: wishItem.courseId });
+        await supabase.rpc("fn_toggle_wishlist", { p_course: wishItem.courseId });
+      }
+
+      try {
+        const cartIds: string[] = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
+        if (!cartIds.includes(wishItem.courseId)) {
+          cartIds.push(wishItem.courseId);
+          localStorage.setItem("demo_cart_items", JSON.stringify(cartIds));
+        }
+        const wishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+        const nextWish = wishIds.filter((id) => id !== wishItem.courseId);
+        localStorage.setItem("demo_wishlist", JSON.stringify(nextWish));
+      } catch {}
+
+      setWishlistItems((prev) => prev.filter((w) => w.courseId !== wishItem.courseId));
+      setItems((prev) => {
+        if (prev.some((it) => it.courseId === wishItem.courseId)) return prev;
+        return [
+          ...prev,
+          {
+            id: `cart-${wishItem.courseId}`,
+            courseId: wishItem.courseId,
+            title: wishItem.title,
+            slug: wishItem.slug,
+            thumbnailUrl: wishItem.thumbnailUrl,
+            instructorName: wishItem.instructorName,
+            level: wishItem.level,
+            price: wishItem.price,
+          },
+        ];
+      });
+
+      setFlash(`Đã chuyển khóa học "${wishItem.title}" vào giỏ hàng!`);
+      setTimeout(() => setFlash(null), 3500);
+      window.dispatchEvent(new Event("cart-updated"));
+    } catch {
+      setFlash("Không thể chuyển vào giỏ hàng. Vui lòng thử lại.");
+    }
+  }
+
+  // Xóa khỏi danh sách yêu thích
+  async function handleRemoveWishlist(courseId: string) {
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        await supabase.rpc("fn_toggle_wishlist", { p_course: courseId });
+      }
+
+      try {
+        const wishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+        const nextWish = wishIds.filter((id) => id !== courseId);
+        localStorage.setItem("demo_wishlist", JSON.stringify(nextWish));
+      } catch {}
+
+      setWishlistItems((prev) => prev.filter((w) => w.courseId !== courseId));
+      setFlash("Đã xóa khóa học khỏi danh sách yêu thích");
+      setTimeout(() => setFlash(null), 3000);
+    } catch {
+      setWishlistItems((prev) => prev.filter((w) => w.courseId !== courseId));
+    }
+  }
+
+  // Chuyển khóa học từ Giỏ hàng sang Danh sách yêu thích
+  async function handleMoveToWishlist(item: CartCourseItem) {
+    await handleRemoveItem(item.courseId, item.id);
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        await supabase.rpc("fn_toggle_wishlist", { p_course: item.courseId });
+      }
+
+      try {
+        const wishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+        if (!wishIds.includes(item.courseId)) {
+          wishIds.push(item.courseId);
+          localStorage.setItem("demo_wishlist", JSON.stringify(wishIds));
+        }
+      } catch {}
+
+      setWishlistItems((prev) => {
+        if (prev.some((w) => w.courseId === item.courseId)) return prev;
+        return [
+          {
+            id: `wish-${item.courseId}`,
+            courseId: item.courseId,
+            title: item.title,
+            slug: item.slug,
+            thumbnailUrl: item.thumbnailUrl,
+            instructorName: item.instructorName,
+            level: item.level,
+            price: item.price,
+          },
+          ...prev,
+        ];
+      });
+
+      setFlash(`Đã chuyển khóa học "${item.title}" vào Danh sách yêu thích`);
+      setTimeout(() => setFlash(null), 3000);
+    } catch {}
+  }
 
   // Xóa khóa học khỏi giỏ
   async function handleRemoveItem(courseId: string, itemId: string) {
@@ -398,64 +616,56 @@ export function CartView() {
     );
   }
 
-  // MÀN HÌNH GIỎ HÀNG TRỐNG
-  if (!loading && items.length === 0) {
-    return (
-      <div className="mx-auto max-w-md py-16 text-center space-y-5">
-        <div className="rounded-3xl border border-slate-200 bg-white p-10 shadow-sm space-y-4">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-            <ShoppingBag className="h-8 w-8" />
-          </div>
-
-          <div className="space-y-1">
-            <h2 className="text-lg font-black text-slate-900">Giỏ hàng của bạn đang trống</h2>
-            <p className="text-xs text-slate-500">
-              Bạn chưa chọn khóa học nào. Hãy khám phá hơn 50+ khóa học chất lượng cao tại Nhom7Edu!
-            </p>
-          </div>
-
-          <Link
-            href="/courses"
-            className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-6 py-3 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
-          >
-            <span>Khám phá khóa học ngay</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 pt-6">
-      {/* CỘT TRÁI: DANH SÁCH MÓN HÀNG */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
-          <h2 className="text-base font-black text-slate-900">
-            Khóa học trong giỏ ({items.length})
-          </h2>
-          {items.length > 0 && (
-            <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600">
-              <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 accent-blue-600" />
-              <span>Chọn tất cả</span>
-            </label>
+    <div className="space-y-12 pt-6">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* CỘT TRÁI: DANH SÁCH MÓN HÀNG */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
+            <h2 className="text-base font-black text-slate-900">
+              Khóa học trong giỏ ({items.length})
+            </h2>
+            {items.length > 0 && (
+              <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-slate-600">
+                <input type="checkbox" checked={allSelected} onChange={toggleSelectAll} className="h-4 w-4 accent-blue-600" />
+                <span>Chọn tất cả</span>
+              </label>
+            )}
+          </div>
+
+          {flash && (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700 animate-in fade-in">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{flash}</span>
+            </div>
           )}
-        </div>
 
-        {flash && (
-          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-700">
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
-            <span>{flash}</span>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="flex py-12 items-center justify-center text-slate-400 text-xs">
-            <Loader2 className="h-5 w-5 animate-spin mr-2 text-blue-600" />
-            <span>Đang tải giỏ hàng...</span>
-          </div>
-        ) : (
-          <div className="space-y-3">
+          {loading ? (
+            <div className="flex py-12 items-center justify-center text-slate-400 text-xs">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-blue-600" />
+              <span>Đang tải giỏ hàng...</span>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center space-y-3">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                <ShoppingBag className="h-7 w-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-black text-slate-900">Giỏ hàng của bạn đang trống</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Bạn chưa chọn khóa học nào. Hãy khám phá khóa học mới hoặc chọn từ danh sách yêu thích bên dưới!
+                </p>
+              </div>
+              <Link
+                href="/courses"
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-all active:scale-95"
+              >
+                <span>Khám phá khóa học ngay</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
             {items.map((item) => (
               <div
                 key={item.id}
@@ -497,10 +707,19 @@ export function CartView() {
                 </div>
 
                 {/* PRICE & REMOVE BUTTON */}
-                <div className="flex items-center justify-between sm:justify-end gap-4 border-t border-slate-100 sm:border-0 pt-2 sm:pt-0">
+                <div className="flex items-center justify-between sm:justify-end gap-3 border-t border-slate-100 sm:border-0 pt-2 sm:pt-0">
                   <span className="text-base font-black text-blue-600 font-mono">
                     {item.price > 0 ? formatPrice(item.price) : "Miễn phí"}
                   </span>
+
+                  <button
+                    onClick={() => handleMoveToWishlist(item)}
+                    title="Chuyển vào danh sách yêu thích"
+                    className="flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-rose-600 transition-colors px-2.5 py-1.5 rounded-full border border-slate-200 hover:border-rose-200 hover:bg-rose-50"
+                  >
+                    <Heart className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Lưu sau</span>
+                  </button>
 
                   <button
                     onClick={() => handleRemoveItem(item.courseId, item.id)}
@@ -644,6 +863,135 @@ export function CartView() {
           </div>
         </div>
       </div>
+    </div>
+
+      {/* KHỐI 2: DANH SÁCH KHÓA HỌC YÊU THÍCH (WISHLIST) */}
+      <section id="wishlist" className="pt-8 border-t border-slate-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 shadow-xs">
+              <Heart className="h-5 w-5 fill-rose-500 text-rose-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                Danh sách khóa học yêu thích (Wishlist)
+              </h2>
+              <p className="text-xs text-slate-500 font-medium">
+                Những khóa học bạn đã lưu tim để theo dõi hoặc chuẩn bị đăng ký học
+              </p>
+            </div>
+          </div>
+
+          <span className="self-start sm:self-auto rounded-full bg-slate-100 border border-slate-200/80 px-3 py-1 text-xs font-bold text-slate-700">
+            {wishlistItems.length} khóa học
+          </span>
+        </div>
+
+        {wishlistLoading ? (
+          <div className="flex items-center justify-center py-12 text-slate-400 gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <span className="text-xs font-medium">Đang tải danh sách yêu thích...</span>
+          </div>
+        ) : wishlistItems.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-8 text-center space-y-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-400">
+              <Heart className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-bold text-slate-700">
+              Danh sách yêu thích của bạn đang trống
+            </p>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Khi xem các khóa học, bạn hãy bấm vào nút &quot;Lưu vào danh sách yêu thích&quot; để lưu lại các khóa học bạn quan tâm vào đây.
+            </p>
+            <div className="pt-1">
+              <Link
+                href="/courses"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 transition-colors"
+              >
+                <span>Khám phá khóa học ngay</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {wishlistItems.map((wish) => {
+              const inCart = items.some((it) => it.courseId === wish.courseId);
+              return (
+                <div
+                  key={wish.id}
+                  className="flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs hover:shadow-md transition-all group"
+                >
+                  <div className="space-y-3">
+                    <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden">
+                      {wish.thumbnailUrl ? (
+                        <img
+                          src={wish.thumbnailUrl}
+                          alt={wish.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-tr from-slate-100 to-rose-50 text-rose-500">
+                          <Heart className="h-8 w-8 fill-rose-200 text-rose-400" />
+                        </div>
+                      )}
+                      <span className="absolute top-2 left-2 rounded-full bg-slate-900/70 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                        {wish.level}
+                      </span>
+                    </div>
+
+                    <div>
+                      <Link
+                        href={`/courses/${wish.slug}`}
+                        className="font-bold text-sm text-slate-900 hover:text-blue-600 transition-colors line-clamp-2 leading-snug"
+                      >
+                        {wish.title}
+                      </Link>
+                      <p className="text-[11px] text-slate-400 mt-1 font-medium flex items-center gap-1">
+                        <User className="h-3 w-3 text-slate-400" />
+                        <span>{wish.instructorName}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 mt-4 space-y-3">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-[11px] text-slate-400 font-medium">Học phí</span>
+                      <span className="text-base font-black text-blue-600 font-mono">
+                        {wish.price === 0 ? "Miễn phí" : formatPrice(wish.price)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {inCart ? (
+                        <div className="flex-1 text-center py-2 text-xs font-bold text-emerald-600 bg-emerald-50 rounded-full border border-emerald-100">
+                          ✓ Đã trong giỏ
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleMoveToCart(wish)}
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-full bg-blue-600 py-2 px-3 text-xs font-bold text-white hover:bg-blue-700 shadow-xs transition-all active:scale-95"
+                        >
+                          <ShoppingBag className="h-3.5 w-3.5" />
+                          <span>Chuyển vào giỏ</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleRemoveWishlist(wish.courseId)}
+                        title="Bỏ thích"
+                        className="flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 transition-all active:scale-95"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

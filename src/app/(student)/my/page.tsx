@@ -13,9 +13,11 @@ import {
   Sparkles,
   Search,
   ReceiptText,
+  Heart,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { createClient } from "@/lib/supabase/client";
+import { formatPrice } from "@/lib/utils";
 
 interface EnrolledCourseItem {
   courseId: string;
@@ -27,6 +29,17 @@ interface EnrolledCourseItem {
   progressPercent: number;
   thumbnailUrl: string | null;
   lastStudiedLessonTitle?: string;
+}
+
+interface WishlistCourseItem {
+  id: string;
+  courseId: string;
+  slug: string;
+  title: string;
+  instructorName: string;
+  price: number;
+  level: string;
+  thumbnailUrl: string | null;
 }
 
 // Danh sách khóa học mẫu khi offline / demo
@@ -57,7 +70,8 @@ const FALLBACK_MY_COURSES: EnrolledCourseItem[] = [
 
 export default function MyLearningPage() {
   const [courses, setCourses] = useState<EnrolledCourseItem[]>([]);
-  const [filterTab, setFilterTab] = useState<"all" | "in_progress" | "completed">("all");
+  const [wishlistCourses, setWishlistCourses] = useState<WishlistCourseItem[]>([]);
+  const [filterTab, setFilterTab] = useState<"all" | "in_progress" | "completed" | "wishlist">("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [feedback, setFeedback] = useState<
@@ -172,8 +186,96 @@ export default function MyLearningPage() {
       }
     }
 
+    async function loadWishlist() {
+      try {
+        const supabase = createClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (session) {
+          const { data, error } = await supabase
+            .from("wishlist")
+            .select(`
+              id,
+              course_id,
+              courses (
+                id,
+                title,
+                slug,
+                price,
+                level,
+                thumbnail_url,
+                profiles!courses_instructor_id_fkey (full_name)
+              )
+            `)
+            .eq("user_id", session.user.id);
+
+          if (!error && data && isMounted) {
+            const list: WishlistCourseItem[] = [];
+            for (const row of data as any[]) {
+              const c = row.courses;
+              if (c) {
+                list.push({
+                  id: row.id,
+                  courseId: c.id,
+                  slug: c.slug,
+                  title: c.title,
+                  instructorName: c.profiles?.full_name || "Giảng viên LMS",
+                  price: Number(c.price || 0),
+                  level: c.level || "Cơ bản",
+                  thumbnailUrl: c.thumbnail_url,
+                });
+              }
+            }
+            setWishlistCourses(list);
+            return;
+          }
+        }
+
+        // Demo fallback
+        try {
+          const demoWishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
+          if (demoWishIds.length > 0) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title, slug, price, thumbnail_url, level, profiles!courses_instructor_id_fkey(full_name)")
+              .in("id", demoWishIds);
+
+            if (cData && isMounted) {
+              setWishlistCourses(
+                cData.map((c: any) => ({
+                  id: c.id,
+                  courseId: c.id,
+                  slug: c.slug,
+                  title: c.title,
+                  instructorName: c.profiles?.full_name || "Giảng viên LMS",
+                  price: Number(c.price || 0),
+                  level: c.level || "Cơ bản",
+                  thumbnailUrl: c.thumbnail_url,
+                }))
+              );
+              return;
+            }
+          }
+        } catch {}
+
+        if (isMounted) setWishlistCourses([]);
+      } catch {
+        if (isMounted) setWishlistCourses([]);
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const tabParam = new URLSearchParams(window.location.search).get("tab");
+      if (tabParam === "wishlist") {
+        setFilterTab("wishlist");
+      }
+    }
+
     loadMyCourses();
     loadFeedback();
+    loadWishlist();
 
     return () => {
       isMounted = false;
@@ -189,6 +291,10 @@ export default function MyLearningPage() {
     if (filterTab === "completed") return c.progressPercent === 100;
     return true;
   });
+
+  const filteredWishlistCourses = wishlistCourses.filter((w) =>
+    w.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
@@ -265,6 +371,16 @@ export default function MyLearningPage() {
             >
               Đã hoàn thành ({courses.filter((c) => c.progressPercent === 100).length})
             </button>
+            <button
+              type="button"
+              onClick={() => setFilterTab("wishlist")}
+              className={`flex-1 sm:flex-initial rounded-full px-4 py-1.5 transition-all flex items-center justify-center gap-1.5 ${
+                filterTab === "wishlist" ? "bg-rose-600 text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <Heart className={`h-3.5 w-3.5 ${filterTab === "wishlist" ? "fill-white" : "text-rose-500"}`} />
+              <span>Yêu thích ({wishlistCourses.length})</span>
+            </button>
           </div>
 
           <div className="relative w-full sm:w-72">
@@ -285,6 +401,93 @@ export default function MyLearningPage() {
             <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách khóa học của bạn...
             </div>
+          ) : filterTab === "wishlist" ? (
+            filteredWishlistCourses.length === 0 ? (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-500">
+                  <Heart className="h-7 w-7" />
+                </div>
+                <h3 className="mt-4 text-base font-bold text-slate-900">
+                  {searchQuery ? "Không tìm thấy khóa học yêu thích phù hợp" : "Danh sách yêu thích đang trống"}
+                </h3>
+                <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  {searchQuery
+                    ? "Hãy thử tìm kiếm với từ khóa khác."
+                    : "Bạn chưa lưu khóa học nào vào danh sách yêu thích. Hãy bấm vào biểu tượng trái tim ở trang chi tiết khóa học để lưu lại!"}
+                </p>
+                <div className="mt-6">
+                  <Link
+                    href="/courses"
+                    className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>Khám phá khóa học ngay</span>
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredWishlistCourses.map((wish) => (
+                  <div
+                    key={wish.id}
+                    className="group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs transition-all hover:border-rose-200 hover:shadow-md"
+                  >
+                    <div className="space-y-3">
+                      <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden">
+                        {wish.thumbnailUrl ? (
+                          <img
+                            src={wish.thumbnailUrl}
+                            alt={wish.title}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-tr from-slate-100 to-rose-50 text-rose-500">
+                            <Heart className="h-8 w-8 fill-rose-200 text-rose-400" />
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 rounded-full bg-slate-900/70 backdrop-blur-xs px-2.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                          {wish.level}
+                        </span>
+                      </div>
+
+                      <div>
+                        <h3 className="text-base font-black leading-snug text-slate-900 line-clamp-2">
+                          {wish.title}
+                        </h3>
+                        <p className="mt-1 text-xs text-slate-500 font-medium">
+                          Giảng viên: <span className="text-slate-800">{wish.instructorName}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between gap-3">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-medium block">Học phí</span>
+                        <span className="text-sm font-black text-blue-600 font-mono">
+                          {wish.price === 0 ? "Miễn phí" : formatPrice(wish.price)}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/courses/${wish.slug}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 hover:bg-slate-200 px-3.5 py-2 text-xs font-bold text-slate-700 transition-all active:scale-95"
+                        >
+                          <span>Xem chi tiết</span>
+                        </Link>
+                        <Link
+                          href="/cart"
+                          className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 hover:bg-blue-700 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition-all active:scale-95"
+                        >
+                          <span>Giỏ hàng</span>
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : filteredCourses.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
               <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
