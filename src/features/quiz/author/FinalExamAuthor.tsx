@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+function errorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object" && "message" in error) {
+    return String((error as { message?: unknown }).message ?? fallback);
+  }
+  return error instanceof Error ? error.message : fallback;
+}
+
 export function FinalExamAuthor({ courseId }: { courseId: string }) {
   const [examId, setExamId] = useState<string | null>(null);
   const [quizId, setQuizId] = useState<string | null>(null);
@@ -25,7 +32,7 @@ export function FinalExamAuthor({ courseId }: { courseId: string }) {
       .eq("is_final", true)
       .maybeSingle()
       .then(({ data, error }) => {
-        if (error) setMessage(error.message);
+        if (error) setMessage(errorMessage(error, "Không thể tải kỳ thi."));
         if (data) {
           setExamId(String(data.id));
           setQuizId(data.quiz_id ? String(data.quiz_id) : null);
@@ -43,7 +50,7 @@ export function FinalExamAuthor({ courseId }: { courseId: string }) {
       p_time_limit: timeLimit,
       p_pass_score: passScore,
     });
-    if (error) throw error;
+    if (error) throw new Error(errorMessage(error, "Không thể tạo kỳ thi. Cơ sở dữ liệu có thể chưa cập nhật migration 0021."));
     const row = Array.isArray(data) ? data[0] : data;
     setExamId(String(row.exam_id));
     setQuizId(String(row.quiz_id));
@@ -80,7 +87,7 @@ export function FinalExamAuthor({ courseId }: { courseId: string }) {
       setCorrectIndex(0);
       setMessage("Đã lưu câu hỏi kỳ thi cuối khóa.");
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Không thể lưu kỳ thi.");
+      setMessage(errorMessage(error, "Không thể lưu kỳ thi."));
     }
   }
 
@@ -95,7 +102,7 @@ export function FinalExamAuthor({ courseId }: { courseId: string }) {
         <div className="space-y-1"><Label>Thời lượng (phút)</Label><Input type="number" min={1} value={timeLimit} disabled={Boolean(examId)} onChange={(e) => setTimeLimit(Number(e.target.value))} /></div>
         <div className="space-y-1"><Label>Điểm đạt (%)</Label><Input type="number" min={0} max={100} value={passScore} disabled={Boolean(examId)} onChange={(e) => setPassScore(Number(e.target.value))} /></div>
       </div>
-      {!examId && <Button type="button" onClick={() => createExam().then(() => setMessage("Đã tạo kỳ thi. Hãy thêm câu hỏi.")).catch((error) => setMessage(error instanceof Error ? error.message : "Không thể tạo kỳ thi."))}>Tạo kỳ thi cuối khóa</Button>}
+      {!examId && <Button type="button" onClick={() => createExam().then(() => setMessage("Đã tạo kỳ thi. Hãy thêm câu hỏi.")).catch((error) => setMessage(errorMessage(error, "Không thể tạo kỳ thi.")))}>Tạo kỳ thi cuối khóa</Button>}
       {examId && <form onSubmit={handleAddQuestion} className="space-y-3 rounded border bg-background p-4"><Label>Thêm câu hỏi</Label><Input value={question} required placeholder="Nội dung câu hỏi" onChange={(e) => setQuestion(e.target.value)} />{options.map((option, index) => <label key={index} className="flex items-center gap-2"><input type="radio" name={`final-correct-${courseId}`} checked={correctIndex === index} onChange={() => setCorrectIndex(index)} /><Input value={option} required placeholder={`Đáp án ${index + 1}`} onChange={(e) => setOptions(options.map((item, itemIndex) => itemIndex === index ? e.target.value : item))} /></label>)}<Button type="submit">Lưu câu hỏi</Button></form>}
       {message && <p className="text-sm text-muted-foreground">{message}</p>}
     </section>
