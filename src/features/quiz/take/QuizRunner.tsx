@@ -12,7 +12,6 @@ import {
   Trophy,
   RotateCcw,
   Clock,
-  Award,
   Loader2,
 } from "lucide-react";
 import { getQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
@@ -219,16 +218,6 @@ export function QuizRunner({ quizId, examId, courseSlug = "nextjs-co-ban-nang-ca
               <RotateCcw className="h-4 w-4" />
               <span>Làm lại bài thi</span>
             </button>
-
-            {result.passed && (
-              <Link
-                href="/certificates"
-                className="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-amber-500/25 hover:bg-amber-600 transition-all active:scale-95"
-              >
-                <Award className="h-4 w-4" />
-                <span>Xem chứng chỉ hoàn thành</span>
-              </Link>
-            )}
 
             <Link
               href={`/learn/${courseSlug}`}
