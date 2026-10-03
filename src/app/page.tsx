@@ -54,14 +54,8 @@ export default async function HomePage() {
               
               {/* CỘT TRÁI: TIÊU ĐỀ & CTA */}
               <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
-                {/* BADGE */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-1.5 text-xs font-bold text-blue-700">
-                  <Sparkles className="h-3.5 w-3.5 text-blue-600" />
-                  <span>Hệ thống Đào tạo Lập trình Thực chiến 2026</span>
-                </div>
-
                 {/* HEADING */}
-                <h1 className="text-3xl font-black tracking-tight sm:text-5xl lg:text-6xl text-slate-900 leading-tight">
+                <h1 className="text-3xl font-black sm:text-5xl lg:text-6xl text-slate-900 leading-[1.18] sm:leading-[1.15]">
                   Nâng tầm kỹ năng công nghệ cùng{" "}
                   <span className="text-blue-600">
                     Lộ trình chuẩn Thực chiến
@@ -120,11 +114,11 @@ export default async function HomePage() {
                 <div className="rounded-3xl bg-gradient-to-tr from-blue-100/70 via-indigo-50/50 to-blue-50/60 p-6 border border-blue-200/70 shadow-xl">
                   {/* Floating Achievement Badge */}
                   <div className="rounded-2xl bg-white p-4 shadow-lg border border-slate-100 mb-4 flex items-center gap-3 animate-float-soft">
-                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">
+                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold shrink-0">
                       🏆
                     </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">Chứng chỉ Hoàn thành Chuẩn LMS</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-bold text-slate-900 block truncate">Chứng chỉ Hoàn thành Chuẩn LMS</span>
                       <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
                         ✓ Mã định danh xác thực công khai
                       </span>
@@ -133,19 +127,21 @@ export default async function HomePage() {
 
                   {/* Course Progress Card */}
                   <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-100 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold shrink-0">
                         Đang học gần đây
                       </span>
-                      <span className="text-xs font-mono text-blue-600 font-bold">85% Hoàn thành</span>
+                      <span className="text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
+                        <strong className="text-blue-600 font-bold font-mono text-sm">85%</strong> hoàn thành
+                      </span>
                     </div>
                     <h4 className="font-bold text-slate-900 text-sm">Lập trình Fullstack Next.js 14 & Supabase</h4>
                     <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 h-full w-[85%] rounded-full"></div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1">
-                      <span>Còn 2 bài học & 1 bài thi Quiz</span>
-                      <Link href="/courses" className="px-3.5 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 transition-all">
+                    <div className="flex items-center justify-between text-xs text-slate-500 pt-1 gap-2">
+                      <span className="truncate">Còn 2 bài học & 1 bài thi Quiz</span>
+                      <Link href="/courses" className="px-3.5 py-1.5 rounded-full bg-blue-600 text-white text-[11px] font-bold hover:bg-blue-700 transition-all shrink-0">
                         Tiếp tục học
                       </Link>
                     </div>
