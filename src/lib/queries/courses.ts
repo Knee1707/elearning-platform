@@ -424,33 +424,47 @@ export async function getCoursesByCategories(): Promise<CategoryGroup[]> {
     const categories = categoriesRes.data ?? [];
     const courses = coursesRes ?? [];
 
-    if (categories.length > 0 && courses.length > 0) {
-      const groups: CategoryGroup[] = categories.map((cat) => ({
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        courses: courses.filter((c) => c.categoryId === cat.id),
-      }));
+    // Luôn bắt đầu từ FALLBACK_CATEGORY_GROUPS để giữ vững cấu trúc danh mục và số lượng thẻ chuẩn
+    const baseGroups: CategoryGroup[] = FALLBACK_CATEGORY_GROUPS.map((g) => ({
+      ...g,
+      courses: [...g.courses],
+    }));
 
-      // Phân bổ các khóa học chưa có category_id vào các nhóm còn thiếu
-      const unassigned = courses.filter((c) => !categories.some((cat) => cat.id === c.categoryId));
-      if (unassigned.length > 0) {
-        let uIdx = 0;
-        for (const g of groups) {
-          while (g.courses.length < 3 && uIdx < unassigned.length) {
-            g.courses.push(unassigned[uIdx++]);
+    if (courses.length > 0) {
+      // Đưa các khóa học thực tế từ database vào danh mục tương ứng
+      for (const course of courses) {
+        let targetGroup = baseGroups.find(
+          (g) => g.id === course.categoryId || g.slug === course.categoryId
+        );
+
+        if (!targetGroup) {
+          // Khớp theo tên hoặc từ khóa nếu category_id là uuid
+          const catObj = categories.find((c) => c.id === course.categoryId);
+          if (catObj) {
+            targetGroup = baseGroups.find(
+              (g) =>
+                g.slug === catObj.slug ||
+                g.name.toLowerCase().includes(catObj.name.toLowerCase()) ||
+                catObj.name.toLowerCase().includes(g.name.toLowerCase())
+            );
           }
+        }
+
+        // Nếu vẫn không tìm thấy, gán vào nhóm đầu tiên
+        if (!targetGroup && baseGroups.length > 0) {
+          targetGroup = baseGroups[0];
+        }
+
+        if (targetGroup) {
+          // Đưa khóa học thực tế lên đầu danh sách của nhóm, loại bỏ trùng lặp nếu có
+          targetGroup.courses = [
+            course,
+            ...targetGroup.courses.filter((c) => c.id !== course.id && c.slug !== course.slug),
+          ].slice(0, 3);
         }
       }
 
-      // Giới hạn tối đa 3 khóa mỗi danh mục và lọc các danh mục có khóa
-      const validGroups = groups
-        .filter((g) => g.courses.length > 0)
-        .map((g) => ({ ...g, courses: g.courses.slice(0, 3) }));
-
-      if (validGroups.length > 0) {
-        return validGroups;
-      }
+      return baseGroups;
     }
   } catch {
     // Dùng fallback nếu DB lỗi hoặc trống

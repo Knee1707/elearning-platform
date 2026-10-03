@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyProfile } from "@/lib/queries/auth";
@@ -28,7 +29,7 @@ const text = (formData: FormData, key: string) => String(formData.get(key) ?? ""
 export async function moderateCourseAction(formData: FormData) {
   const status = text(formData, "status") as CourseStatus;
   const messages: Partial<Record<CourseStatus, string>> = {
-    published: "Đã duyệt / hiển thị lại khóa học.",
+    published: "Đã duyệt / xuất bản khóa học lên phần Khám phá khóa học.",
     rejected: "Đã từ chối khóa học và báo cho giảng viên.",
     hidden: "Đã ẩn khóa học và báo cho giảng viên.",
   };
@@ -36,7 +37,11 @@ export async function moderateCourseAction(formData: FormData) {
     path: "/admin/courses",
     roles: ADMIN_ROLES,
     success: messages[status] ?? "Đã cập nhật trạng thái.",
-    task: () => moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined),
+    task: async () => {
+      await moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined);
+      revalidatePath("/courses");
+      revalidatePath("/");
+    },
     returnTo: formData.get("returnTo"),
   });
 }

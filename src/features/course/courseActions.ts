@@ -49,6 +49,7 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
   }
 
   const slug = `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
+  const status = isAdminRole(profile.role) ? (input.status ?? "published") : "draft";
 
   const { data, error } = await supabase
     .from("courses")
@@ -60,7 +61,7 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
       description: input.description.trim(),
       level: input.level,
       price: input.price,
-      status: "draft",
+      status,
     })
     .select("id")
     .single();
@@ -70,7 +71,35 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     }
     throw error;
   }
+
+  // Revalidate toàn bộ các trang hiển thị khóa học công khai
+  revalidatePath("/courses");
+  revalidatePath("/");
+  revalidatePath("/admin/courses");
+
   return { id: data.id };
+}
+
+/**
+ * Quản trị viên xuất bản khóa học trực tiếp lên phần Khám phá khóa học
+ */
+export async function adminPublishCourseDirectly(formData: FormData) {
+  const courseId = String(formData.get("courseId"));
+  await requireRole(ADMIN_ROLES);
+  const supabase = createClient();
+
+  const { error } = await supabase
+    .from("courses")
+    .update({ status: "published", updated_at: new Date().toISOString() })
+    .eq("id", courseId);
+
+  if (error) throw error;
+
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath("/admin/courses");
+  revalidatePath("/courses");
+  revalidatePath("/");
 }
 
 const editorPath = (courseId: string) => `/studio/${courseId}`;

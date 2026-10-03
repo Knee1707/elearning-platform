@@ -136,9 +136,18 @@ export default async function HomePage() {
     courses = [];
   }
 
-  const displayCourses = courses.length > 0 ? courses : FALLBACK_COURSES;
+  const existingIds = new Set(courses.map((c) => c.id));
+  const existingSlugs = new Set(courses.map((c) => c.slug));
+  const mergedFallback = FALLBACK_COURSES.filter(
+    (fb) => !existingIds.has(fb.id) && !existingSlugs.has(fb.slug)
+  );
+
+  // Đảm bảo các khóa học thực tế do Admin xuất bản/cấp luôn đứng ở vị trí ưu tiên đầu danh sách
+  const displayCourses: CourseCatalog[] = [...courses, ...mergedFallback];
   const featuredCourses = displayCourses.filter((c) => c.isFeatured);
-  const spotlightList = featuredCourses.length > 0 ? featuredCourses : displayCourses.slice(0, 6);
+  const spotlightList = [...courses, ...(featuredCourses.length > 0 ? featuredCourses : displayCourses)]
+    .filter((c, idx, arr) => arr.findIndex((x) => x.id === c.id) === idx)
+    .slice(0, 6);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col font-sans">
