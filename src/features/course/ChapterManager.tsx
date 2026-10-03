@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useFormState, useFormStatus } from "react-dom";
 import {
   DndContext,
   closestCenter,
@@ -26,6 +27,7 @@ import {
   deleteChapter,
   updateLesson,
   deleteLesson,
+  type AddLessonState,
 } from "./courseActions";
 import { reorderChapters, reorderLessons } from "./reorderActions";
 import { uploadLessonVideo, uploadLessonAttachment, deleteAttachment } from "./uploadActions";
@@ -79,6 +81,22 @@ function DragHandle() {
     </span>
   );
 }
+
+function AddLessonSubmitButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="w-fit rounded border px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "Đang thêm..." : "Thêm bài học"}
+    </button>
+  );
+}
+
+const initialAddLessonState: AddLessonState = { status: "idle" };
 
 function AttachmentList({ courseId, lessonId, attachments }: { courseId: string; lessonId: string; attachments: Attachment[] }) {
   const [items, setItems] = useState(attachments);
@@ -313,6 +331,12 @@ function SortableChapter({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+  const [addLessonState, addLessonAction] = useFormState(addLesson, initialAddLessonState);
+  const addLessonFormRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (addLessonState.status === "success") addLessonFormRef.current?.reset();
+  }, [addLessonState]);
 
   function handleLessonDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -429,7 +453,7 @@ function SortableChapter({
         </SortableContext>
       </DndContext>
 
-      <form action={addLesson} className="mt-4 grid gap-3 rounded bg-muted/30 p-3 sm:grid-cols-2">
+      <form ref={addLessonFormRef} action={addLessonAction} className="mt-4 grid gap-3 rounded bg-muted/30 p-3 sm:grid-cols-2">
         <input type="hidden" name="courseId" value={courseId} />
         <input type="hidden" name="chapterId" value={chapter.id} />
         <input name="title" required placeholder="Tên bài học" className="rounded border bg-background px-3 py-2" />
@@ -438,7 +462,13 @@ function SortableChapter({
         <label className="flex items-center gap-2 text-sm">
           <input name="isFree" type="checkbox" /> Cho học thử
         </label>
-        <button className="w-fit rounded border px-3 py-2 text-sm">Thêm bài học</button>
+        <AddLessonSubmitButton />
+        {addLessonState.status === "success" && (
+          <p className="text-sm text-emerald-600" aria-live="polite">{addLessonState.message}</p>
+        )}
+        {addLessonState.status === "error" && (
+          <p className="text-sm text-destructive" role="alert">{addLessonState.message}</p>
+        )}
       </form>
     </article>
   );
