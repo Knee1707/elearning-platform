@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.agents
+.claude
+.codex
+.githooks
+*.log
+.env.local
