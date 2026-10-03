@@ -529,6 +529,204 @@ export interface CertificateRow {
   status: string;
 }
 
+// ------------------------------------------------------------------ //
+// Quản lý học viên: danh sách, số khóa học, số tiền đã trả, lộ trình học
+// ------------------------------------------------------------------ //
+export interface StudentCourseRoadmapItem {
+  enrollmentId: string;
+  courseId: string;
+  courseTitle: string;
+  status: EnrollmentStatus;
+  purchasedAt: string;
+  totalLessons: number;
+  completedLessons: number;
+  progressPercent: number;
+}
+
+export interface StudentManagementItem {
+  id: string;
+  fullName: string;
+  avatarUrl: string | null;
+  role: UserRole;
+  isBanned: boolean;
+  createdAt: string;
+  enrolledCount: number;
+  totalSpent: number;
+  completedCoursesCount: number;
+  inProgressCoursesCount: number;
+  roadmap: StudentCourseRoadmapItem[];
+}
+
+export async function getStudentOverallStats() {
+  const supabase = createClient();
+  const [studentsRes, enrollmentsRes, paymentsRes] = await Promise.all([
+    supabase.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("enrollments").select("id", { count: "exact", head: true }),
+    supabase.from("payments").select("amount").eq("status", "paid"),
+  ]);
+
+  const totalSpentAll = (paymentsRes.data ?? []).reduce((sum: number, r: Row) => sum + Number(r.amount ?? 0), 0);
+
+  return {
+    totalStudents: studentsRes.count ?? 0,
+    totalEnrollments: enrollmentsRes.count ?? 0,
+    totalRevenue: totalSpentAll,
+  };
+}
+
+export async function getStudentsManagement(filters: {
+  keyword?: string;
+  banned?: boolean;
+  page?: number;
+  pageSize?: number;
+}) {
+  const supabase = createClient();
+  const page = Math.max(1, filters.page ?? 1);
+  const pageSize = filters.pageSize ?? ADMIN_PAGE_SIZE;
+  const cleaned = cleanKeyword(filters.keyword ?? "");
+
+  let query = supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, role, is_banned, created_at", { count: "exact" })
+    .eq("role", "student")
+    .order("created_at", { ascending: false });
+
+  if (cleaned) {
+    query = query.ilike("full_name", `%${cleaned}%`);
+  }
+  if (filters.banned !== undefined) {
+    query = query.eq("is_banned", filters.banned);
+  }
+
+  query = query.range((page - 1) * pageSize, page * pageSize - 1);
+
+  const { data: profiles, count, error } = await query;
+  if (error) throw error;
+
+  const studentIds = (profiles ?? []).map((p: Row) => String(p.id));
+
+  if (!studentIds.length) {
+    return { students: [], total: count ?? 0 };
+  }
+
+  // Lấy dữ liệu ghi danh, thanh toán, tiến độ bài học của các học viên này
+  const [enrollmentsRes, paymentsRes, lessonProgressRes, lessonsRes] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select("id, user_id, course_id, status, purchased_at, courses(id, title)")
+      .in("user_id", studentIds)
+      .order("purchased_at", { ascending: false }),
+    supabase
+      .from("payments")
+      .select("id, user_id, course_id, amount, status")
+      .in("user_id", studentIds)
+      .eq("status", "paid"),
+    supabase
+      .from("lesson_progress")
+      .select("user_id, lesson_id, is_completed")
+      .in("user_id", studentIds),
+    supabase
+      .from("lessons")
+      .select("id, chapters(course_id)"),
+  ]);
+
+  // Đếm tổng số bài học của từng khóa học
+  const courseLessonsMap = new Map<string, number>();
+  const lessonToCourseMap = new Map<string, string>();
+  (lessonsRes.data ?? []).forEach((l: Row) => {
+    const chapter = l.chapters as { course_id?: string } | null;
+    const cId = chapter?.course_id ? String(chapter.course_id) : null;
+    if (cId) {
+      lessonToCourseMap.set(String(l.id), cId);
+      courseLessonsMap.set(cId, (courseLessonsMap.get(cId) ?? 0) + 1);
+    }
+  });
+
+  // Đếm số bài đã hoàn thành: studentId -> (courseId -> Set<lessonId>)
+  const completedLessonsMap = new Map<string, Map<string, Set<string>>>();
+  (lessonProgressRes.data ?? []).forEach((lp: Row) => {
+    if (!lp.is_completed) return;
+    const sId = String(lp.user_id);
+    const lId = String(lp.lesson_id);
+    const cId = lessonToCourseMap.get(lId);
+    if (!cId) return;
+
+    if (!completedLessonsMap.has(sId)) {
+      completedLessonsMap.set(sId, new Map());
+    }
+    const studentCourses = completedLessonsMap.get(sId)!;
+    if (!studentCourses.has(cId)) {
+      studentCourses.set(cId, new Set());
+    }
+    studentCourses.get(cId)!.add(lId);
+  });
+
+  // Tổng tiền đã thanh toán của từng học viên
+  const totalSpentMap = new Map<string, number>();
+  (paymentsRes.data ?? []).forEach((pay: Row) => {
+    const sId = String(pay.user_id);
+    const amt = Number(pay.amount ?? 0);
+    totalSpentMap.set(sId, (totalSpentMap.get(sId) ?? 0) + amt);
+  });
+
+  // Lộ trình học (các khóa học + tiến độ) của từng học viên
+  const studentRoadmapMap = new Map<string, StudentCourseRoadmapItem[]>();
+  (enrollmentsRes.data ?? []).forEach((enr: Row) => {
+    const sId = String(enr.user_id);
+    const cId = String(enr.course_id);
+    const course = enr.courses as { id?: string; title?: string } | null;
+    const courseTitle = course?.title ? String(course.title) : "Khóa học";
+
+    const totalLessons = courseLessonsMap.get(cId) ?? 0;
+    const completedSet = completedLessonsMap.get(sId)?.get(cId);
+    const completedLessons = completedSet ? completedSet.size : 0;
+    const progressPercent = totalLessons > 0 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100)) : 0;
+
+    const roadmapItem: StudentCourseRoadmapItem = {
+      enrollmentId: String(enr.id),
+      courseId: cId,
+      courseTitle,
+      status: (enr.status as EnrollmentStatus) ?? "active",
+      purchasedAt: String(enr.purchased_at),
+      totalLessons,
+      completedLessons,
+      progressPercent,
+    };
+
+    if (!studentRoadmapMap.has(sId)) {
+      studentRoadmapMap.set(sId, []);
+    }
+    studentRoadmapMap.get(sId)!.push(roadmapItem);
+  });
+
+  // Kết hợp thành danh sách hoàn chỉnh
+  const students: StudentManagementItem[] = (profiles ?? []).map((p: Row) => {
+    const sId = String(p.id);
+    const roadmap = studentRoadmapMap.get(sId) ?? [];
+    const completedCoursesCount = roadmap.filter((r) => r.progressPercent === 100).length;
+    const inProgressCoursesCount = roadmap.filter((r) => r.progressPercent > 0 && r.progressPercent < 100).length;
+
+    return {
+      id: sId,
+      fullName: String(p.full_name || "Chưa đặt tên"),
+      avatarUrl: (p.avatar_url as string | null) ?? null,
+      role: (p.role as UserRole) ?? "student",
+      isBanned: Boolean(p.is_banned),
+      createdAt: String(p.created_at),
+      enrolledCount: roadmap.length,
+      totalSpent: totalSpentMap.get(sId) ?? 0,
+      completedCoursesCount,
+      inProgressCoursesCount,
+      roadmap,
+    };
+  });
+
+  return {
+    students,
+    total: count ?? 0,
+  };
+}
+
 export type PendingDisciplineRequest = {
   id: string;
   enrollmentId: string;
