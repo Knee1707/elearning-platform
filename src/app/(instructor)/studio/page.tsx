@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BookOpen, CheckCircle2, Clock, Users, Star } from "lucide-react";
 import { getMyCourses, getInstructorStats } from "@/features/course/queries";
 import { Button } from "@/components/ui/button";
-import { FinalExamDashboard } from "@/features/quiz/author/FinalExamDashboard";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Nháp",
@@ -98,7 +97,6 @@ export default async function StudioPage() {
           ))}
         </ul>
       )}
-      <FinalExamDashboard courses={courses.filter((course) => course.status === "published").map((course) => ({ id: course.id, title: course.title }))} />
     </main>
   );
 }

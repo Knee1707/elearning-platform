@@ -134,6 +134,25 @@ export interface ModerationCourse {
   updatedAt: string;
 }
 
+export type ModerationRequestType = "create_course" | "update_video" | "update_content";
+
+export interface ModerationCourseItem {
+  id: string;
+  courseId: string;
+  courseTitle: string;
+  status: CourseStatus;
+  price: number;
+  instructorName: string | null;
+  categoryName: string | null;
+  updatedAt: string;
+  requestType: ModerationRequestType;
+  requestLabel: string;
+  targetLessonId?: string;
+  targetLessonTitle?: string;
+  videoUrl?: string | null;
+  durationSeconds?: number;
+}
+
 export async function getCoursesForModeration(status: CourseStatus | "all", keyword = ""): Promise<ModerationCourse[]> {
   const supabase = createClient();
   let query = supabase
@@ -191,6 +210,144 @@ export async function getCoursesForModeration(status: CourseStatus | "all", keyw
       updatedAt: String(row.updated_at),
     };
   });
+}
+
+export async function getUnifiedCoursesForModeration(
+  status: CourseStatus | "all",
+  keyword = "",
+): Promise<ModerationCourseItem[]> {
+  const supabase = createClient();
+  const cleaned = cleanKeyword(keyword).toLowerCase();
+
+  if (status === "pending") {
+    // 1. Khóa học mới chờ duyệt
+    const coursesQuery = supabase
+      .from("courses")
+      .select("id, title, status, price, updated_at, profiles!courses_instructor_id_fkey(full_name), categories(name)")
+      .eq("status", "pending")
+      .order("updated_at", { ascending: true })
+      .limit(100);
+
+    // 2. Các bài học có video chờ duyệt
+    const videosQuery = supabase
+      .from("lessons")
+      .select(
+        "id, title, video_url, duration_seconds, is_free, video_review, chapters!inner(course_id, courses!inner(id, title, status, price, updated_at, profiles!courses_instructor_id_fkey(full_name), categories(name)))",
+      )
+      .eq("video_review", "pending")
+      .order("id", { ascending: true })
+      .limit(100);
+
+    // 3. Các bài học có nội dung chờ duyệt hoặc is_updated = true
+    const contentsQuery = supabase
+      .from("lessons")
+      .select(
+        "id, title, content_review, is_updated, chapters!inner(course_id, courses!inner(id, title, status, price, updated_at, profiles!courses_instructor_id_fkey(full_name), categories(name)))",
+      )
+      .or("content_review.eq.pending,is_updated.eq.true")
+      .neq("video_review", "pending")
+      .order("id", { ascending: true })
+      .limit(100);
+
+    const [coursesRes, videosRes, contentsRes] = await Promise.all([
+      coursesQuery,
+      videosQuery,
+      Promise.resolve(contentsQuery).catch(() => ({ data: [] as any[], error: null })),
+    ]);
+
+    if (coursesRes.error) throw coursesRes.error;
+    if (videosRes.error) throw videosRes.error;
+
+    const items: ModerationCourseItem[] = [];
+    const pendingCourseIds = new Set<string>();
+
+    // 1. Thêm các khóa học mới
+    for (const row of (coursesRes.data ?? []) as Row[]) {
+      const cId = String(row.id);
+      pendingCourseIds.add(cId);
+      items.push({
+        id: cId,
+        courseId: cId,
+        courseTitle: String(row.title),
+        status: "pending",
+        price: Number(row.price),
+        instructorName: nameOf(row.profiles),
+        categoryName: ((row.categories as { name?: string } | null)?.name ?? null) || null,
+        updatedAt: String(row.updated_at),
+        requestType: "create_course",
+        requestLabel: "Tạo khóa học",
+      });
+    }
+
+    // 2. Thêm các bài học có video chờ duyệt (thuộc khóa đã publish / không pending cả khóa)
+    for (const row of (videosRes.data ?? []) as Row[]) {
+      const chapter = (row.chapters ?? {}) as Row;
+      const course = (chapter.courses ?? {}) as Row;
+      const cId = String(course.id ?? "");
+      if (pendingCourseIds.has(cId)) continue;
+
+      items.push({
+        id: `video-${row.id}`,
+        courseId: cId,
+        courseTitle: String(course.title ?? "Khóa học"),
+        status: (course.status as CourseStatus) ?? "published",
+        price: Number(course.price ?? 0),
+        instructorName: nameOf(course.profiles),
+        categoryName: ((course.categories as { name?: string } | null)?.name ?? null) || null,
+        updatedAt: String(course.updated_at ?? new Date().toISOString()),
+        requestType: "update_video",
+        requestLabel: "Chỉnh sửa video",
+        targetLessonId: String(row.id),
+        targetLessonTitle: String(row.title),
+        videoUrl: typeof row.video_url === "string" ? row.video_url : null,
+        durationSeconds: Number(row.duration_seconds ?? 0),
+      });
+    }
+
+    // 3. Thêm các bài học cập nhật nội dung
+    for (const row of (contentsRes.data ?? []) as Row[]) {
+      const chapter = (row.chapters ?? {}) as Row;
+      const course = (chapter.courses ?? {}) as Row;
+      const cId = String(course.id ?? "");
+      if (pendingCourseIds.has(cId)) continue;
+
+      items.push({
+        id: `content-${row.id}`,
+        courseId: cId,
+        courseTitle: String(course.title ?? "Khóa học"),
+        status: (course.status as CourseStatus) ?? "published",
+        price: Number(course.price ?? 0),
+        instructorName: nameOf(course.profiles),
+        categoryName: ((course.categories as { name?: string } | null)?.name ?? null) || null,
+        updatedAt: String(course.updated_at ?? new Date().toISOString()),
+        requestType: "update_content",
+        requestLabel: "Update nội dung",
+        targetLessonId: String(row.id),
+        targetLessonTitle: String(row.title),
+      });
+    }
+
+    if (cleaned) {
+      return items.filter(
+        (item) =>
+          item.courseTitle.toLowerCase().includes(cleaned) ||
+          (item.targetLessonTitle && item.targetLessonTitle.toLowerCase().includes(cleaned)) ||
+          (item.instructorName && item.instructorName.toLowerCase().includes(cleaned)),
+      );
+    }
+
+    return items;
+  }
+
+  // Các tab khác
+  const courses = await getCoursesForModeration(status, keyword);
+  return courses.map((course) => ({
+    ...course,
+    courseId: course.id,
+    courseTitle: course.title,
+    requestType: "create_course",
+    requestLabel: course.status === "published" ? "Đang bán" : course.status === "hidden" ? "Đã ẩn" : course.status === "rejected" ? "Bị từ chối" : "Khóa học",
+  }));
 }
 
 // ------------------------------------------------------------------ //

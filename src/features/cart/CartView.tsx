@@ -925,6 +925,7 @@ export function CartView() {
                   <div className="space-y-3">
                     <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden">
                       {wish.thumbnailUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={wish.thumbnailUrl}
                           alt={wish.title}
