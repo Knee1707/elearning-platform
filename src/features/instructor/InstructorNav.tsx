@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Award, Compass, LayoutDashboard, Users, Star, Video, LogOut, GraduationCap } from "lucide-react";
+import { Award, LayoutDashboard, Users, Star, Video, LogOut, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 // Menu riêng của khu Giảng viên (tách khỏi luồng Học viên).
@@ -67,14 +67,6 @@ export function InstructorNav({ fullName }: { fullName: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/courses"
-            className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 sm:flex"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span>Khám phá khóa học</span>
-          </Link>
-
           <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1 pr-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-600 text-xs font-bold text-white shadow-sm">
               {fullName ? fullName.charAt(0).toUpperCase() : "G"}
