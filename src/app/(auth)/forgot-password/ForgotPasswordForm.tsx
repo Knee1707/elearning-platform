@@ -30,7 +30,16 @@ export function ForgotPasswordForm() {
     });
 
     if (error) {
-      setServerError("Không thể gửi email. Vui lòng thử lại sau.");
+      const message = error.message.toLowerCase();
+      if (message.includes("rate limit") || message.includes("too many")) {
+        setServerError("Supabase đang giới hạn số email gửi ra. Vui lòng chờ một lúc rồi thử lại.");
+      } else if (message.includes("redirect") || message.includes("url")) {
+        setServerError("Địa chỉ quay lại chưa được cho phép trên Supabase. Hãy thêm URL /reset-password vào Redirect URLs.");
+      } else if (message.includes("smtp") || message.includes("email provider")) {
+        setServerError("Supabase chưa cấu hình dịch vụ gửi email. Hãy bật Email Provider hoặc cấu hình SMTP.");
+      } else {
+        setServerError(`Không thể gửi email: ${error.message}`);
+      }
       return;
     }
 
