@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -75,6 +75,13 @@ export function FinalExamManager({
   const [mcContent, setMcContent] = useState("");
   const [mcOptions, setMcOptions] = useState(["", "", "", ""]);
   const [mcCorrectIndex, setMcCorrectIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Không giữ đáp án đúng khi giảng viên xoá hoặc chưa nhập đủ một phương án.
+    if (mcOptions.some((option) => !option.trim())) {
+      setMcCorrectIndex(null);
+    }
+  }, [mcOptions]);
 
   // State câu hỏi tự luận
   const [essayContent, setEssayContent] = useState("");
@@ -424,11 +431,6 @@ export function FinalExamManager({
             <span className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs">
               Tổng số: <strong>{questions.length} câu</strong> ({mcCount} trắc nghiệm, {essayCount} tự luận)
             </span>
-            {examId && (
-              <button type="button" onClick={() => void handlePublishExam()} disabled={isSavingExam || isPublished} className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60">
-                {isPublished ? "Đã đăng cho học viên" : "Đăng đề thi cuối khóa"}
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -690,7 +692,7 @@ export function FinalExamManager({
 
       {/* KHỐI 3: DANH SÁCH CÁC CÂU HỎI HIỆN CÓ TRONG KỲ THI */}
       <section className="rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs space-y-5">
-        <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
           <div>
             <h2 className="text-base font-black text-slate-900">
               Danh sách câu hỏi trong đề thi ({questions.length})
@@ -699,6 +701,16 @@ export function FinalExamManager({
               Xem lại toàn bộ câu hỏi trắc nghiệm và tự luận đã được lưu vào kỳ thi
             </p>
           </div>
+          {examId && (
+            <button
+              type="button"
+              onClick={() => void handlePublishExam()}
+              disabled={isSavingExam || isPublished}
+              className="shrink-0 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isPublished ? "Đã đăng cho học viên" : "Đăng đề thi cuối khóa"}
+            </button>
+          )}
         </div>
 
         {questions.length === 0 ? (
