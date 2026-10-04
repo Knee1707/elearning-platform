@@ -85,7 +85,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
 
   // Đóng/mở sidebar trên màn hình nhỏ
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
-  const [finalExam, setFinalExam] = useState<{ examId: string; quizId: string; title: string; passScore: number } | null>(null);
+  const [finalExam, setFinalExam] = useState<{ examId: string; quizId: string; title: string; passScore: number; timeLimitMinutes: number } | null>(null);
   const [currentLessonQuiz, setCurrentLessonQuiz] = useState<{ id: string; title: string; passScore: number } | null>(null);
 
   // Dữ liệu bài quiz của bài học đang chọn
@@ -145,7 +145,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
         // 1. Thử truy vấn với cờ is_final nếu schema đã cập nhật
         let { data, error } = await supabase
           .from("exams")
-          .select("id, quiz_id, title, pass_score")
+          .select("id, quiz_id, title, pass_score, time_limit_minutes")
           .eq("course_id", course.id)
           .eq("is_final", true)
           .maybeSingle();
@@ -154,7 +154,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
         if (!data || error) {
           const { data: exData } = await supabase
             .from("exams")
-            .select("id, title, pass_score")
+             .select("id, title, pass_score, time_limit_minutes")
             .eq("course_id", course.id)
             .limit(1)
             .maybeSingle();
@@ -165,6 +165,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
               quizId: "50000000-0000-0000-0000-000000000002",
               title: String(exData.title),
               passScore: Number(exData.pass_score || 70),
+              timeLimitMinutes: Number(exData.time_limit_minutes || 60),
             });
             return;
           }
@@ -176,6 +177,7 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             quizId: String(data.quiz_id || "50000000-0000-0000-0000-000000000002"),
             title: String(data.title),
             passScore: Number(data.pass_score || 70),
+            timeLimitMinutes: Number(data.time_limit_minutes || 60),
           });
         }
       } catch {}
@@ -762,18 +764,19 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4 shadow-xs">
               <div>
                 <h4 className="text-xs font-bold text-slate-900">{finalExam.title}</h4>
-                <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học và đạt từ {finalExam.passScore}/100 để được cấp chứng chỉ tự động.</p>
+                <p className="mt-1 text-[11px] text-slate-500">Hoàn thành toàn bộ bài học để mở bài thi · {finalExam.timeLimitMinutes} phút · đạt từ {finalExam.passScore}/100 để được cấp chứng chỉ.</p>
               </div>
               {allLessonsCompleted ? (
                 <Link
                   href={`/quiz/${finalExam.quizId}?exam=${finalExam.examId}&course=${course.slug}`}
                   className="rounded-full bg-amber-500 px-4 py-2 text-xs font-bold text-white hover:bg-amber-600 shadow-sm transition-all active:scale-95"
                 >
-                  Thi cuối khóa
+                  <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" />Thi cuối khóa</span>
                 </Link>
               ) : (
-                <span className="rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-                  Chưa hoàn thành nội dung
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5 text-[11px] font-semibold text-slate-500" title="Bạn cần hoàn thành tất cả bài học để mở bài thi">
+                  <Lock className="h-3.5 w-3.5" />
+                  Đang khóa · hoàn thành khóa học để mở
                 </span>
               )}
             </div>

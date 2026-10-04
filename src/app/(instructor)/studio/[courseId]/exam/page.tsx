@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES, isAdminRole } from "@/lib/utils";
 import { FinalExamManager, type ExamQuestion } from "@/features/quiz/author/FinalExamManager";
+import { FinalExamGrading, type PendingExamAttempt } from "@/features/quiz/author/FinalExamGrading";
 
 type PageProps = { params: { courseId: string } };
 
@@ -63,6 +64,26 @@ export default async function CourseFinalExamPage({ params }: PageProps) {
       }
     : null;
 
+  let pendingAttempts: PendingExamAttempt[] = [];
+  if (examData) {
+    const { data: attempts } = await supabase
+      .from("exam_attempts")
+      .select("id, submitted_at, is_time_expired, profiles(full_name), answers(answer_text, questions(content))")
+      .eq("exam_id", examData.id)
+      .eq("status", "pending_grading")
+      .order("submitted_at", { ascending: true });
+    pendingAttempts = (attempts ?? []).map((attempt: any) => ({
+      id: String(attempt.id),
+      studentName: String(attempt.profiles?.full_name ?? "Học viên"),
+      submittedAt: attempt.submitted_at,
+      isTimeExpired: Boolean(attempt.is_time_expired),
+      answers: (attempt.answers ?? []).map((answer: any) => ({
+        question: String(answer.questions?.content ?? "Câu hỏi tự luận"),
+        answer: String(answer.answer_text ?? ""),
+      })),
+    }));
+  }
+
   return (
     <main className="min-h-screen bg-slate-50/50 pb-16">
       <FinalExamManager
@@ -71,6 +92,7 @@ export default async function CourseFinalExamPage({ params }: PageProps) {
         initialExam={initialExam}
         initialQuestions={initialQuestions}
       />
+      <FinalExamGrading attempts={pendingAttempts} />
     </main>
   );
 }

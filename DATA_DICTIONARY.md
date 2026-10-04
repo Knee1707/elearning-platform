@@ -212,6 +212,10 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 **Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
 
+**Cột [0028]:** `exam_attempts.status`, `is_time_expired`, `graded_at`, `graded_by`, `grader_feedback`; `answers.answer_text` cho bài tự luận.
+| `fn_start_final_exam` **[0028]** | `p_exam uuid` → lần thi, thời điểm bắt đầu, thời điểm hết hạn; kiểm tra ghi danh và hoàn thành toàn bộ bài học |
+| `fn_grade_final_exam_attempt` **[0028]** | `p_attempt uuid`, `p_score integer`, `p_feedback text` → giảng viên/admin chấm bài tự luận và cấp chứng chỉ nếu đạt |
+
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 **Cột thêm [0027]:** `lessons.content_review` (text, mặc định `'approved'`), `lessons.content_review_reason` (text), `lessons.is_updated` (boolean, mặc định `false`), `courses.update_status` (text, mặc định `'none'`), `courses.update_feedback` (text).
 
@@ -243,6 +247,9 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | view | `view_course_progress` | `user_id`, `course_id`, `percent` |
 | fn | `fn_get_quiz` | `p_quiz uuid` → câu hỏi + đáp án **KHÔNG kèm `is_correct`** |
 | fn | `fn_submit_attempt` | `p_exam uuid`, `p_answers jsonb` → `int` (điểm) |
+| fn | `fn_start_final_exam` **[0028]** | `p_exam uuid` → lần thi và thời điểm hết hạn; kiểm tra hoàn thành khóa học |
+| fn | `fn_grade_final_exam_attempt` **[0028]** | `p_attempt uuid`, `p_score integer`, `p_feedback text` → chấm bài tự luận |
+| fn | `fn_issue_certificate_for_exam` **[0028]** | hàm nội bộ cấp chứng chỉ và ghi log sau khi đạt kỳ thi |
 | fn | `fn_issue_certificate` | trigger function cho `trg_issue_certificate` |
 | trg | `trg_issue_certificate` | cấp khi đạt |
 | fn | `fn_verify_certificate` | `p_code text` |
