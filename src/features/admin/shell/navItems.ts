@@ -8,7 +8,6 @@ import {
   FolderTree,
   GraduationCap,
   LayoutDashboard,
-  MessagesSquare,
   Video,
   ScrollText,
   Settings,
@@ -47,7 +46,6 @@ const MODERATION_GROUPS: NavGroup[] = [
     items: [
       { href: "/admin/courses", label: "Duyệt khóa học", icon: BookCheck },
       { href: "/admin/reports", label: "Báo cáo & review", icon: Flag },
-      { href: "/admin/qa", label: "Hỏi đáp (Q&A)", icon: MessagesSquare },
     ],
   },
   {
