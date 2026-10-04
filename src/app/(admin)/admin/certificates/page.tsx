@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ExternalLink, Search } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { getCertificateCourseOptions, getCertificates, getPendingCertificates } from "@/features/admin/queries";
-import { restoreCertificateAction, revokeCertificateAction, reviewCertificateAction } from "@/features/admin/actions";
+import { getCertificateCourseOptions, getCertificates } from "@/features/admin/queries";
+import { restoreCertificateAction, revokeCertificateAction } from "@/features/admin/actions";
 import { FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
 export default async function AdminCertificatesPage({ searchParams }: { searchParams: SearchParams }) {
@@ -11,12 +11,13 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
   const keyword = param(searchParams, "q") ?? "";
   const revokedOnly = param(searchParams, "status") === "revoked";
   const courseId = param(searchParams, "courseId");
-  const [courses, certificates, pending] = await Promise.all([
+  const sortBy = param(searchParams, "sortBy") === "name" ? "name" : "time";
+  const sortDir = param(searchParams, "sortDir") === "asc" ? "asc" : "desc";
+  const [courses, certificates] = await Promise.all([
     getCertificateCourseOptions(),
-    getCertificates({ keyword, revokedOnly, courseId }),
-    getPendingCertificates(courseId),
+    getCertificates({ keyword, revokedOnly, courseId, sortBy, sortDir }),
   ]);
-  const here = buildHref("/admin/certificates", { q: keyword, status: revokedOnly ? "revoked" : undefined, courseId });
+  const here = buildHref("/admin/certificates", { q: keyword, status: revokedOnly ? "revoked" : undefined, courseId, sortBy, sortDir });
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -29,65 +30,19 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
       <section className="mt-6 rounded-lg border border-border bg-white p-4">
         <h2 className="font-semibold">Theo khóa học</h2>
         <form className="mt-3 flex flex-wrap items-end gap-3">
-          <label className="text-sm"><span className="mb-1 block text-muted-foreground">Chọn khóa học</span><select name="courseId" defaultValue={courseId ?? ""} className="min-w-72 rounded border border-border bg-background px-3 py-2"><option value="">Tất cả khóa học</option>{courses.map((course) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label>
+          <label className="text-sm"><span className="mb-1 block text-muted-foreground">Chọn khóa học</span><select name="courseId" defaultValue={courseId ?? ""} className="min-w-72 rounded border border-border bg-background px-3 py-2"><option value="">Tất cả khóa học</option>{courses.map((course: { id: string; title: string }) => <option key={course.id} value={course.id}>{course.title}</option>)}</select></label>
+          <label className="text-sm"><span className="mb-1 block text-muted-foreground">Sắp xếp theo</span><select name="sortBy" defaultValue={sortBy} className="rounded border border-border bg-background px-3 py-2"><option value="time">Thời gian cấp</option><option value="name">Tên học viên</option></select></label>
+          <label className="text-sm"><span className="mb-1 block text-muted-foreground">Thứ tự</span><select name="sortDir" defaultValue={sortDir} className="rounded border border-border bg-background px-3 py-2"><option value="desc">Giảm dần</option><option value="asc">Tăng dần</option></select></label>
           <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">Lọc</button>
         </form>
       </section>
 
-      {/* Yêu cầu cấp chứng chỉ chờ duyệt */}
-      <section className="mt-6">
-        <h2 className="flex items-center gap-2 font-semibold">
-          Yêu cầu cấp chứng chỉ chờ duyệt
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
-            {pending.length}
-          </span>
-        </h2>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left">
-              <tr>
-                <th className="p-3">Học viên</th>
-                <th className="p-3">Khóa học</th>
-                <th className="p-3">Ngày xin</th>
-                <th className="p-3">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pending.length ? (
-                pending.map((c) => (
-                  <tr key={c.id} className="border-b last:border-0">
-                    <td className="p-3 font-medium">{c.studentName ?? "—"}</td>
-                    <td className="p-3">{c.courseTitle ?? "—"}</td>
-                    <td className="p-3">{dateTime.format(new Date(c.createdAt))}</td>
-                    <td className="p-3">
-                      <div className="flex gap-2">
-                        <form action={reviewCertificateAction}>
-                          <input type="hidden" name="certificateId" value={c.id} />
-                          <input type="hidden" name="approve" value="true" />
-                          <input type="hidden" name="returnTo" value={here} />
-                          <button className="rounded bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700">Duyệt cấp</button>
-                        </form>
-                        <form action={reviewCertificateAction}>
-                          <input type="hidden" name="certificateId" value={c.id} />
-                          <input type="hidden" name="approve" value="false" />
-                          <input type="hidden" name="returnTo" value={here} />
-                          <button className="rounded border px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50">Từ chối</button>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="p-4 text-center text-muted-foreground">Không có yêu cầu nào đang chờ.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <p className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">Chứng chỉ được cấp tự động khi học viên đạt kỳ thi cuối khóa. Admin chỉ theo dõi log, tra cứu và xử lý thu hồi/khôi phục.</p>
 
       <form className="mt-8 flex flex-wrap items-end gap-3" role="search">
+        <input type="hidden" name="courseId" value={courseId ?? ""} />
+        <input type="hidden" name="sortBy" value={sortBy} />
+        <input type="hidden" name="sortDir" value={sortDir} />
         <label className="text-sm">
           <span className="mb-1 block text-muted-foreground">Mã hoặc tên học viên</span>
           <span className="relative block">
@@ -121,7 +76,7 @@ export default async function AdminCertificatesPage({ searchParams }: { searchPa
           </thead>
           <tbody>
             {certificates.length ? (
-              certificates.map((cert) => (
+              certificates.map((cert: any) => (
                 <tr key={cert.id} className="border-b border-border align-top last:border-0">
                   <td className="p-3">
                     <a href={`/verify/${cert.code}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-mono text-xs hover:underline">

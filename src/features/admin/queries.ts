@@ -567,9 +567,19 @@ const toCertificate = (row: Row): CertificateRow => ({
 });
 
 // Tìm theo mã chứng chỉ HOẶC tên học viên; lọc đã thu hồi.
-export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean; courseId?: string }) {
+export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean; courseId?: string; sortBy?: "name" | "time"; sortDir?: "asc" | "desc" }) {
   const supabase = createClient();
   const cleaned = cleanKeyword(filters.keyword ?? "");
+  const sortBy = filters.sortBy ?? "time";
+  const sortDir = filters.sortDir ?? "desc";
+  const sortRows = (rows: CertificateRow[]) => [...rows].sort((a, b) => {
+    if (sortBy === "name") {
+      const result = (a.studentName ?? "").localeCompare(b.studentName ?? "", "vi", { sensitivity: "base" });
+      if (result !== 0) return sortDir === "asc" ? result : -result;
+    }
+    const result = a.issuedAt.localeCompare(b.issuedAt);
+    return sortDir === "asc" ? result : -result;
+  });
   const base = () => {
     let q = supabase.from("certificates").select(CERT_SELECT).order("issued_at", { ascending: false }).limit(50);
     if (filters.revokedOnly) q = q.not("revoked_at", "is", null);
@@ -579,7 +589,7 @@ export async function getCertificates(filters: { keyword?: string; revokedOnly?:
   if (!cleaned) {
     const { data, error } = await base();
     if (error) throw error;
-    return (data ?? []).map(toCertificate);
+    return sortRows((data ?? []).map(toCertificate));
   }
   const [byCode, byName] = await Promise.all([
     base().ilike("code", `%${cleaned}%`),
@@ -589,5 +599,5 @@ export async function getCertificates(filters: { keyword?: string; revokedOnly?:
   if (byName.error) throw byName.error;
   const merged = new Map<string, CertificateRow>();
   for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) merged.set(String(row.id), toCertificate(row));
-  return [...merged.values()].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+  return sortRows([...merged.values()]);
 }
