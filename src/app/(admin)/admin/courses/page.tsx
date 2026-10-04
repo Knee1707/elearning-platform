@@ -4,11 +4,23 @@ import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import type { CourseStatus } from "@/types/domain";
 import { getUnifiedCoursesForModeration } from "@/features/admin/queries";
-import { moderateCourseAction, reviewVideoAction, reviewLessonContentAction } from "@/features/admin/actions";
-
-import { getCoursesForModeration } from "@/features/admin/queries";
-import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
-import { FilterTabs, FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
+import {
+  moderateCourseAction,
+  reviewVideoAction,
+  reviewLessonContentAction,
+  adminDeleteCourseAction,
+} from "@/features/admin/actions";
+import {
+  FilterTabs,
+  FlashMessage,
+  PageHeader,
+  ReasonAction,
+  buildHref,
+  dateTime,
+  money,
+  param,
+  type SearchParams,
+} from "@/features/admin/ui";
 
 const TABS: { value: CourseStatus | "all"; label: string }[] = [
   { value: "pending", label: "Chờ duyệt" },
@@ -51,11 +63,22 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
       <FlashMessage searchParams={searchParams} />
 
       <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-        <FilterTabs label="Lọc theo trạng thái" tabs={TABS} active={status} hrefFor={(value) => buildHref("/admin/courses", { status: value, q: keyword })} />
+        <FilterTabs
+          label="Lọc theo trạng thái"
+          tabs={TABS}
+          active={status}
+          hrefFor={(value) => buildHref("/admin/courses", { status: value, q: keyword })}
+        />
         <form className="relative" role="search">
           <input type="hidden" name="status" value={status} />
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input name="q" defaultValue={keyword} placeholder="Tìm theo tên khóa…" aria-label="Tìm khóa học" className="w-56 rounded border border-border bg-background py-2 pl-9 pr-3 text-sm" />
+          <input
+            name="q"
+            defaultValue={keyword}
+            placeholder="Tìm theo tên khóa…"
+            aria-label="Tìm khóa học"
+            className="w-56 rounded border border-border bg-background py-2 pl-9 pr-3 text-sm"
+          />
         </form>
       </div>
 
@@ -103,7 +126,8 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                   )}
 
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {course.instructorName ?? "Không rõ giảng viên"} · {course.categoryName ?? "Chưa phân loại"} · {money.format(course.price)}
+                    {course.instructorName ?? "Không rõ giảng viên"} · {course.categoryName ?? "Chưa phân loại"} ·{" "}
+                    {money.format(course.price)}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {STATUS_LABEL[course.status]} · cập nhật {dateTime.format(new Date(course.updatedAt))}
@@ -202,55 +226,25 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                       )}
                     </>
                   )}
+
+                  <form action={adminDeleteCourseAction}>
+                    <input type="hidden" name="courseId" value={course.courseId} />
+                    <input type="hidden" name="returnTo" value={here} />
+                    <button
+                      type="submit"
+                      className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                    >
+                      Xóa
+                    </button>
+                  </form>
                 </div>
               </article>
             );
           })
-
-              <div className="flex flex-wrap items-start gap-2">
-                {(course.status === "pending" || course.status === "hidden") && (
-                  <form action={moderateCourseAction}>
-                    <input type="hidden" name="courseId" value={course.id} />
-                    <input type="hidden" name="status" value="published" />
-                    <input type="hidden" name="returnTo" value={here} />
-                    <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">
-                      {course.status === "pending" ? "Duyệt" : "Hiển thị lại"}
-                    </button>
-                  </form>
-                )}
-                {course.status === "pending" && (
-                  <ReasonAction
-                    action={moderateCourseAction}
-                    label="Từ chối"
-                    submitLabel="Xác nhận từ chối"
-                    placeholder="Lý do từ chối (giảng viên sẽ thấy)…"
-                    hidden={{ courseId: course.id, status: "rejected", returnTo: here }}
-                  />
-                )}
-                {course.status === "published" && (
-                  <ReasonAction
-                    action={moderateCourseAction}
-                    label="Ẩn khóa"
-                    submitLabel="Xác nhận ẩn"
-                    placeholder="Lý do ẩn (giảng viên sẽ thấy)…"
-                    hidden={{ courseId: course.id, status: "hidden", returnTo: here }}
-                  />
-                )}
-                <form action={adminDeleteCourseAction}>
-                  <input type="hidden" name="courseId" value={course.id} />
-                  <input type="hidden" name="returnTo" value={here} />
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
-                  >
-                    Xóa
-                  </button>
-                </form>
-              </div>
-            </article>
-          ))
         ) : (
-          <p className="text-sm text-muted-foreground">Không có khóa học nào{keyword ? ` khớp “${keyword}”` : ""}.</p>
+          <p className="text-sm text-muted-foreground">
+            Không có khóa học nào{keyword ? <> khớp &quot;{keyword}&quot;</> : ""}.
+          </p>
         )}
       </div>
     </main>

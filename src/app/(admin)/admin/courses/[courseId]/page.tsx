@@ -5,14 +5,16 @@ import { Pencil, Sparkles, Video } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { moderateCourseAction, reviewVideoAction, reviewLessonContentAction } from "@/features/admin/actions";
+import {
+  moderateCourseAction,
+  reviewVideoAction,
+  reviewLessonContentAction,
+  adminDeleteCourseAction,
+} from "@/features/admin/actions";
 import { FlashMessage, ReasonAction, param, type SearchParams } from "@/features/admin/ui";
 import { getLessonVideoPreviewUrl } from "@/lib/queries/courses";
 import { getYouTubeEmbedUrl } from "@/lib/video";
 import { LessonHighlightScroll } from "@/features/admin/LessonHighlightScroll";
-
-import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
-import { FlashMessage, ReasonAction, type SearchParams } from "@/features/admin/ui";
  
 
 type PageProps = { params: { courseId: string }; searchParams: SearchParams };
