@@ -90,7 +90,28 @@ export async function getCourseDetail(slugOrId: string): Promise<CourseDetail | 
     .maybeSingle();
   if (ratingError) throw ratingError;
 
-  return mapCourseDetail(course, (rating as DatabaseRow | null) ?? {});
+  // Lấy thêm danh sách nhiều giảng viên từ bảng course_instructors (nếu có)
+  let multiInstructorName: string | null = null;
+  try {
+    const { data: ciData } = await supabase
+      .from("course_instructors")
+      .select("profiles(full_name)")
+      .eq("course_id", course.id);
+    if (ciData && ciData.length > 0) {
+      const names = ciData.map((row: any) => row.profiles?.full_name).filter(Boolean);
+      if (names.length > 0) {
+        multiInstructorName = names.join(", ");
+      }
+    }
+  } catch {
+    // Bỏ qua nếu bảng chưa tạo
+  }
+
+  const detail = mapCourseDetail(course, (rating as DatabaseRow | null) ?? {});
+  if (multiInstructorName) {
+    detail.instructorName = multiInstructorName;
+  }
+  return detail;
 }
 
 

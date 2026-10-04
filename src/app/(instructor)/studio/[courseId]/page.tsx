@@ -27,7 +27,24 @@ export default async function EditCoursePage({ params }: PageProps) {
     .select("id, instructor_id, title, description, price, status, chapters(id, title, position, lessons(id, title, video_url, video_review, video_review_reason, duration_seconds, is_free, position, attachments(id, name, file_url)))")
     .eq("id", params.courseId)
     .single();
-  if (!course || (course.instructor_id !== profile.id && !isAdminRole(profile.role))) notFound();
+
+  // Kiểm tra quyền chỉnh sửa: Chủ khóa, Giảng viên đồng phụ trách, hoặc Admin/Super Admin
+  let isAuthorized = course ? (course.instructor_id === profile.id || isAdminRole(profile.role)) : false;
+  if (course && !isAuthorized) {
+    try {
+      const { data: ci } = await supabase
+        .from("course_instructors")
+        .select("instructor_id")
+        .eq("course_id", params.courseId)
+        .eq("instructor_id", profile.id)
+        .maybeSingle();
+      if (ci) isAuthorized = true;
+    } catch {
+      // Bỏ qua nếu bảng chưa tạo
+    }
+  }
+
+  if (!course || !isAuthorized) notFound();
 
   const chapters = (course.chapters ?? [])
     .map((c) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a, b) => a.position - b.position) }))
