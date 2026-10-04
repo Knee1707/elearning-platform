@@ -157,20 +157,40 @@ export function LoginForm() {
         </Link>
       </div>
 
-      {APP_MODE !== "admin" && (
+      {APP_MODE === "admin" ? (
+        <div className="pt-3 border-t space-y-2">
+          <p className="text-[11px] text-center text-muted-foreground font-medium">Tài khoản demo quản trị:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => fillDemo("admin@demo.local", "123456")}
+              className="rounded-lg border border-purple-200 bg-purple-50/80 px-2.5 py-1.5 text-xs font-semibold text-purple-800 hover:bg-purple-100 transition-colors cursor-pointer"
+            >
+              🛡️ Điền Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemo("superadmin@demo.local", "123456")}
+              className="rounded-lg border border-indigo-200 bg-indigo-50/80 px-2.5 py-1.5 text-xs font-semibold text-indigo-800 hover:bg-indigo-100 transition-colors cursor-pointer"
+            >
+              👑 Điền Super Admin
+            </button>
+          </div>
+        </div>
+      ) : (
         <div className="pt-3 border-t space-y-2">
           <p className="text-[11px] text-center text-muted-foreground font-medium">Tài khoản demo kiểm thử nhanh:</p>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => fillDemo("gv@demo.local")}
+              onClick={() => fillDemo("gv@demo.local", "123456")}
               className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
             >
               👨‍🏫 Điền Giảng viên
             </button>
             <button
               type="button"
-              onClick={() => fillDemo("hva@demo.local")}
+              onClick={() => fillDemo("hva@demo.local", "123456")}
               className="rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
             >
               🎓 Điền Học viên A
