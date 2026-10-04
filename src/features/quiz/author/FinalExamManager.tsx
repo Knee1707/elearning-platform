@@ -169,14 +169,27 @@ export function FinalExamManager({
   }
 
   async function handlePublishExam() {
-    if (!examId) {
-      showMessage("error", "Hãy khởi tạo kỳ thi trước khi đăng đề.");
-      return;
-    }
     if (!window.confirm("Đăng đề thi cho học viên? Học viên đủ điều kiện sẽ nhìn thấy bài thi.")) return;
     setIsSavingExam(true);
     try {
-      const { error } = await createClient().rpc("fn_publish_final_exam", { p_exam: examId });
+      const supabase = createClient();
+      let targetExamId = examId;
+
+      if (!targetExamId) {
+        const { data, error } = await supabase.rpc("fn_create_final_exam", {
+          p_course: courseId,
+          p_title: title.trim(),
+          p_time_limit: timeLimit,
+          p_pass_score: passScore,
+        });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        targetExamId = String(row.exam_id);
+        setExamId(targetExamId);
+        setQuizId(String(row.quiz_id));
+      }
+
+      const { error } = await supabase.rpc("fn_publish_final_exam", { p_exam: targetExamId });
       if (error) throw error;
       setIsPublished(true);
       showMessage("success", "Đã đăng đề thi cuối khóa cho học viên.");
@@ -701,16 +714,14 @@ export function FinalExamManager({
               Xem lại toàn bộ câu hỏi trắc nghiệm và tự luận đã được lưu vào kỳ thi
             </p>
           </div>
-          {examId && (
-            <button
-              type="button"
-              onClick={() => void handlePublishExam()}
-              disabled={isSavingExam || isPublished}
-              className="shrink-0 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isPublished ? "Đã đăng cho học viên" : "Đăng đề thi cuối khóa"}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => void handlePublishExam()}
+            disabled={isSavingExam || isPublished}
+            className="shrink-0 rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isPublished ? "Đã đăng cho học viên" : "Đăng đề thi cuối khóa"}
+          </button>
         </div>
 
         {questions.length === 0 ? (
