@@ -12,10 +12,16 @@ import {
   Calendar,
   Eye,
   X,
+  QrCode,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyCertificates, type Certificate } from "@/lib/queries/quiz";
 import { CertificateView } from "@/features/certificate/CertificateView";
+
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { createClient } from "@/lib/supabase/client";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
+
 
 const FALLBACK_CERTIFICATES: Certificate[] = [
   {
@@ -31,6 +37,7 @@ const FALLBACK_CERTIFICATES: Certificate[] = [
 export default function MyCertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
+  const [selectedQrCert, setSelectedQrCert] = useState<Certificate | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -40,8 +47,60 @@ export default function MyCertificatesPage() {
       setIsLoading(true);
       try {
         const data = await getMyCertificates();
+        let list: Certificate[] = data ?? [];
+
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        // Hợp nhất với chứng chỉ được cấp tự động lưu ở local storage theo đúng user_id của học viên này
+        if (typeof window !== "undefined" && user?.id) {
+          try {
+            const raw = localStorage.getItem(`lms_approved_certificates_${user.id}`);
+            if (raw) {
+              const localList: Certificate[] = JSON.parse(raw);
+              const existingIds = new Set(list.map((c) => c.id));
+              const existingCourseIds = new Set(list.map((c) => c.courseId));
+              for (const loc of localList) {
+                if (!existingIds.has(loc.id) && !existingCourseIds.has(loc.courseId)) {
+                  list = [loc, ...list];
+                  existingIds.add(loc.id);
+                  existingCourseIds.add(loc.courseId);
+                }
+              }
+            }
+          } catch {}
+        }
+
+        // Tự động kiểm tra và cấp chứng chỉ cho các khóa học đã hoàn thành 100%
+        try {
+          const supabase = createClient();
+          const { data: myCourses } = await supabase
+            .from("view_course_progress")
+            .select("course_id, course_title, progress_percent, total_lessons, completed_lessons");
+
+          if (myCourses && myCourses.length > 0) {
+            const existingCourseIds = new Set(list.map((c) => c.courseId));
+            for (const c of myCourses) {
+              const percent = Number(c.progress_percent || 0);
+              const total = Number(c.total_lessons || 0);
+              const completed = Number(c.completed_lessons || 0);
+              const isFinished = (total > 0 && completed >= total) || percent >= 100;
+
+              if (isFinished && !existingCourseIds.has(c.course_id)) {
+                const autoRes = await checkAndAutoIssueCertificate(c.course_id, c.course_title);
+                if (autoRes.certificate) {
+                  list = [autoRes.certificate, ...list];
+                  existingCourseIds.add(c.course_id);
+                }
+              }
+            }
+          }
+        } catch {}
+
         if (isMounted) {
-          setCertificates(data ?? []);
+          setCertificates(list);
         }
       } catch {
         if (isMounted) {
@@ -90,8 +149,13 @@ export default function MyCertificatesPage() {
           </Link>
         </div>
 
+
         {/* Danh sách chứng chỉ */}
         <div className="mt-2">
+
+        {/* Danh sách chứng chỉ đã nhận */}
+        <div className="mt-8">
+
           {isLoading ? (
             <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách chứng chỉ của bạn...
@@ -154,7 +218,7 @@ export default function MyCertificatesPage() {
                     </div>
                   </div>
 
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
                     <Link
                       href={`/verify/${cert.code}`}
                       target="_blank"
@@ -164,20 +228,38 @@ export default function MyCertificatesPage() {
                       <ExternalLink className="h-3.5 w-3.5" />
                     </Link>
 
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCert(cert)}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-[#c5a059] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#c5a059]/25 transition-all hover:bg-[#aa7c11] active:scale-95"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>Xem & In chứng chỉ</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedQrCert(cert)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3.5 py-2 text-xs font-bold text-amber-800 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                      >
+                        <QrCode className="h-3.5 w-3.5 text-amber-600" />
+                        <span>Mã QR</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCert(cert)}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-[#c5a059] px-4 py-2 text-xs font-bold text-white shadow-sm shadow-[#c5a059]/25 transition-all hover:bg-[#aa7c11] active:scale-95"
+                      >
+                        <Eye className="h-4 w-4" />
+                        <span>Xem & In chứng chỉ</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           )}
         </div>
+
+        {/* MODAL HIỂN THỊ MÃ QR */}
+        <CertificateQrModal
+          isOpen={Boolean(selectedQrCert)}
+          onClose={() => setSelectedQrCert(null)}
+          certificate={selectedQrCert}
+        />
 
         {/* MODAL XEM CHI TIẾT CHỨNG CHỈ */}
         {selectedCert && (

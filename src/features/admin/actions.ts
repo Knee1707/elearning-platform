@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getMyProfile } from "@/lib/queries/auth";
@@ -28,7 +29,7 @@ const text = (formData: FormData, key: string) => String(formData.get(key) ?? ""
 export async function moderateCourseAction(formData: FormData) {
   const status = text(formData, "status") as CourseStatus;
   const messages: Partial<Record<CourseStatus, string>> = {
-    published: "Đã duyệt / hiển thị lại khóa học.",
+    published: "Đã duyệt / xuất bản khóa học lên phần Khám phá khóa học.",
     rejected: "Đã từ chối khóa học và báo cho giảng viên.",
     hidden: "Đã ẩn khóa học và báo cho giảng viên.",
   };
@@ -36,7 +37,37 @@ export async function moderateCourseAction(formData: FormData) {
     path: "/admin/courses",
     roles: ADMIN_ROLES,
     success: messages[status] ?? "Đã cập nhật trạng thái.",
-    task: () => moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined),
+    task: async () => {
+      await moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined);
+      revalidatePath("/courses");
+      revalidatePath("/");
+      revalidatePath("/admin/video-reviews");
+      revalidatePath("/admin/courses");
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+/**
+ * Xóa khóa học bởi Quản trị viên, đồng bộ xóa khỏi toàn bộ hệ thống (Giảng viên Studio, Học viên Góc học tập, Khám phá)
+ */
+export async function adminDeleteCourseAction(formData: FormData) {
+  const courseId = text(formData, "courseId");
+  await runAction({
+    path: "/admin/courses",
+    roles: ADMIN_ROLES,
+    success: "Đã xóa khóa học thành công khỏi hệ thống.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.from("courses").delete().eq("id", courseId);
+      if (error) throw error;
+      revalidatePath("/admin/courses");
+      revalidatePath("/courses");
+      revalidatePath("/");
+      revalidatePath("/studio");
+      revalidatePath("/my");
+      revalidatePath("/cart");
+    },
     returnTo: formData.get("returnTo"),
   });
 }
@@ -178,9 +209,9 @@ export async function updateUserNameAction(formData: FormData) {
 export async function reviewVideoAction(formData: FormData) {
   const approve = text(formData, "approve") === "true";
   await runAction({
-    path: "/admin/video-reviews",
+    path: "/admin/courses",
     roles: ADMIN_ROLES,
-    success: approve ? "Đã duyệt video." : "Đã từ chối video và báo giảng viên.",
+    success: approve ? "Đã duyệt video." : "Đã từ chối video và gửi feedback cho giảng viên.",
     task: async () => {
       const supabase = createClient();
       const { error } = await supabase.rpc("fn_review_lesson_video", {
@@ -189,6 +220,33 @@ export async function reviewVideoAction(formData: FormData) {
         p_reason: text(formData, "reason") || null,
       });
       if (error) throw error;
+      revalidatePath("/admin/courses");
+      revalidatePath("/courses");
+      revalidatePath("/admin/video-reviews");
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
+// ------------------------------------------------------------------ //
+// Duyệt nội dung bài giảng (rpc fn_review_lesson_content — DB kiểm quyền admin)
+// ------------------------------------------------------------------ //
+export async function reviewLessonContentAction(formData: FormData) {
+  const approve = text(formData, "approve") === "true";
+  await runAction({
+    path: "/admin/courses",
+    roles: ADMIN_ROLES,
+    success: approve ? "Đã duyệt cập nhật bài giảng." : "Đã từ chối cập nhật và gửi feedback cho giảng viên.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.rpc("fn_review_lesson_content", {
+        p_lesson: text(formData, "lessonId"),
+        p_approve: approve,
+        p_reason: text(formData, "reason") || null,
+      });
+      if (error) throw error;
+      revalidatePath("/admin/courses");
+      revalidatePath("/courses");
     },
     returnTo: formData.get("returnTo"),
   });

@@ -13,9 +13,19 @@ import {
   RotateCcw,
   Clock,
   Loader2,
+  QrCode,
+  Award,
 } from "lucide-react";
-import { getQuiz, submitLessonQuiz, submitAttempt, type QuizData } from "@/lib/queries/quiz";
+import {
+  getQuiz,
+  submitLessonQuiz,
+  submitAttempt,
+  type QuizData,
+  type Certificate,
+} from "@/lib/queries/quiz";
 import { createClient } from "@/lib/supabase/client";
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
 // Đề thi mẫu khi DB chưa kết nối hoặc chạy thử nghiệm
 const FALLBACK_QUIZ: QuizData = {
@@ -70,9 +80,12 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   const [resolvedSlug, setResolvedSlug] = useState<string | null>(courseSlug || null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [essayTexts, setEssayTexts] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [earnedCert, setEarnedCert] = useState<Certificate | null>(null);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
 
   // Tự động tìm slug khóa học tương ứng nếu không được truyền trực tiếp
   useEffect(() => {
@@ -180,10 +193,50 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
 
       await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers).catch(() => res.score);
 
+      let calculatedPassed = res.passed;
       setResult({
         score: res.score,
         passed: res.passed,
       });
+
+      if (calculatedPassed) {
+        try {
+          const supabase = createClient();
+          let targetCourseId: string | null = null;
+          let targetCourseTitle = "Khóa học";
+
+          if (targetExamId) {
+            const { data: exData } = await supabase
+              .from("exams")
+              .select("course_id, courses(title)")
+              .eq("id", targetExamId)
+              .maybeSingle();
+            if (exData?.course_id) {
+              targetCourseId = exData.course_id;
+              targetCourseTitle = (exData.courses as any)?.title || targetCourseTitle;
+            }
+          }
+
+          if (!targetCourseId && effectiveCourseSlug) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title")
+              .eq("slug", effectiveCourseSlug)
+              .maybeSingle();
+            if (cData?.id) {
+              targetCourseId = cData.id;
+              targetCourseTitle = cData.title || targetCourseTitle;
+            }
+          }
+
+          if (targetCourseId) {
+            const certRes = await checkAndAutoIssueCertificate(targetCourseId, targetCourseTitle);
+            if (certRes.certificate) {
+              setEarnedCert(certRes.certificate);
+            }
+          }
+        } catch {}
+      }
     } catch {
       // Chấm điểm dự phòng khi offline
       let correctCount = 0;
@@ -193,10 +246,38 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
       if (answers["51000000-0000-0000-0000-000000000003"] === "52000000-0000-0000-0000-000000000009") correctCount++;
 
       const calculatedScore = Math.round((correctCount / quiz.questions.length) * 100);
+      const calculatedPassed = calculatedScore >= quiz.passScore;
       setResult({
         score: calculatedScore,
-        passed: calculatedScore >= quiz.passScore,
+        passed: calculatedPassed,
       });
+
+      if (calculatedPassed) {
+        try {
+          const supabase = createClient();
+          let targetCourseId: string | null = null;
+          let targetCourseTitle = "Khóa học";
+
+          if (effectiveCourseSlug) {
+            const { data: cData } = await supabase
+              .from("courses")
+              .select("id, title")
+              .eq("slug", effectiveCourseSlug)
+              .maybeSingle();
+            if (cData?.id) {
+              targetCourseId = cData.id;
+              targetCourseTitle = cData.title || targetCourseTitle;
+            }
+          }
+
+          if (targetCourseId) {
+            const certRes = await checkAndAutoIssueCertificate(targetCourseId, targetCourseTitle);
+            if (certRes.certificate) {
+              setEarnedCert(certRes.certificate);
+            }
+          }
+        } catch {}
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -272,26 +353,69 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
             </span>
           </div>
 
+          {/* Vinh danh chứng chỉ tự động cấp (nếu đạt đủ điều kiện) */}
+          {earnedCert && (
+            <div className="my-5 rounded-2xl border border-emerald-300 bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 p-5 text-center shadow-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100/80 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                <Award className="h-3.5 w-3.5 text-emerald-600" />
+                Chứng chỉ chính quy đã được cấp tự động
+              </span>
+              <p className="mt-2 text-base font-black text-slate-900">
+                Chúc mừng bạn đã hoàn thành xuất sắc điều kiện nhận chứng chỉ!
+              </p>
+              <p className="mt-1 text-xs text-slate-500 font-mono">
+                Mã chứng chỉ: <strong className="text-slate-900">{earnedCert.code}</strong>
+              </p>
+            </div>
+          )}
+
           {/* Nút hành động */}
           <div className="flex flex-wrap items-center justify-center gap-3">
+            {earnedCert && (
+              <button
+                type="button"
+                onClick={() => setShowQrModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-5 py-2.5 text-xs font-bold text-amber-900 shadow-2xs transition-all active:scale-95 cursor-pointer"
+              >
+                <QrCode className="h-4 w-4 text-amber-600" />
+                <span>Hiển thị mã QR</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={handleRetake}
-              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Làm lại bài thi</span>
             </button>
 
-            <Link
-              href={backCourseUrl}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
-            >
-              <span>Tiếp tục bài học</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            {result.passed ? (
+              <Link
+                href={backCourseUrl}
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>Tiếp tục bài tập</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <Link
+                href={backCourseUrl}
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 shadow-xs hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+              >
+                <span>Quay lại bài giảng</span>
+              </Link>
+            )}
           </div>
         </div>
+
+        {/* Modal hiển thị mã QR */}
+        <CertificateQrModal
+          isOpen={showQrModal}
+          onClose={() => setShowQrModal(false)}
+          certificate={earnedCert}
+        />
       </div>
     );
   }
@@ -348,43 +472,74 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-blue-600">
               <FileQuestion className="h-4 w-4" />
-              <span>Câu hỏi {currentIndex + 1} / {quiz.questions.length}</span>
+              <span>
+                Câu hỏi {currentIndex + 1} / {quiz.questions.length}
+                {currentQuestion.questionText.startsWith("[Tự luận]") && (
+                  <span className="ml-2 rounded-full bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-800 uppercase tracking-wider">
+                    Tự luận
+                  </span>
+                )}
+              </span>
             </div>
             <p className="mt-2 text-base font-bold leading-relaxed text-slate-900">
-              {currentQuestion.questionText}
+              {currentQuestion.questionText.replace(/^\[Tự luận\]\s*/i, "")}
             </p>
           </div>
 
-          {/* Danh sách lựa chọn */}
-          <div className="space-y-3">
-            {currentQuestion.options.map((option) => {
-              const isSelected = answers[currentQuestion.questionId] === option.optionId;
+          {/* Kiểm tra câu hỏi tự luận hay trắc nghiệm */}
+          {currentQuestion.questionText.startsWith("[Tự luận]") ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-purple-200 bg-purple-50/40 p-4">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 block mb-2">
+                  Bài làm tự luận của bạn:
+                </span>
+                <textarea
+                  rows={6}
+                  value={essayTexts[currentQuestion.questionId] || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEssayTexts((prev) => ({ ...prev, [currentQuestion.questionId]: val }));
+                    if (currentQuestion.options[0]) {
+                      handleSelectOption(currentQuestion.questionId, currentQuestion.options[0].optionId);
+                    }
+                  }}
+                  placeholder="Gõ nội dung bài làm, câu trả lời tự luận hoặc lời giải chi tiết của bạn tại đây..."
+                  className="w-full rounded-xl border border-purple-200 bg-white p-3.5 text-xs sm:text-sm font-medium focus:border-purple-600 focus:outline-none transition-all shadow-2xs"
+                />
+              </div>
+            </div>
+          ) : (
+            /* Danh sách lựa chọn trắc nghiệm */
+            <div className="space-y-3">
+              {currentQuestion.options.map((option) => {
+                const isSelected = answers[currentQuestion.questionId] === option.optionId;
 
-              return (
-                <button
-                  key={option.optionId}
-                  type="button"
-                  onClick={() => handleSelectOption(currentQuestion.questionId, option.optionId)}
-                  className={`flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-[0.99] ${
-                    isSelected
-                      ? "border-blue-600 bg-blue-50/70 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
-                      : "border-slate-200/90 bg-white hover:border-blue-200 hover:bg-slate-50/50 text-slate-700"
-                  }`}
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                return (
+                  <button
+                    key={option.optionId}
+                    type="button"
+                    onClick={() => handleSelectOption(currentQuestion.questionId, option.optionId)}
+                    className={`flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-[0.99] ${
                       isSelected
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-slate-300 text-slate-400"
+                        ? "border-blue-600 bg-blue-50/70 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
+                        : "border-slate-200/90 bg-white hover:border-blue-200 hover:bg-slate-50/50 text-slate-700"
                     }`}
                   >
-                    {isSelected ? "✓" : ""}
-                  </div>
-                  <span className="leading-snug flex-1">{option.optionText}</span>
-                </button>
-              );
-            })}
-          </div>
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-slate-300 text-slate-400"
+                      }`}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                    <span className="leading-snug flex-1">{option.optionText}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

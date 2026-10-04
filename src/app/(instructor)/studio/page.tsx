@@ -2,7 +2,6 @@ import Link from "next/link";
 import { BookOpen, CheckCircle2, Clock, Users, Star } from "lucide-react";
 import { getMyCourses, getInstructorStats } from "@/features/course/queries";
 import { Button } from "@/components/ui/button";
-import { FinalExamDashboard } from "@/features/quiz/author/FinalExamDashboard";
 
 const STATUS_LABEL: Record<string, string> = {
   draft: "Nháp",
@@ -38,7 +37,7 @@ export default async function StudioPage() {
         <div>
           <h1 className="text-2xl font-bold">Bảng điều khiển Giảng viên</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Quản lý nội dung, chương/bài, buổi live và doanh thu cho từng khóa.
+            Quản lý nội dung, chương/bài và doanh thu cho từng khóa.
           </p>
         </div>
         <Link href="/studio/new">
@@ -98,7 +97,6 @@ export default async function StudioPage() {
           ))}
         </ul>
       )}
-      <FinalExamDashboard courses={courses.filter((course) => course.status === "published").map((course) => ({ id: course.id, title: course.title }))} />
     </main>
   );
 }

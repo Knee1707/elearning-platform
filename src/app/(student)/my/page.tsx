@@ -11,13 +11,15 @@ import {
   ArrowRight,
   GraduationCap,
   Sparkles,
-  Search,
   ReceiptText,
   Heart,
+  QrCode,
 } from "lucide-react";
 import { Navbar } from "@/components/shared/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
+import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
+import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
 interface EnrolledCourseItem {
   courseId: string;
@@ -29,6 +31,9 @@ interface EnrolledCourseItem {
   progressPercent: number;
   thumbnailUrl: string | null;
   lastStudiedLessonTitle?: string;
+  certificateCode?: string | null;
+  certificateIssuedAt?: string | null;
+  isCertified?: boolean;
 }
 
 interface WishlistCourseItem {
@@ -50,10 +55,13 @@ const FALLBACK_MY_COURSES: EnrolledCourseItem[] = [
     title: "Khóa học Next.js từ cơ bản đến nâng cao",
     instructorName: "Nguyễn Văn Giảng Viên",
     totalLessons: 4,
-    completedLessons: 2,
-    progressPercent: 50,
+    completedLessons: 4,
+    progressPercent: 100,
     thumbnailUrl: null,
-    lastStudiedLessonTitle: "Bài 3: Server Components",
+    lastStudiedLessonTitle: "Bài 4: Tối ưu hóa hiệu năng và triển khai",
+    certificateCode: "CERT-NEXTJS-2026-A1B2C3D4",
+    certificateIssuedAt: new Date().toISOString(),
+    isCertified: true,
   },
   {
     courseId: "demo-course-1",
@@ -72,7 +80,12 @@ export default function MyLearningPage() {
   const [courses, setCourses] = useState<EnrolledCourseItem[]>([]);
   const [wishlistCourses, setWishlistCourses] = useState<WishlistCourseItem[]>([]);
   const [filterTab, setFilterTab] = useState<"all" | "in_progress" | "completed" | "wishlist">("all");
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [selectedQrCert, setSelectedQrCert] = useState<{
+    code: string;
+    courseTitle: string;
+    instructorName?: string;
+    issuedAt?: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [feedback, setFeedback] = useState<
     { id: string; content: string; createdAt: string; courseTitle: string; instructorName: string }[]
@@ -85,70 +98,153 @@ export default function MyLearningPage() {
       setIsLoading(true);
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("view_course_progress")
-          .select("*");
-
-        if (error || !data || data.length === 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           if (isMounted) {
             setCourses([]);
           }
-        } else if (isMounted) {
-          // 2. Tra cứu thêm thông tin slug và thumbnail từ bảng courses để bảo đảm link chính xác
-          const courseIds = Array.from(new Set((data as Array<Record<string, unknown>>).map((r) => r.course_id as string)));
-          const { data: coursesInfo } = await supabase
-            .from("courses")
-            .select("id, slug, thumbnail_url, profiles!courses_instructor_id_fkey(full_name)")
-            .in("id", courseIds);
+          return;
+        }
 
-          const courseMetaMap = new Map<string, { slug: string; thumbnail: string | null; instructor: string }>();
-          if (coursesInfo) {
-            for (const c of coursesInfo as Array<Record<string, unknown>>) {
-              const prof = c.profiles as Record<string, unknown> | null;
-              courseMetaMap.set(c.id as string, {
-                slug: c.slug as string,
-                thumbnail: (c.thumbnail_url as string) || null,
-                instructor: (prof?.full_name as string) || "Giảng viên LMS",
+        // 1. Lấy tất cả các khóa học đã ghi danh/mua thành công của học viên từ bảng enrollments
+        const { data: enrollmentsData } = await supabase
+          .from("enrollments")
+          .select("course_id, status")
+          .eq("user_id", user.id)
+          .eq("status", "active");
+
+        const enrolledCourseIds = Array.from(
+          new Set((enrollmentsData ?? []).map((e: any) => e.course_id as string)),
+        );
+
+        if (enrolledCourseIds.length === 0) {
+          if (isMounted) {
+            setCourses([]);
+          }
+          return;
+        }
+
+        // 2. Tra cứu thông tin khóa học từ bảng courses
+        const { data: coursesInfo } = await supabase
+          .from("courses")
+          .select("id, slug, title, thumbnail_url, instructor_id, profiles!courses_instructor_id_fkey(full_name)")
+          .in("id", enrolledCourseIds);
+
+        // Tra cứu tiến độ từ view_course_progress (nếu có)
+        const { data: progressData } = await supabase
+          .from("view_course_progress")
+          .select("*");
+
+        const progressMap = new Map<string, any>();
+        if (progressData) {
+          for (const row of progressData as any[]) {
+            progressMap.set(row.course_id, row);
+          }
+        }
+
+        // Tra cứu nhiều giảng viên từ bảng course_instructors (nếu có)
+        const multiInstructorMap = new Map<string, string[]>();
+        try {
+          const { data: ciData } = await supabase
+            .from("course_instructors")
+            .select("course_id, profiles(full_name)")
+            .in("course_id", enrolledCourseIds);
+          if (ciData) {
+            for (const r of ciData as any[]) {
+              const name = r.profiles?.full_name;
+              if (name) {
+                const list = multiInstructorMap.get(r.course_id) ?? [];
+                if (!list.includes(name)) list.push(name);
+                multiInstructorMap.set(r.course_id, list);
+              }
+            }
+          }
+        } catch {
+          // Bỏ qua nếu bảng chưa tạo
+        }
+
+        // 3. Gom nhóm dữ liệu cho từng khóa học
+        const resultCourses: EnrolledCourseItem[] = [];
+        for (const cid of enrolledCourseIds) {
+          const course = (coursesInfo ?? []).find((c: any) => c.id === cid);
+          const prog = progressMap.get(cid);
+          const multiNames = multiInstructorMap.get(cid);
+
+          const defaultInstructor = (course?.profiles as any)?.full_name || "Giảng viên LMS";
+          const instructorName = (multiNames && multiNames.length > 0)
+            ? multiNames.join(", ")
+            : defaultInstructor;
+
+          const total = Number(prog?.total_lessons || 0);
+          const completed = Number(prog?.completed_lessons || 0);
+          const percent = Number(prog?.progress_percent || 0);
+
+          resultCourses.push({
+            courseId: cid,
+            slug: course?.slug || prog?.slug || cid,
+            title: course?.title || prog?.course_title || "Khóa học",
+            instructorName,
+            totalLessons: total,
+            completedLessons: completed,
+            progressPercent: percent,
+            thumbnailUrl: course?.thumbnail_url || prog?.thumbnail_url || null,
+          });
+        }
+
+        // 4. Lấy chứng chỉ đã cấp để gắn mã chứng chỉ và cho phép mở mã QR
+        // 4. Lấy chứng chỉ đã cấp của chính user này để gắn mã chứng chỉ và cho phép mở mã QR
+        try {
+          const { data: certs } = await supabase
+            .from("certificates")
+            .select("id, code, course_id, issued_at")
+            .eq("user_id", user.id)
+            .eq("status", "approved");
+
+          const certMap = new Map<string, { code: string; issuedAt: string }>();
+          if (certs) {
+            for (const c of certs as Array<Record<string, unknown>>) {
+              certMap.set(c.course_id as string, {
+                code: c.code as string,
+                issuedAt: c.issued_at as string,
               });
             }
           }
 
-          // 3. Gom nhóm theo course_id để triệt tiêu hoàn toàn trùng lặp thẻ khóa học
-          const courseMap = new Map<string, EnrolledCourseItem>();
-          for (const row of data as Array<Record<string, unknown>>) {
-            const cid = row.course_id as string;
-            const meta = courseMetaMap.get(cid);
-            const total = Number(row.total_lessons || 0);
-            const completed = Number(row.completed_lessons || 0);
-
-            const existing = courseMap.get(cid);
-            if (!existing) {
-              courseMap.set(cid, {
-                courseId: cid,
-                slug: meta?.slug || (row.slug as string) || cid,
-                title: (row.course_title as string) || "Khóa học",
-                instructorName: meta?.instructor || (row.instructor_name as string) || "Giảng viên LMS",
-                totalLessons: total,
-                completedLessons: completed,
-                progressPercent: Number(row.progress_percent || 0),
-                thumbnailUrl: meta?.thumbnail || (row.thumbnail_url as string) || null,
+          for (const item of resultCourses) {
+            const cert = certMap.get(item.courseId);
+            if (cert) {
+              item.isCertified = true;
+              item.certificateCode = cert.code;
+              item.certificateIssuedAt = cert.issuedAt;
+            } else if (item.progressPercent === 100 && item.totalLessons > 0) {
+              // Tự động kiểm tra và cấp chứng chỉ nếu đã hoàn thành mọi video, quiz và bài thi
+              checkAndAutoIssueCertificate(item.courseId, item.title, item.instructorName).then((res) => {
+                if (res.certificate && isMounted) {
+                  setCourses((prev) =>
+                    prev.map((c) =>
+                      c.courseId === item.courseId
+                        ? {
+                            ...c,
+                            isCertified: true,
+                            certificateCode: res.certificate!.code,
+                            certificateIssuedAt: res.certificate!.issuedAt,
+                          }
+                        : c
+                    )
+                  );
+                }
               });
-            } else {
-              // Gộp tiến độ nếu DB view cũ tách thành 2 dòng (do lp.user_id null)
-              const newTotal = Math.max(existing.totalLessons, total);
-              const newCompleted = Math.max(existing.completedLessons, completed);
-              const newPercent = newTotal > 0 ? Math.round((newCompleted / newTotal) * 100) : existing.progressPercent;
-              existing.totalLessons = newTotal;
-              existing.completedLessons = newCompleted;
-              existing.progressPercent = Math.max(existing.progressPercent, newPercent);
             }
           }
+        } catch {}
 
-          setCourses(Array.from(courseMap.values()));
+        if (isMounted) {
+          setCourses(resultCourses);
         }
       } catch {
         if (isMounted) {
-          setCourses(FALLBACK_MY_COURSES);
+          // Tránh gán nhầm khóa học demo của người khác cho tài khoản mới
+          setCourses([]);
         }
       } finally {
         if (isMounted) {
@@ -282,19 +378,14 @@ export default function MyLearningPage() {
     };
   }, []);
 
-  // Lọc theo tab và tìm kiếm
+  // Lọc theo tab
   const filteredCourses = courses.filter((c) => {
-    const matchesSearch = c.title.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-
     if (filterTab === "in_progress") return c.progressPercent < 100;
     if (filterTab === "completed") return c.progressPercent === 100;
     return true;
   });
 
-  const filteredWishlistCourses = wishlistCourses.filter((w) =>
-    w.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredWishlistCourses = wishlistCourses;
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col">
@@ -341,9 +432,9 @@ export default function MyLearningPage() {
           </div>
         </div>
 
-        {/* Thanh công cụ: Tabs lọc & Tìm kiếm */}
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5 rounded-full bg-slate-100 p-1.5 text-xs font-semibold w-full sm:w-auto border border-slate-200/60">
+        {/* Thanh công cụ: Tabs lọc (Đã xóa thanh tìm kiếm theo yêu cầu) */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-1.5 rounded-full bg-slate-100 p-1.5 text-xs font-semibold w-full sm:w-auto border border-slate-200/60">
             <button
               type="button"
               onClick={() => setFilterTab("all")}
@@ -382,17 +473,6 @@ export default function MyLearningPage() {
               <span>Yêu thích ({wishlistCourses.length})</span>
             </button>
           </div>
-
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm kiếm khóa học..."
-              className="w-full rounded-full border border-slate-200 bg-white py-2 pl-9 pr-4 text-xs font-medium placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 shadow-xs"
-            />
-          </div>
         </div>
 
         {/* Danh sách khóa học */}
@@ -408,19 +488,17 @@ export default function MyLearningPage() {
                   <Heart className="h-7 w-7" />
                 </div>
                 <h3 className="mt-4 text-base font-bold text-slate-900">
-                  {searchQuery ? "Không tìm thấy khóa học yêu thích phù hợp" : "Danh sách yêu thích đang trống"}
+                  Danh sách yêu thích đang trống
                 </h3>
                 <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                  {searchQuery
-                    ? "Hãy thử tìm kiếm với từ khóa khác."
-                    : "Bạn chưa lưu khóa học nào vào danh sách yêu thích. Hãy bấm vào biểu tượng trái tim ở trang chi tiết khóa học để lưu lại!"}
+                  Bạn chưa lưu khóa học nào vào danh sách yêu thích. Hãy bấm vào biểu tượng trái tim ở trang chi tiết khóa học để lưu lại!
                 </p>
                 <div className="mt-6">
                   <Link
                     href="/courses"
                     className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
                   >
-                    <Search className="h-3.5 w-3.5" />
+                    <BookOpen className="h-3.5 w-3.5" />
                     <span>Khám phá khóa học ngay</span>
                   </Link>
                 </div>
@@ -435,6 +513,7 @@ export default function MyLearningPage() {
                     <div className="space-y-3">
                       <div className="relative aspect-video w-full rounded-xl bg-slate-100 overflow-hidden">
                         {wish.thumbnailUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={wish.thumbnailUrl}
                             alt={wish.title}
@@ -492,19 +571,17 @@ export default function MyLearningPage() {
             <div className="rounded-3xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
               <BookOpen className="mx-auto h-12 w-12 text-slate-300" />
               <h3 className="mt-4 text-base font-bold text-slate-900">
-                {searchQuery ? "Không tìm thấy khóa học phù hợp" : "Chưa có khóa học nào"}
+                Chưa có khóa học nào trong mục này
               </h3>
               <p className="mt-1.5 text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-                {searchQuery
-                  ? "Hãy thử tìm kiếm với từ khóa khác hoặc xóa bộ lọc."
-                  : "Bạn chưa đăng ký khóa học nào trong danh mục này. Hãy bắt đầu nâng cao kiến thức ngay hôm nay!"}
+                Bạn chưa có khóa học nào thuộc danh mục này. Hãy bắt đầu hành trình nâng cao kiến thức ngay hôm nay!
               </p>
               <div className="mt-6">
                 <Link
                   href="/courses"
                   className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-500/25 hover:bg-blue-700 transition-all active:scale-95"
                 >
-                  <Search className="h-3.5 w-3.5" />
+                  <BookOpen className="h-3.5 w-3.5" />
                   <span>Duyệt danh mục khóa học</span>
                 </Link>
               </div>
@@ -570,21 +647,46 @@ export default function MyLearningPage() {
                     )}
                   </div>
 
-                  {/* Hành động dưới cùng */}
-                  <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
-                    {course.progressPercent === 100 ? (
-                      <Link
-                        href="/certificates"
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700"
-                      >
-                        <Award className="h-4 w-4" />
-                        <span>Xem chứng chỉ</span>
-                      </Link>
-                    ) : (
-                      <span className="text-xs text-slate-400 font-medium">
-                        {course.totalLessons - course.completedLessons} bài còn lại
-                      </span>
-                    )}
+                  {/* Hành động dưới cùng (Bao gồm button hiển thị Mã QR sau khi được cấp chứng chỉ) */}
+                  <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                    <div className="flex items-center gap-2">
+                      {course.progressPercent === 100 || course.isCertified ? (
+                        <>
+                          <Link
+                            href="/certificates"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700"
+                          >
+                            <Award className="h-4 w-4" />
+                            <span>Chứng chỉ</span>
+                          </Link>
+
+                          {/* Button click hiển thị mã QR cho người khác quét */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSelectedQrCert({
+                                code:
+                                  course.certificateCode ||
+                                  `CERT-${course.courseId.slice(0, 8).toUpperCase()}`,
+                                courseTitle: course.title,
+                                instructorName: course.instructorName,
+                                issuedAt:
+                                  course.certificateIssuedAt ||
+                                  new Date().toISOString(),
+                              })
+                            }
+                            className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-800 shadow-2xs transition-all active:scale-95 cursor-pointer"
+                          >
+                            <QrCode className="h-3.5 w-3.5 text-amber-600" />
+                            <span>Mã QR</span>
+                          </button>
+                        </>
+                      ) : (
+                        <span className="text-xs text-slate-400 font-medium">
+                          {course.totalLessons - course.completedLessons} bài còn lại
+                        </span>
+                      )}
+                    </div>
 
                     <Link
                       href={`/learn/${course.slug}`}
@@ -623,6 +725,13 @@ export default function MyLearningPage() {
             </div>
           </div>
         )}
+
+        {/* MODAL HIỂN THỊ MÃ QR CHO NGƯỜI KHÁC QUÉT */}
+        <CertificateQrModal
+          isOpen={Boolean(selectedQrCert)}
+          onClose={() => setSelectedQrCert(null)}
+          certificate={selectedQrCert}
+        />
       </main>
     </div>
   );

@@ -57,6 +57,7 @@
 | `categories` | `id` · `name` · `slug`(UNIQUE) |
 | `tag` | `id` · `name` · `slug`(UNIQUE) |
 | `course_tag` | `course_id`(FK→courses) · `tag_id`(FK→tag) — PK ghép (course_id, tag_id) |
+| `course_instructors` **[0026]** | `course_id`(FK→courses) · `instructor_id`(FK→profiles) · `created_at` — PK ghép (course_id, instructor_id) |
 | `courses` | `id` · `instructor_id`(FK→profiles) · `category_id`(FK→categories) · `title` · `slug`(UNIQUE) · `description` · `level` · `price` · `status`(course_status) · `thumbnail_url` · `is_featured` · `created_at` · `updated_at` · `moderation_note` **[0014]** (lý do từ chối/ẩn gần nhất) |
 | `chapters` | `id` · `course_id`(FK→courses) · `title` · `position` |
 | `lessons` | `id` · `chapter_id`(FK→chapters) · `title` · `video_url` · `video_status` · `duration_seconds` · `is_free` · `position` |
@@ -134,7 +135,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 `idx_exams_course_id`, `idx_exam_attempts_user_id`, `idx_exam_attempts_exam_id`,
 `idx_answers_attempt_id`, `idx_certificates_user_id`, `idx_live_sessions_course_id`,
 `idx_attendance_course_id`, `idx_attendance_user_id`, `uq_attendance_once`,
-`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**.
+`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**,
+`idx_course_instructors_course_id` **[0026]**, `idx_course_instructors_instructor_id` **[0026]**.
 
 ---
 
@@ -198,6 +200,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_create_final_exam` **[0021]** | `p_course uuid`, `p_title text`, `p_time_limit integer`, `p_pass_score integer` → `exam_id`, `quiz_id`; GV tạo kỳ thi cuối khóa |
 | `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
 | `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
+| `fn_review_lesson_content` **[0027]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text`; admin duyệt/từ chối nội dung bài học, báo giảng viên |
+| `fn_submit_course_update` **[0027]** | `p_course uuid`, `p_note text`; giảng viên gửi yêu cầu duyệt cập nhật nội dung khóa học đã publish |
 | `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
 | `fn_submit_quiz` **[0020]** | `p_quiz uuid`, `p_answers jsonb` → `jsonb`. Học viên nộp bài quiz bài học, DB chấm điểm và cập nhật `lesson_progress` |
 | `fn_is_lesson_unlocked` **[0020]** | `p_lesson uuid`, `p_user uuid` (mặc định auth.uid()). Kiểm tra bài học đã mở khóa chưa (bài 1 luôn mở, bài N yêu cầu bài N-1 xem xong + pass quiz) |
@@ -209,6 +213,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 **Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
+**Cột thêm [0027]:** `lessons.content_review` (text, mặc định `'approved'`), `lessons.content_review_reason` (text), `lessons.is_updated` (boolean, mặc định `false`), `courses.update_status` (text, mặc định `'none'`), `courses.update_feedback` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
 **Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_live_sessions_validate_date` (live_sessions) **[0020]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.

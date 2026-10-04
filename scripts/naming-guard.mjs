@@ -25,7 +25,7 @@ const ALLOWED = {
     "reviews", "lesson_progress", "lesson_note", "qa_question", "qa_answer",
     "quizzes", "questions", "options", "exams", "exam_attempts", "answers",
     "certificates", "live_sessions", "attendance", "notification", "report",
-    "student_feedback", "student_discipline_request",
+    "student_feedback", "student_discipline_request", "course_instructors",
   ]),
   enums: new Set([
     "user_role", "course_status", "enrollment_status", "payment_status",
@@ -65,6 +65,8 @@ const ALLOWED = {
     // L — kỳ thi cuối khóa + duyệt chứng nhận bởi giảng viên (0021)
     "fn_create_final_exam",
     "fn_request_student_discipline", "fn_review_student_discipline",
+    // L — gộp duyệt khóa học & duyệt cập nhật nội dung (0027)
+    "fn_review_lesson_content", "fn_submit_course_update",
     // M1
     "fn_search_courses", "fn_apply_coupon",
     // M2

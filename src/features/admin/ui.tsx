@@ -93,6 +93,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   qa_answer: "Trả lời Q&A",
   certificate: "Chứng chỉ",
   student_discipline: "Xử lý học viên",
+  student: "Học viên",
+  student_management: "Quản lý học viên",
 };
 
 const show = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "string" ? v : JSON.stringify(v));
@@ -135,6 +137,8 @@ export function describeActivity(entry: ActivityEntry): { label: string; detail:
 
 // ------------------------------------------------------------------ //
 // Nút mở ô nhập lý do rồi gửi (dùng <details>, không cần JS phía client).
+// ------------------------------------------------------------------ //
+// Nút mở ô nhập lý do rồi gửi (dùng <details>, không cần JS phía client).
 // Dùng cho: từ chối/ẩn khóa học, khóa tài khoản, từ chối hoàn tiền.
 // ------------------------------------------------------------------ //
 export function ReasonAction({
@@ -151,11 +155,11 @@ export function ReasonAction({
   placeholder?: string;
 }) {
   return (
-    <details className="group">
-      <summary className="cursor-pointer list-none rounded border border-border px-3 py-2 text-center text-sm hover:bg-muted group-open:bg-muted [&::-webkit-details-marker]:hidden">
+    <details className="group relative">
+      <summary className="cursor-pointer list-none inline-flex items-center justify-center rounded-md border border-border bg-background px-3.5 py-1.5 text-center text-sm font-medium text-foreground shadow-xs hover:bg-muted group-open:bg-muted transition-colors [&::-webkit-details-marker]:hidden">
         {label}
       </summary>
-      <form action={action} className="mt-2 w-64 max-w-[calc(100vw-3rem)] space-y-2 rounded-lg border border-border bg-background p-3 shadow-sm">
+      <form action={action} className="absolute right-0 z-20 mt-2 w-64 max-w-[calc(100vw-3rem)] space-y-2 rounded-lg border border-border bg-background p-3 shadow-lg">
         {Object.entries(hidden).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
@@ -167,9 +171,9 @@ export function ReasonAction({
           rows={3}
           aria-label="Lý do"
           placeholder={placeholder}
-          className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
+          className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
         />
-        <button type="submit" className="w-full rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+        <button type="submit" className="w-full rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors cursor-pointer">
           {submitLabel ?? label}
         </button>
       </form>
@@ -186,24 +190,31 @@ export function ConfirmAction({
   message,
   submitLabel,
   hidden,
+  variant = "link",
 }: {
   action: (formData: FormData) => Promise<void>;
   label: string;
   message: string;
   submitLabel?: string;
   hidden: Record<string, string>;
+  variant?: "link" | "button";
 }) {
+  const summaryClass =
+    variant === "button"
+      ? "cursor-pointer list-none inline-flex items-center justify-center rounded-md border border-border bg-background px-3.5 py-1.5 text-center text-sm font-medium text-red-600 shadow-xs hover:bg-red-50 hover:text-red-700 hover:border-red-200 dark:text-red-400 dark:hover:bg-red-950/40 group-open:bg-muted transition-colors [&::-webkit-details-marker]:hidden"
+      : "cursor-pointer list-none text-sm font-medium text-red-600 underline hover:text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden";
+
   return (
-    <details className="group">
-      <summary className="cursor-pointer list-none text-sm font-medium text-red-600 underline hover:text-red-700 dark:text-red-400 [&::-webkit-details-marker]:hidden">
+    <details className="group relative">
+      <summary className={summaryClass}>
         {label}
       </summary>
-      <form action={action} className="mt-2 w-64 max-w-[calc(100vw-3rem)] space-y-2 rounded-lg border border-border bg-background p-3 shadow-sm">
+      <form action={action} className="absolute right-0 z-20 mt-2 w-64 max-w-[calc(100vw-3rem)] space-y-2 rounded-lg border border-border bg-background p-3 shadow-lg">
         {Object.entries(hidden).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
         ))}
-        <p className="text-sm text-muted-foreground">{message}</p>
-        <button type="submit" className="w-full rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+        <p className="text-xs text-muted-foreground">{message}</p>
+        <button type="submit" className="w-full rounded bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 transition-colors cursor-pointer">
           {submitLabel ?? label}
         </button>
       </form>
