@@ -97,7 +97,7 @@ export default async function EditCoursePage({ params }: PageProps) {
             <div>
               <p className="font-semibold">Khóa học bị từ chối kiểm duyệt</p>
               <p className="mt-1 text-xs text-red-700 dark:text-red-400">
-                Phản hồi từ Admin: "{(course as any).moderation_note}"
+                Phản hồi từ Admin: &quot;{(course as any).moderation_note}&quot;
               </p>
             </div>
           </div>
@@ -189,9 +189,13 @@ export default async function EditCoursePage({ params }: PageProps) {
               Kỳ thi cuối khóa (Trắc nghiệm &amp; Tự luận)
             </h2>
             <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
-              {finalExam
-                ? `Đề thi: "${finalExam.title}" · Thời lượng: ${finalExam.time_limit_minutes} phút · Điểm đạt: ${finalExam.pass_score}%. Bấm nút bên cạnh để xem và chỉnh sửa nội dung câu hỏi.`
-                : "Tạo đề thi gồm các câu hỏi trắc nghiệm và tự luận để học viên làm bài thi và nhận chứng chỉ hoàn thành khóa học."}
+              {finalExam ? (
+                <>
+                  Đề thi: &quot;{finalExam.title}&quot; · Thời lượng: {finalExam.time_limit_minutes} phút · Điểm đạt: {finalExam.pass_score}%. Bấm nút bên cạnh để xem và chỉnh sửa nội dung câu hỏi.
+                </>
+              ) : (
+                "Tạo đề thi gồm các câu hỏi trắc nghiệm và tự luận để học viên làm bài thi và nhận chứng chỉ hoàn thành khóa học."
+              )}
             </p>
           </div>
 
