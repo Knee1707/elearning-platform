@@ -18,7 +18,9 @@ export default async function CourseFinalExamPage({ params }: PageProps) {
     .eq("id", params.courseId)
     .single();
 
-  if (!course || (course.instructor_id !== profile.id && !isAdminRole(profile.role))) {
+  // Giảng viên chính, giảng viên đồng phụ trách (course_instructors) hoặc admin.
+  const { data: ownsCourse } = await supabase.rpc("fn_owns_course", { cid: params.courseId });
+  if (!course || (!ownsCourse && !isAdminRole(profile.role))) {
     notFound();
   }
 
