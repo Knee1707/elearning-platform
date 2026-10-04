@@ -17,33 +17,6 @@ import {
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyNotifications, markRead, type Notification } from "@/lib/queries/qa";
 
-const FALLBACK_NOTIFICATIONS: Notification[] = [
-  {
-    id: "notif-1",
-    type: "system",
-    title: "Chúc mừng! Bạn đã được cấp chứng chỉ tốt nghiệp",
-    body: "Bạn đã xuất sắc hoàn thành khóa học Next.js từ cơ bản đến nâng cao. Mã chứng chỉ: CERT-NEXTJS-2026-A1B2C3D4.",
-    isRead: false,
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: "notif-2",
-    type: "reply",
-    title: "Giảng viên đã giải đáp câu hỏi của bạn",
-    body: "Nguyễn Văn Giảng Viên: 'Vì useState là client-side state, cần \"use client\" directive. Server Components không có lifecycle phía browser...'",
-    isRead: false,
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-  },
-  {
-    id: "notif-3",
-    type: "purchase",
-    title: "Kích hoạt khóa học thành công",
-    body: "Đơn hàng đã được thanh toán. Bạn đã chính thức sở hữu toàn quyền truy cập trọn đời vào khóa học Lập trình Web hiện đại.",
-    isRead: true,
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
-
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<"all" | "unread">("all");

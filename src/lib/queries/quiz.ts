@@ -291,10 +291,14 @@ export async function verifyCertificate(code: string): Promise<CertificateInfo |
  */
 export async function getMyCertificates(): Promise<Certificate[]> {
   const supabase = createClient();
-  // Chỉ chứng chỉ ĐÃ DUYỆT (status='approved'); yêu cầu 'pending' không tính là đã có.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  // Chỉ chứng chỉ ĐÃ DUYỆT (status='approved') của chính học viên này
   const { data, error } = await supabase
     .from("certificates")
     .select("id, code, issued_at, revoked_at, course_id, courses(title, profiles!courses_instructor_id_fkey(full_name))")
+    .eq("user_id", user.id)
     .eq("status", "approved")
     .order("issued_at", { ascending: false });
 

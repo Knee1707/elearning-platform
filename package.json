@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:admin": "node scripts/start-admin.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

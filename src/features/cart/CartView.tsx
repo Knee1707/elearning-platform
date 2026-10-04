@@ -158,35 +158,11 @@ export function CartView() {
           }));
         }
 
-        // Đồng bộ thêm các khóa học từ localStorage (nếu vừa bấm thêm trước đó)
-        try {
-          const demoIds: string[] = JSON.parse(localStorage.getItem("demo_cart_items") || "[]");
-          const existingIds = new Set(mapped.map((m) => m.courseId));
-          const missingIds = demoIds.filter((id) => !existingIds.has(id));
-
-          if (missingIds.length > 0) {
-            const { data: missingCourses } = await supabase
-              .from("courses")
-              .select("id, title, slug, price, thumbnail_url, level")
-              .in("id", missingIds);
-
-            if (missingCourses && missingCourses.length > 0) {
-              for (const c of missingCourses as any[]) {
-                await supabase.rpc("fn_add_to_cart", { p_course: c.id });
-                mapped.push({
-                  id: c.id,
-                  courseId: c.id,
-                  title: c.title,
-                  slug: c.slug,
-                  thumbnailUrl: c.thumbnail_url,
-                  instructorName: "Giảng viên LMS",
-                  level: c.level || "Cơ bản",
-                  price: Number(c.price || 0),
-                });
-              }
-            }
-          }
-        } catch {}
+        // Đã đăng nhập: Chỉ lấy đúng giỏ hàng từ Database của chính tài khoản này
+        // Dọn sạch demo cart trong localStorage để tránh lẫn dữ liệu
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("demo_cart_items");
+        }
 
         setItems(mapped);
       } catch {
@@ -240,11 +216,20 @@ export function CartView() {
               }
             }
             setWishlistItems(list);
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("demo_wishlist");
+            }
             return;
           }
+          // Nếu có session nhưng danh sách trống hoặc không có lỗi
+          setWishlistItems([]);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("demo_wishlist");
+          }
+          return;
         }
 
-        // Fallback demo từ localStorage
+        // Chỉ Fallback demo từ localStorage khi CHƯA ĐĂNG NHẬP (!session)
         try {
           const demoWishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
           if (demoWishIds.length > 0) {

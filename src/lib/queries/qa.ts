@@ -240,9 +240,13 @@ export async function markRead(notificationId: string): Promise<void> {
  */
 export async function getMyNotifications(onlyUnread = false): Promise<Notification[]> {
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
   let query = supabase
     .from("notification")
     .select("id, type, title, body, is_read, created_at")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (onlyUnread) {

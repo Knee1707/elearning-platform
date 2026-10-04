@@ -47,35 +47,6 @@ interface WishlistCourseItem {
   thumbnailUrl: string | null;
 }
 
-// Danh sách khóa học mẫu khi offline / demo
-const FALLBACK_MY_COURSES: EnrolledCourseItem[] = [
-  {
-    courseId: "20000000-0000-0000-0000-000000000001",
-    slug: "nextjs-co-ban-nang-cao",
-    title: "Khóa học Next.js từ cơ bản đến nâng cao",
-    instructorName: "Nguyễn Văn Giảng Viên",
-    totalLessons: 4,
-    completedLessons: 4,
-    progressPercent: 100,
-    thumbnailUrl: null,
-    lastStudiedLessonTitle: "Bài 4: Tối ưu hóa hiệu năng và triển khai",
-    certificateCode: "CERT-NEXTJS-2026-A1B2C3D4",
-    certificateIssuedAt: new Date().toISOString(),
-    isCertified: true,
-  },
-  {
-    courseId: "demo-course-1",
-    slug: "lap-trinh-web-nextjs",
-    title: "Lập trình Web hiện đại với Next.js 14, React & TypeScript",
-    instructorName: "ThS. Nguyễn Văn A",
-    totalLessons: 6,
-    completedLessons: 3,
-    progressPercent: 50,
-    thumbnailUrl: null,
-    lastStudiedLessonTitle: "04. Cấu hình Semantic Design Tokens và shadcn/ui",
-  },
-];
-
 export default function MyLearningPage() {
   const [courses, setCourses] = useState<EnrolledCourseItem[]>([]);
   const [wishlistCourses, setWishlistCourses] = useState<WishlistCourseItem[]>([]);
@@ -325,11 +296,19 @@ export default function MyLearningPage() {
               }
             }
             setWishlistCourses(list);
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("demo_wishlist");
+            }
             return;
           }
+          if (isMounted) setWishlistCourses([]);
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("demo_wishlist");
+          }
+          return;
         }
 
-        // Demo fallback
+        // Chỉ Demo fallback khi CHƯA ĐĂNG NHẬP (!session)
         try {
           const demoWishIds: string[] = JSON.parse(localStorage.getItem("demo_wishlist") || "[]");
           if (demoWishIds.length > 0) {
