@@ -145,21 +145,22 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
         // 1. Thử truy vấn với cờ is_final nếu schema đã cập nhật
         let { data, error } = await supabase
           .from("exams")
-          .select("id, quiz_id, title, pass_score, time_limit_minutes")
+          .select("id, quiz_id, title, pass_score, time_limit_minutes, is_published")
           .eq("course_id", course.id)
           .eq("is_final", true)
+          .eq("is_published", true)
           .maybeSingle();
 
         // 2. Nếu chưa có cờ is_final, tìm exam gắn với khóa học này
         if (!data || error) {
           const { data: exData } = await supabase
             .from("exams")
-             .select("id, title, pass_score, time_limit_minutes")
+             .select("id, title, pass_score, time_limit_minutes, is_published")
             .eq("course_id", course.id)
             .limit(1)
             .maybeSingle();
 
-          if (exData) {
+          if (exData?.is_published) {
             setFinalExam({
               examId: String(exData.id),
               quizId: "50000000-0000-0000-0000-000000000002",
