@@ -714,12 +714,23 @@ export interface CertificateRow {
   id: string;
   code: string;
   issuedAt: string;
-  revokedAt: string | null;
-  revokedReason: string | null;
+  revokedAt?: string | null;
+  revokedReason?: string | null;
   studentId: string;
   studentName: string | null;
+  studentAvatar?: string | null;
+  courseId?: string;
   courseTitle: string | null;
+  categoryId?: string | null;
+  categoryName?: string;
   status: string;
+}
+
+export interface CertificateCategoryTab {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
 }
 
 // ------------------------------------------------------------------ //
@@ -943,42 +954,165 @@ export async function getPendingStudentDiscipline(): Promise<PendingDisciplineRe
   }));
 }
 
-const CERT_SELECT = "id, code, issued_at, revoked_at, revoked_reason, status, user_id, profiles!inner(full_name), courses(title)";
+const CERT_SELECT = "id, code, issued_at, status, user_id, profiles!inner(full_name, avatar_url), courses!inner(id, title, category_id, categories(id, name, slug))";
 
-const toCertificate = (row: Row): CertificateRow => ({
-  id: String(row.id),
-  code: String(row.code),
-  issuedAt: String(row.issued_at),
-  revokedAt: (row.revoked_at as string | null) ?? null,
-  revokedReason: (row.revoked_reason as string | null) ?? null,
-  studentId: String(row.user_id),
-  studentName: nameOf(row.profiles),
-  courseTitle: titleOf(row.courses),
-  status: String(row.status ?? "approved"),
-});
+const toCertificate = (row: Row): CertificateRow => {
+  const course = row.courses as { id?: string; title?: string; category_id?: string; categories?: { id?: string; name?: string; slug?: string } | null } | null;
+  const profile = row.profiles as { full_name?: string; avatar_url?: string } | null;
+  return {
+    id: String(row.id),
+    code: String(row.code),
+    issuedAt: String(row.issued_at),
+    revokedAt: null,
+    revokedReason: null,
+    studentId: String(row.user_id),
+    studentName: profile?.full_name ?? nameOf(row.profiles),
+    studentAvatar: profile?.avatar_url ?? null,
+    courseId: String(course?.id ?? ""),
+    courseTitle: course?.title ?? titleOf(row.courses),
+    categoryId: course?.category_id ? String(course.category_id) : null,
+    categoryName: course?.categories?.name ?? "Chưa phân loại",
+    status: String(row.status ?? "approved"),
+  };
+};
 
-// Tìm theo mã chứng chỉ HOẶC tên học viên; lọc đã thu hồi.
-export async function getCertificates(filters: { keyword?: string; revokedOnly?: boolean; courseId?: string }) {
+export async function getCertificateCategories(): Promise<CertificateCategoryTab[]> {
+  const supabase = createClient();
+  const [categoriesRes, certsRes] = await Promise.all([
+    supabase.from("categories").select("id, name, slug").order("name"),
+    supabase
+      .from("certificates")
+      .select("id, courses(category_id)")
+      .is("revoked_at", null)
+      .neq("status", "pending")
+      .neq("status", "rejected"),
+  ]);
+
+  const certRows = (certsRes.data ?? []) as Row[];
+  const countsByCat = new Map<string, number>();
+  let uncategorizedCount = 0;
+
+  for (const row of certRows) {
+    const course = row.courses as { category_id?: string } | null;
+    const catId = course?.category_id;
+    if (catId) {
+      countsByCat.set(catId, (countsByCat.get(catId) ?? 0) + 1);
+    } else {
+      uncategorizedCount++;
+    }
+  }
+
+  const list: CertificateCategoryTab[] = ((categoriesRes.data ?? []) as Row[]).map((c: Row) => ({
+    id: String(c.id),
+    name: String(c.name),
+    slug: String(c.slug),
+    count: countsByCat.get(String(c.id)) ?? 0,
+  }));
+
+  if (uncategorizedCount > 0) {
+    list.push({
+      id: "uncategorized",
+      name: "Chưa phân loại",
+      slug: "uncategorized",
+      count: uncategorizedCount,
+    });
+  }
+
+  return list;
+}
+
+// Tìm học viên đã nhận chứng chỉ hợp lệ theo Danh mục, Tên học sinh, và Khoảng thời gian
+export async function getCertificates(filters: {
+  keyword?: string;
+  categoryId?: string;
+  timeRange?: string;
+  fromDate?: string;
+  toDate?: string;
+  courseId?: string;
+  revokedOnly?: boolean;
+}) {
   const supabase = createClient();
   const cleaned = cleanKeyword(filters.keyword ?? "");
+
+  let dateFromIso: string | null = null;
+  let dateToIso: string | null = null;
+
+  const now = new Date();
+  if (filters.timeRange === "today") {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    dateFromIso = today.toISOString();
+  } else if (filters.timeRange === "7d") {
+    const d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    dateFromIso = d.toISOString();
+  } else if (filters.timeRange === "30d") {
+    const d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    dateFromIso = d.toISOString();
+  } else if (filters.timeRange === "this_month") {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    dateFromIso = d.toISOString();
+  } else if (filters.timeRange === "this_year") {
+    const d = new Date(now.getFullYear(), 0, 1);
+    dateFromIso = d.toISOString();
+  }
+
+  if (filters.fromDate) {
+    dateFromIso = new Date(`${filters.fromDate}T00:00:00.000Z`).toISOString();
+  }
+  if (filters.toDate) {
+    dateToIso = new Date(`${filters.toDate}T23:59:59.999Z`).toISOString();
+  }
+
   const base = () => {
-    let q = supabase.from("certificates").select(CERT_SELECT).order("issued_at", { ascending: false }).limit(50);
-    if (filters.revokedOnly) q = q.not("revoked_at", "is", null);
-    if (filters.courseId) q = q.eq("course_id", filters.courseId);
+    let q = supabase
+      .from("certificates")
+      .select(CERT_SELECT)
+      .is("revoked_at", null) // CHỈ HIỂN THỊ HỌC VIÊN ĐÃ NHẬN CHỨNG CHỈ (KHÔNG LẤY ĐÃ THU HỒI)
+      .neq("status", "pending")
+      .neq("status", "rejected")
+      .order("issued_at", { ascending: false })
+      .limit(100);
+
+    if (filters.courseId) {
+      q = q.eq("course_id", filters.courseId);
+    }
+    if (dateFromIso) {
+      q = q.gte("issued_at", dateFromIso);
+    }
+    if (dateToIso) {
+      q = q.lte("issued_at", dateToIso);
+    }
     return q;
   };
+
+  let rows: CertificateRow[] = [];
   if (!cleaned) {
     const { data, error } = await base();
     if (error) throw error;
-    return (data ?? []).map(toCertificate);
+    rows = (data ?? []).map(toCertificate);
+  } else {
+    const [byCode, byName] = await Promise.all([
+      base().ilike("code", `%${cleaned}%`),
+      base().ilike("profiles.full_name", `%${cleaned}%`),
+    ]);
+    if (byCode.error) throw byCode.error;
+    if (byName.error) throw byName.error;
+
+    const merged = new Map<string, CertificateRow>();
+    for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) {
+      merged.set(String(row.id), toCertificate(row));
+    }
+    rows = [...merged.values()].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
   }
-  const [byCode, byName] = await Promise.all([
-    base().ilike("code", `%${cleaned}%`),
-    base().ilike("profiles.full_name", `%${cleaned}%`),
-  ]);
-  if (byCode.error) throw byCode.error;
-  if (byName.error) throw byName.error;
-  const merged = new Map<string, CertificateRow>();
-  for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) merged.set(String(row.id), toCertificate(row));
-  return [...merged.values()].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+
+  // Lọc theo Danh mục
+  if (filters.categoryId && filters.categoryId !== "all") {
+    if (filters.categoryId === "uncategorized") {
+      rows = rows.filter((c) => !c.categoryId);
+    } else {
+      rows = rows.filter((c) => c.categoryId === filters.categoryId);
+    }
+  }
+
+  return rows;
 }
+
