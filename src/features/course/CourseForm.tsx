@@ -63,7 +63,7 @@ export function CourseForm({
       categoryId: null,
       level: "beginner",
       price: 0,
-      status: area === "admin" ? "published" : "draft",
+      status: "draft",
       instructorIds: [],
     },
   });
@@ -328,21 +328,23 @@ export function CourseForm({
       {area === "admin" && (
         <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
           <Label htmlFor="status" className="font-semibold text-slate-800">
-            Trạng thái phát hành khóa học
+            Trạng thái khởi tạo khóa học
           </Label>
           <select
             id="status"
             className="flex h-10 w-full rounded-lg border border-input bg-white px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             {...register("status")}
-            defaultValue="published"
+            defaultValue="draft"
           >
-            <option value="published">
-              ✅ Tự động thêm &amp; Xuất bản ngay (Hiển thị ngay trên Khám phá &amp; Trang chủ)
+            <option value="draft">
+              📁 Lưu bản nháp (Giao cho Giảng viên biên soạn video, quiz &amp; test cuối khóa)
             </option>
-            <option value="draft">📁 Lưu bản nháp (Chưa công khai)</option>
+            <option value="published">
+              ✅ Xuất bản ngay (Hiển thị ngay cho học viên)
+            </option>
           </select>
           <p className="text-xs text-muted-foreground">
-            Khóa học xuất bản sẽ có trạng thái <b>Đang bán</b> và có hiệu lực ngay lập tức.
+            Khi chọn <b>Lưu bản nháp</b>, giảng viên được phân công sẽ vào Studio tải nội dung lên (ít nhất 3 chương, 5 video, quiz sau video và test cuối khóa) trước khi gửi Admin duyệt.
           </p>
         </div>
       )}
@@ -363,7 +365,7 @@ export function CourseForm({
           {isSubmitting
             ? "Đang xử lý..."
             : area === "admin"
-              ? "Tạo & Thêm khóa học ngay"
+              ? "Mở khóa học mới"
               : "Tạo khóa (nháp)"}
         </Button>
       </div>
