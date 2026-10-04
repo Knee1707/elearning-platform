@@ -37,6 +37,8 @@ export function QuizAuthor({ lessonId }: { lessonId: string }) {
     setIsLoading(false);
   }
 
+  // Hàm tải dùng lessonId hiện tại và được tạo lại theo từng bài học.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { void loadQuizzes(); }, [lessonId]);
 
   async function handleCreateQuiz(event: React.FormEvent<HTMLFormElement>) {
