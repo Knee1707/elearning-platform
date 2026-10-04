@@ -46,6 +46,30 @@ export async function moderateCourseAction(formData: FormData) {
   });
 }
 
+/**
+ * Xóa khóa học bởi Quản trị viên, đồng bộ xóa khỏi toàn bộ hệ thống (Giảng viên Studio, Học viên Góc học tập, Khám phá)
+ */
+export async function adminDeleteCourseAction(formData: FormData) {
+  const courseId = text(formData, "courseId");
+  await runAction({
+    path: "/admin/courses",
+    roles: ADMIN_ROLES,
+    success: "Đã xóa khóa học thành công khỏi hệ thống.",
+    task: async () => {
+      const supabase = createClient();
+      const { error } = await supabase.from("courses").delete().eq("id", courseId);
+      if (error) throw error;
+      revalidatePath("/admin/courses");
+      revalidatePath("/courses");
+      revalidatePath("/");
+      revalidatePath("/studio");
+      revalidatePath("/my");
+      revalidatePath("/cart");
+    },
+    returnTo: formData.get("returnTo"),
+  });
+}
+
 // ------------------------------------------------------------------ //
 // Người dùng
 // ------------------------------------------------------------------ //

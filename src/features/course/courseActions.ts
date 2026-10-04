@@ -121,6 +121,18 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
         throw fallbackError;
       }
       createdCourseId = fallbackData.id;
+
+      // Cập nhật ngay instructor_id thành giảng viên chính được chọn (RLS UPDATE cho phép admin)
+      if (primaryInstructorId !== profile.id) {
+        try {
+          await supabase
+            .from("courses")
+            .update({ instructor_id: primaryInstructorId })
+            .eq("id", createdCourseId);
+        } catch {
+          // Bỏ qua
+        }
+      }
     } else {
       if (error.code === "23505") {
         throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
