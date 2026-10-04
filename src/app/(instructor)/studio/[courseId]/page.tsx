@@ -80,6 +80,24 @@ export default async function EditCoursePage({ params }: PageProps) {
     ),
   ) || (course as any).update_status === "pending";
 
+  // Calculate constraints
+  const numChapters = chapters.length;
+  const numLessons = chapters.reduce((sum, c) => sum + (c.lessons?.length || 0), 0);
+  const hasFinalExam = !!finalExam;
+  
+  const lessonIds = chapters.flatMap((c: any) => c.lessons.map((l: any) => l.id));
+  const lessonIdsString = lessonIds.length > 0 ? lessonIds.join(',') : '00000000-0000-0000-0000-000000000000';
+  
+  const { data: allQuizzes } = await supabase
+    .from("quizzes")
+    .select("id")
+    .or(`course_id.eq.${params.courseId},lesson_id.in.(${lessonIdsString})`);
+    
+  const normalQuizzesCount = (allQuizzes || []).filter((q: any) => q.id !== finalExam?.quiz_id).length;
+  const hasMinQuizzes = normalQuizzesCount >= 1;
+
+  const canPublishNow = numChapters >= 3 && numLessons >= 5 && hasFinalExam && hasMinQuizzes;
+
   return (
     <main className="mx-auto max-w-4xl p-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -129,16 +147,40 @@ export default async function EditCoursePage({ params }: PageProps) {
         </section>
       )}
 
-      <section className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-border p-4">
+      <section className="mt-4 flex flex-col gap-3 rounded-lg border border-dashed border-border p-4">
         {canSubmit ? (
           <>
-            <p className="text-sm text-muted-foreground">Khi sẵn sàng, gửi khóa học để quản trị viên xét duyệt.</p>
-            <form action={submitForReview} className="ml-auto">
-              <input type="hidden" name="courseId" value={String(course.id)} />
-              <button type="submit" className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground font-medium hover:opacity-90 cursor-pointer">
-                Gửi duyệt khóa học
-              </button>
-            </form>
+            <div className="text-sm">
+              <p className="font-semibold mb-2">Điều kiện xuất bản khóa học:</p>
+              <ul className="space-y-1">
+                <li className={`flex items-center gap-2 ${numChapters >= 3 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span>{numChapters >= 3 ? '✅' : '❌'}</span> Ít nhất 3 chương (Hiện tại: {numChapters})
+                </li>
+                <li className={`flex items-center gap-2 ${numLessons >= 5 ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span>{numLessons >= 5 ? '✅' : '❌'}</span> Ít nhất 5 bài giảng (Hiện tại: {numLessons})
+                </li>
+                <li className={`flex items-center gap-2 ${hasMinQuizzes ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span>{hasMinQuizzes ? '✅' : '❌'}</span> Ít nhất 1 bài quiz kiểm tra (Hiện tại: {normalQuizzesCount})
+                </li>
+                <li className={`flex items-center gap-2 ${hasFinalExam ? 'text-emerald-600' : 'text-red-600'}`}>
+                  <span>{hasFinalExam ? '✅' : '❌'}</span> Ít nhất 1 bài test cuối khóa (Final exam)
+                </li>
+              </ul>
+            </div>
+            
+            <div className="flex items-center justify-between mt-2 pt-2 border-t">
+              <p className="text-sm text-muted-foreground">Khi đã đạt đủ điều kiện, hãy gửi khóa học để quản trị viên xét duyệt.</p>
+              <form action={submitForReview} className="ml-auto">
+                <input type="hidden" name="courseId" value={String(course.id)} />
+                <button 
+                  type="submit" 
+                  disabled={!canPublishNow}
+                  className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Gửi duyệt khóa học
+                </button>
+              </form>
+            </div>
           </>
         ) : (
           <p className="text-sm text-muted-foreground">
