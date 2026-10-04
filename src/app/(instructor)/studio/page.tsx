@@ -37,7 +37,7 @@ export default async function StudioPage() {
         <div>
           <h1 className="text-2xl font-bold">Bảng điều khiển Giảng viên</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Quản lý nội dung, chương/bài, buổi live và doanh thu cho từng khóa.
+            Quản lý nội dung, chương/bài và doanh thu cho từng khóa.
           </p>
         </div>
         <Link href="/studio/new">

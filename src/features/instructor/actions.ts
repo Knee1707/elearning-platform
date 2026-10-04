@@ -64,23 +64,3 @@ export async function requestStudentDisciplineAction(formData: FormData) {
   revalidatePath("/studio/students");
   redirect(`/studio/students?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
 }
-
-// Giảng viên duyệt/từ chối yêu cầu chứng nhận trong khóa mình phụ trách.
-export async function reviewInstructorCertificateAction(formData: FormData) {
-  const approve = String(formData.get("approve")) === "true";
-  let msg = "";
-  let err: string | null = null;
-  try {
-    const supabase = createClient();
-    const { error } = await supabase.rpc("fn_review_certificate", {
-      p_certificate: String(formData.get("certificateId")),
-      p_approve: approve,
-    });
-    if (error) throw error;
-    msg = approve ? "Đã duyệt yêu cầu chứng nhận." : "Đã từ chối yêu cầu chứng nhận.";
-  } catch (e) {
-    err = e instanceof Error ? e.message : "Có lỗi xảy ra.";
-  }
-  revalidatePath("/studio/certificates");
-  redirect(`/studio/certificates?${err ? "error=" + encodeURIComponent(err) : "ok=" + encodeURIComponent(msg)}`);
-}

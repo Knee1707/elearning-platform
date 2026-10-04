@@ -17,9 +17,11 @@ import {
 import { Navbar } from "@/components/shared/Navbar";
 import { getMyCertificates, type Certificate } from "@/lib/queries/quiz";
 import { CertificateView } from "@/features/certificate/CertificateView";
+
 import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
 import { createClient } from "@/lib/supabase/client";
 import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
+
 
 const FALLBACK_CERTIFICATES: Certificate[] = [
   {
@@ -147,8 +149,10 @@ export default function MyCertificatesPage() {
           </Link>
         </div>
 
+
         {/* Danh sách chứng chỉ đã nhận */}
         <div className="mt-8">
+
           {isLoading ? (
             <div className="py-20 text-center text-xs text-slate-400 font-medium">
               Đang tải danh sách chứng chỉ của bạn...

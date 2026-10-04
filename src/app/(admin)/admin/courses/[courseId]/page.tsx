@@ -11,11 +11,10 @@ import {
   reviewLessonContentAction,
   adminDeleteCourseAction,
 } from "@/features/admin/actions";
-import { FlashMessage, ReasonAction, param, type SearchParams } from "@/features/admin/ui";
+import { FlashMessage, ReasonAction, ConfirmAction, param, type SearchParams } from "@/features/admin/ui";
 import { getLessonVideoPreviewUrl } from "@/lib/queries/courses";
 import { getYouTubeEmbedUrl } from "@/lib/video";
 import { LessonHighlightScroll } from "@/features/admin/LessonHighlightScroll";
- 
 
 type PageProps = { params: { courseId: string }; searchParams: SearchParams };
 
@@ -92,8 +91,6 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
     .map((c: any) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a: any, b: any) => a.position - b.position) }))
     .sort((a: any, b: any) => a.position - b.position);
 
-  const instructorName = (course as any).profiles?.full_name ?? "Không rõ";
-
   // Lấy video preview url cho bài học được highlight (nếu có video)
   let highlightedVideoUrl: string | null = null;
   if (highlightLesson) {
@@ -103,8 +100,6 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
   const here = `/admin/courses/${course.id}${
     highlightLesson ? `?highlightLesson=${highlightLesson}${highlightType ? `&type=${highlightType}` : ""}` : ""
   }`;
-
-
 
   return (
     <main className="mx-auto max-w-4xl p-8">
@@ -127,13 +122,16 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
       </div>
 
       {/* Kiểm duyệt khóa học (toàn bộ) */}
-      <div className="mt-4 flex flex-wrap items-start gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {(course.status === "draft" || course.status === "pending" || course.status === "hidden") && (
           <form action={moderateCourseAction}>
             <input type="hidden" name="courseId" value={String(course.id)} />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="returnTo" value={`/admin/courses/${course.id}`} />
-            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-semibold hover:opacity-90">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+            >
               {course.status === "pending" ? "Duyệt xuất bản khóa học" : course.status === "draft" ? "Xuất bản ngay lên Khám phá" : "Hiển thị lại"}
             </button>
           </form>
@@ -156,16 +154,14 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
             hidden={{ courseId: String(course.id), status: "hidden", returnTo: `/admin/courses/${course.id}` }}
           />
         )}
-        <form action={adminDeleteCourseAction}>
-          <input type="hidden" name="courseId" value={String(course.id)} />
-          <input type="hidden" name="returnTo" value="/admin/courses" />
-          <button
-            type="submit"
-            className="rounded bg-destructive/10 px-3 py-2 text-sm text-destructive font-semibold hover:bg-destructive/20 transition-colors cursor-pointer"
-          >
-            Xóa khóa học
-          </button>
-        </form>
+        <ConfirmAction
+          action={adminDeleteCourseAction}
+          label="Xóa khóa học"
+          message={`Xóa vĩnh viễn khóa học "${course.title}"? Dữ liệu liên quan sẽ bị xóa và không thể hoàn tác.`}
+          submitLabel="Xác nhận xóa khóa học"
+          variant="button"
+          hidden={{ courseId: String(course.id), returnTo: "/admin/courses" }}
+        />
       </div>
       <FlashMessage searchParams={searchParams} />
 

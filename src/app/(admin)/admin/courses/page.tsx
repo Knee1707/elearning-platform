@@ -15,6 +15,7 @@ import {
   FlashMessage,
   PageHeader,
   ReasonAction,
+  ConfirmAction,
   buildHref,
   dateTime,
   money,
@@ -137,8 +138,8 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                   </p>
                 </Link>
 
-                {/* Hai nút hành động: Duyệt và Từ chối */}
-                <div className="flex flex-wrap items-start gap-2 shrink-0">
+                {/* Các nút hành động: Duyệt, Từ chối, Xóa */}
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
                   {status === "pending" && (
                     <>
                       {course.requestType === "create_course" && (
@@ -147,7 +148,10 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                             <input type="hidden" name="courseId" value={course.courseId} />
                             <input type="hidden" name="status" value="published" />
                             <input type="hidden" name="returnTo" value={here} />
-                            <button className="rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+                            >
                               Duyệt
                             </button>
                           </form>
@@ -167,7 +171,10 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                             <input type="hidden" name="lessonId" value={course.targetLessonId} />
                             <input type="hidden" name="approve" value="true" />
                             <input type="hidden" name="returnTo" value={here} />
-                            <button className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                            >
                               Duyệt video
                             </button>
                           </form>
@@ -187,7 +194,10 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                             <input type="hidden" name="lessonId" value={course.targetLessonId} />
                             <input type="hidden" name="approve" value="true" />
                             <input type="hidden" name="returnTo" value={here} />
-                            <button className="rounded bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700">
+                            <button
+                              type="submit"
+                              className="inline-flex items-center justify-center rounded-md bg-emerald-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-xs hover:bg-emerald-700 transition-colors cursor-pointer"
+                            >
                               Duyệt nội dung
                             </button>
                           </form>
@@ -210,7 +220,10 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                           <input type="hidden" name="courseId" value={course.courseId} />
                           <input type="hidden" name="status" value="published" />
                           <input type="hidden" name="returnTo" value={here} />
-                          <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-medium">
+                          <button
+                            type="submit"
+                            className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+                          >
                             Hiển thị lại
                           </button>
                         </form>
@@ -227,16 +240,14 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                     </>
                   )}
 
-                  <form action={adminDeleteCourseAction}>
-                    <input type="hidden" name="courseId" value={course.courseId} />
-                    <input type="hidden" name="returnTo" value={here} />
-                    <button
-                      type="submit"
-                      className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
-                    >
-                      Xóa
-                    </button>
-                  </form>
+                  <ConfirmAction
+                    action={adminDeleteCourseAction}
+                    label="Xóa"
+                    message={`Xóa vĩnh viễn khóa học "${course.courseTitle}"? Dữ liệu liên quan sẽ bị xóa và không thể hoàn tác.`}
+                    submitLabel="Xác nhận xóa"
+                    variant="button"
+                    hidden={{ courseId: course.courseId, returnTo: here }}
+                  />
                 </div>
               </article>
             );

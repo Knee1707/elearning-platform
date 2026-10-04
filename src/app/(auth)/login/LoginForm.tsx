@@ -45,8 +45,14 @@ export function LoginForm() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({ resolver: zodResolver(loginSchema) });
+
+  function fillDemo(email: string) {
+    setValue("email", email);
+    setValue("password", "Password123!");
+  }
 
   async function onSubmit(values: LoginInput) {
     setServerError(null);
@@ -150,6 +156,28 @@ export function LoginForm() {
           Chưa có tài khoản? Đăng ký
         </Link>
       </div>
+
+      {APP_MODE !== "admin" && (
+        <div className="pt-3 border-t space-y-2">
+          <p className="text-[11px] text-center text-muted-foreground font-medium">Tài khoản demo kiểm thử nhanh:</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => fillDemo("gv@demo.local")}
+              className="rounded-lg border border-emerald-200 bg-emerald-50/80 px-2.5 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+            >
+              👨‍🏫 Điền Giảng viên
+            </button>
+            <button
+              type="button"
+              onClick={() => fillDemo("hva@demo.local")}
+              className="rounded-lg border border-blue-200 bg-blue-50/80 px-2.5 py-1.5 text-xs font-semibold text-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
+            >
+              🎓 Điền Học viên A
+            </button>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

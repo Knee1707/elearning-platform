@@ -14,6 +14,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
   const isSuperAdmin = me.role === "super_admin";
   // Admin thường chỉ gán student/instructor; super admin gán được mọi vai trò (DB kiểm lại).
   const assignableRoles: UserRole[] = isSuperAdmin ? ["student", "instructor", "admin", "super_admin"] : ["student", "instructor"];
+  // Tạo tài khoản mới từ trang người dùng: Chỉ cho phép tạo Giảng viên (Học viên tự đăng ký ở cổng người dùng).
+  const creatableRoles: UserRole[] = ["instructor"];
 
   const keyword = param(searchParams, "q") ?? "";
   const roleParam = param(searchParams, "role");
@@ -32,7 +34,7 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           title="Người dùng"
-          description={`Thêm, sửa, xóa; đổi vai trò hoặc khóa tài khoản (bắt buộc ghi lý do).${isSuperAdmin ? "" : " Tài khoản quản trị chỉ super admin mới thay đổi được."}`}
+          description={`Thêm giảng viên, sửa, xóa; đổi vai trò hoặc khóa tài khoản (bắt buộc ghi lý do).${isSuperAdmin ? "" : " Tài khoản quản trị chỉ super admin mới thay đổi được."}`}
         />
         <details className="group">
           <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 [&::-webkit-details-marker]:hidden">
@@ -54,8 +56,8 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
             </label>
             <label className="block text-sm">
               <span className="mb-1 block text-muted-foreground">Vai trò</span>
-              <select name="role" defaultValue="student" className="w-full rounded border border-border bg-background px-2 py-1.5">
-                {assignableRoles.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+              <select name="role" defaultValue="instructor" className="w-full rounded border border-border bg-background px-2 py-1.5">
+                {creatableRoles.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
               </select>
             </label>
             <button type="submit" className="w-full rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Tạo tài khoản</button>
