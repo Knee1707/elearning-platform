@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
-import { FlashMessage, ReasonAction, type SearchParams } from "@/features/admin/ui";
+import { FlashMessage, ReasonAction, ConfirmAction, type SearchParams } from "@/features/admin/ui";
 
 type PageProps = { params: { courseId: string }; searchParams: SearchParams };
 
@@ -98,13 +98,16 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
       </div>
 
       {/* Kiểm duyệt ngay sau khi xem nội dung (lý do bắt buộc khi từ chối/ẩn). */}
-      <div className="mt-4 flex flex-wrap items-start gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {(course.status === "draft" || course.status === "pending" || course.status === "hidden") && (
           <form action={moderateCourseAction}>
             <input type="hidden" name="courseId" value={String(course.id)} />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="returnTo" value={`/admin/courses/${course.id}`} />
-            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-semibold">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+            >
               {course.status === "pending" ? "Duyệt xuất bản" : course.status === "draft" ? "Xuất bản ngay lên Khám phá" : "Hiển thị lại"}
             </button>
           </form>
@@ -127,16 +130,14 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
             hidden={{ courseId: String(course.id), status: "hidden", returnTo: `/admin/courses/${course.id}` }}
           />
         )}
-        <form action={adminDeleteCourseAction}>
-          <input type="hidden" name="courseId" value={String(course.id)} />
-          <input type="hidden" name="returnTo" value="/admin/courses" />
-          <button
-            type="submit"
-            className="rounded bg-destructive/10 px-3 py-2 text-sm text-destructive font-semibold hover:bg-destructive/20 transition-colors cursor-pointer"
-          >
-            Xóa khóa học
-          </button>
-        </form>
+        <ConfirmAction
+          action={adminDeleteCourseAction}
+          label="Xóa khóa học"
+          message={`Xóa vĩnh viễn khóa học "${course.title}"? Dữ liệu liên quan sẽ bị xóa và không thể hoàn tác.`}
+          submitLabel="Xác nhận xóa khóa học"
+          variant="button"
+          hidden={{ courseId: String(course.id), returnTo: "/admin/courses" }}
+        />
       </div>
       <FlashMessage searchParams={searchParams} />
 

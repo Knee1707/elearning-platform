@@ -5,7 +5,7 @@ import { ADMIN_ROLES } from "@/lib/utils";
 import type { CourseStatus } from "@/types/domain";
 import { getCoursesForModeration } from "@/features/admin/queries";
 import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
-import { FilterTabs, FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
+import { FilterTabs, FlashMessage, PageHeader, ReasonAction, ConfirmAction, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
 
 const TABS: { value: CourseStatus | "all"; label: string }[] = [
   { value: "pending", label: "Chờ duyệt" },
@@ -78,13 +78,16 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-start gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {(course.status === "pending" || course.status === "hidden") && (
                   <form action={moderateCourseAction}>
                     <input type="hidden" name="courseId" value={course.id} />
                     <input type="hidden" name="status" value="published" />
                     <input type="hidden" name="returnTo" value={here} />
-                    <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center rounded-md bg-primary px-3.5 py-1.5 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors cursor-pointer"
+                    >
                       {course.status === "pending" ? "Duyệt" : "Hiển thị lại"}
                     </button>
                   </form>
@@ -107,16 +110,14 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                     hidden={{ courseId: course.id, status: "hidden", returnTo: here }}
                   />
                 )}
-                <form action={adminDeleteCourseAction}>
-                  <input type="hidden" name="courseId" value={course.id} />
-                  <input type="hidden" name="returnTo" value={here} />
-                  <button
-                    type="submit"
-                    className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
-                  >
-                    Xóa
-                  </button>
-                </form>
+                <ConfirmAction
+                  action={adminDeleteCourseAction}
+                  label="Xóa"
+                  message={`Xóa vĩnh viễn khóa học "${course.title}"? Dữ liệu liên quan sẽ bị xóa và không thể hoàn tác.`}
+                  submitLabel="Xác nhận xóa"
+                  variant="button"
+                  hidden={{ courseId: course.id, returnTo: here }}
+                />
               </div>
             </article>
           ))
