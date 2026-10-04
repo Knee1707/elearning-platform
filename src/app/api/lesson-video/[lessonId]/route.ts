@@ -37,6 +37,8 @@ export async function GET(_req: Request, { params }: { params: { lessonId: strin
         if (!lesson.video_url) {
           return NextResponse.json({ url: null, reason: "no_video" });
         }
+        // Đã có quyền nội dung nhưng fn_get_lesson_video vẫn trả null → bài chưa mở khóa tuần tự.
+        return NextResponse.json({ url: null, reason: "lesson_locked" });
       }
     }
 

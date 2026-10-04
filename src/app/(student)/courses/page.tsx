@@ -16,118 +16,6 @@ import {
   type CourseCatalog,
 } from "@/lib/queries/courses";
 
-// Dữ liệu mẫu dự phòng khi database chưa có dữ liệu
-const FALLBACK_COURSES: CourseCatalog[] = [
-  {
-    id: "demo-course-1",
-    instructorId: "demo-inst-1",
-    categoryId: "cat-python-web",
-    title: "Microsoft Python Development",
-    slug: "lap-trinh-web-nextjs",
-    description: "Xây dựng ứng dụng web chuẩn Production từ cơ bản đến nâng cao cùng SSR, RLS và Server Actions.",
-    level: "intermediate",
-    price: 499000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "Microsoft",
-    avgRating: 4.8,
-    ratingCount: 142,
-  },
-  {
-    id: "demo-course-2",
-    instructorId: "demo-inst-2",
-    categoryId: "cat-data-analytics",
-    title: "Cơ sở dữ liệu PostgreSQL & Supabase Chuyên sâu",
-    slug: "postgresql-supabase-chuyen-sau",
-    description: "Làm chủ RLS, Stored Procedures, Triggers và kiến trúc bảo mật đa tầng cho ứng dụng lớn.",
-    level: "advanced",
-    price: 399000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "TS. Trần Thị B",
-    avgRating: 4.8,
-    ratingCount: 96,
-  },
-  {
-    id: "demo-course-3",
-    instructorId: "demo-inst-3",
-    categoryId: "cat-python-web",
-    title: "Python for Everybody: Nhập môn đến chuyên sâu",
-    slug: "nhap-mon-frontend",
-    description: "Khóa học miễn phí dành cho người mới bắt đầu muốn tạo dựng các trang web đẹp mắt và responsive.",
-    level: "beginner",
-    price: 0,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "University of Michigan",
-    avgRating: 4.9,
-    ratingCount: 215,
-  },
-  {
-    id: "demo-course-4",
-    instructorId: "demo-inst-4",
-    categoryId: "cat-data-analytics",
-    title: "Google Data Analytics & Trực quan hóa dữ liệu",
-    slug: "nodejs-restful-api",
-    description: "Thiết kế hệ thống Backend chịu tải cao, JWT Authentication, phân quyền và Docker hóa.",
-    level: "intermediate",
-    price: 350000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "Google",
-    avgRating: 4.8,
-    ratingCount: 88,
-  },
-  {
-    id: "demo-course-5",
-    instructorId: "demo-inst-5",
-    categoryId: "cat-pm-devops",
-    title: "Microsoft Project Management: Job-Ready Skills",
-    slug: "lap-trinh-flutter-dart",
-    description: "Phát triển ứng dụng iOS và Android từ một cơ sở mã nguồn duy nhất với hiệu năng đỉnh cao.",
-    level: "beginner",
-    price: 550000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: true,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "Microsoft",
-    avgRating: 4.6,
-    ratingCount: 110,
-  },
-  {
-    id: "demo-course-6",
-    instructorId: "demo-inst-6",
-    categoryId: "cat-pm-devops",
-    title: "DevOps Thực Chiến: Docker, Kubernetes & CI/CD Pipeline",
-    slug: "devops-docker-cicd",
-    description: "Tự động hóa triển khai, giám sát hệ thống và tối ưu hóa quy trình release phần mềm doanh nghiệp.",
-    level: "advanced",
-    price: 600000,
-    status: "published",
-    thumbnailUrl: null,
-    isFeatured: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    instructorName: "IBM Skills",
-    avgRating: 4.8,
-    ratingCount: 75,
-  },
-];
-
 interface CoursesPageProps {
   searchParams?: {
     q?: string;
@@ -173,13 +61,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
     rawCourses = [];
   }
 
-  // Ưu tiên các khóa học từ database (được Admin cấp/xuất bản) lên đầu tiên, kết hợp cùng fallback courses nếu còn thiếu
-  const existingIds = new Set(rawCourses.map((c) => c.id));
-  const existingSlugs = new Set(rawCourses.map((c) => c.slug));
-  const mergedFallback = FALLBACK_COURSES.filter(
-    (fb) => !existingIds.has(fb.id) && !existingSlugs.has(fb.slug)
-  );
-  let courses: CourseCatalog[] = [...rawCourses, ...mergedFallback];
+  let courses: CourseCatalog[] = rawCourses;
 
   // Lọc theo từ khóa
   if (keyword) {

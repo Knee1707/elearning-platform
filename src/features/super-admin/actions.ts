@@ -3,8 +3,6 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   approveRefund,
-  generatePayout,
-  markPayoutPaid,
   rejectRefund,
   setRole,
   toggleBan,
@@ -52,28 +50,6 @@ export async function rejectRefundAction(formData: FormData) {
     roles: ROLES,
     success: "Đã từ chối yêu cầu hoàn tiền.",
     task: () => rejectRefund(refundId, reason),
-    returnTo: formData.get("returnTo"),
-  });
-}
-
-export async function generatePayoutAction(formData: FormData) {
-  const period = String(formData.get("period") ?? "");
-  await runAction({
-    path: "/super-admin/payouts",
-    roles: ROLES,
-    success: `Đã tạo payout kỳ ${period}.`,
-    task: () => generatePayout(period),
-    returnTo: `/super-admin/payouts?period=${encodeURIComponent(period)}`,
-  });
-}
-
-export async function markPayoutPaidAction(formData: FormData) {
-  const payoutId = String(formData.get("payoutId"));
-  await runAction({
-    path: "/super-admin/payouts",
-    roles: ROLES,
-    success: "Đã đánh dấu chi trả và báo cho giảng viên.",
-    task: () => markPayoutPaid(payoutId),
     returnTo: formData.get("returnTo"),
   });
 }
