@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Award,
-  Compass,
   LayoutDashboard,
   Users,
   Star,
@@ -96,14 +95,6 @@ export function InstructorNav({ fullName }: { fullName: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/courses"
-            className="hidden items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold text-slate-600 transition-all hover:bg-slate-100 hover:text-slate-900 sm:flex"
-          >
-            <Compass className="h-3.5 w-3.5" />
-            <span>Khám phá khóa học</span>
-          </Link>
-
           {/* User Profile Dropdown Menu */}
           <div className="relative" ref={dropdownRef}>
             <button
@@ -154,14 +145,6 @@ export function InstructorNav({ fullName }: { fullName: string }) {
                     <span>Quản lý khóa học (Studio)</span>
                   </Link>
 
-                  <Link
-                    href="/courses"
-                    onClick={() => setDropdownOpen(false)}
-                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-50 sm:hidden"
-                  >
-                    <Compass className="h-4 w-4 text-slate-400" />
-                    <span>Khám phá khóa học</span>
-                  </Link>
                 </div>
 
                 <div className="border-t border-slate-100 pt-1">
