@@ -39,3 +39,12 @@ create policy course_instructors_write_admin on course_instructors
       where courses.id = course_instructors.course_id and courses.instructor_id = auth.uid()
     )
   );
+
+-- Cập nhật quyền INSERT trên bảng courses để Admin / Super Admin có thể tạo khóa học gán cho giảng viên khác
+drop policy if exists courses_insert_owner on courses;
+create policy courses_insert_owner on courses
+  for insert with check (
+    (instructor_id = auth.uid() and fn_current_role() in ('instructor', 'admin', 'super_admin'))
+    or fn_is_admin()
+  );
+

@@ -30,7 +30,7 @@ export async function getInstructors(): Promise<InstructorOption[]> {
   const { data, error } = await supabase
     .from("profiles")
     .select("id, full_name, role, avatar_url")
-    .in("role", ["instructor", "admin", "super_admin"])
+    .eq("role", "instructor")
     .order("full_name", { ascending: true });
   if (error) throw error;
   return (data ?? []).map((row: any) => ({
@@ -79,6 +79,8 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     ? input.instructorIds[0]
     : profile.id;
 
+  let createdCourseId: string;
+
   const { data, error } = await supabase
     .from("courses")
     .insert({
@@ -93,11 +95,40 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     })
     .select("id")
     .single();
+
   if (error) {
-    if (error.code === "23505") {
-      throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+    // Nếu bị lỗi 42501 (RLS do migration 0026 chưa chạy trên DB remote),
+    // fallback tạo với instructor_id là profile.id (tài khoản admin tạo)
+    if (error.code === "42501" && primaryInstructorId !== profile.id) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("courses")
+        .insert({
+          instructor_id: profile.id,
+          category_id: input.categoryId,
+          title,
+          slug,
+          description: input.description.trim(),
+          level: input.level,
+          price: input.price,
+          status,
+        })
+        .select("id")
+        .single();
+      if (fallbackError) {
+        if (fallbackError.code === "23505") {
+          throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+        }
+        throw fallbackError;
+      }
+      createdCourseId = fallbackData.id;
+    } else {
+      if (error.code === "23505") {
+        throw new Error("Tên khóa học đã tồn tại. Vui lòng chọn tên khác.");
+      }
+      throw error;
     }
-    throw error;
+  } else {
+    createdCourseId = data.id;
   }
 
   // Lưu danh sách tất cả các giảng viên được chọn vào bảng course_instructors (hỗ trợ nhiều giảng viên)
@@ -111,7 +142,7 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
   if (allInstructorIds.length > 0) {
     try {
       const instructorRows = allInstructorIds.map((instId) => ({
-        course_id: data.id,
+        course_id: createdCourseId,
         instructor_id: instId,
       }));
       await supabase.from("course_instructors").insert(instructorRows);
@@ -125,7 +156,7 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
   revalidatePath("/");
   revalidatePath("/admin/courses");
 
-  return { id: data.id };
+  return { id: createdCourseId };
 }
 
 /**

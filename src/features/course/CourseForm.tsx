@@ -221,12 +221,8 @@ export function CourseForm({
                     </div>
                     <div className="truncate">
                       <p className="truncate font-semibold leading-tight">{inst.fullName}</p>
-                      <span className="text-[10px] text-muted-foreground capitalize">
-                        {inst.role === "instructor"
-                          ? "Giảng viên"
-                          : inst.role === "super_admin"
-                            ? "Super Admin"
-                            : "Admin"}
+                      <span className="text-[10px] text-blue-600 font-medium">
+                        Giảng viên
                       </span>
                     </div>
                   </div>
@@ -251,10 +247,10 @@ export function CourseForm({
               );
             })
           ) : (
-            <p className="col-span-2 text-xs text-muted-foreground italic py-2">
+            <p className="col-span-2 text-xs text-muted-foreground italic py-3 text-center">
               {instructorSearch
                 ? "Không tìm thấy giảng viên phù hợp."
-                : "Đang tải danh sách giảng viên..."}
+                : "Chưa có tài khoản Giảng viên nào trong hệ thống."}
             </p>
           )}
         </div>
