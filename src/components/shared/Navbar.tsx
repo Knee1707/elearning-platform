@@ -436,7 +436,8 @@ export function Navbar() {
 
           {/* DESKTOP NAVIGATION LINKS (PrepEdu Pill Style) */}
           <nav className="hidden items-center gap-1 md:flex">
-            {/* DROPDOWN KHÁM PHÁ KHÓA HỌC */}
+            {/* Học viên mới có mục khám phá khóa học; giảng viên chỉ quản lý Studio. */}
+            {profile?.role !== "instructor" && (
             <div className="relative" ref={categoryDropdownRef}>
               <button
                 type="button"
@@ -516,6 +517,7 @@ export function Navbar() {
                 </div>
               )}
             </div>
+            )}
 
             {profile?.role === "instructor" ? (
               <Link
@@ -795,7 +797,7 @@ export function Navbar() {
           </form>
 
           <nav className="flex flex-col gap-1">
-            {/* ACCORDION KHÁM PHÁ KHÓA HỌC */}
+            {profile?.role !== "instructor" && (
             <div>
               <button
                 type="button"
@@ -841,6 +843,7 @@ export function Navbar() {
                 </div>
               )}
             </div>
+            )}
 
             {profile?.role === "instructor" ? (
               <Link
