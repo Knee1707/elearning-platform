@@ -6,14 +6,46 @@ export async function getMyCourses(): Promise<Course[]> {
   const { data: userData } = await supabase.auth.getUser();
   if (!userData.user) return [];
 
-  const { data, error } = await supabase
+  const uid = userData.user.id;
+
+  // Lấy các khóa mà user là instructor_id chính
+  const { data: primaryCourses, error } = await supabase
     .from("courses")
     .select("*")
-    .eq("instructor_id", userData.user.id)
+    .eq("instructor_id", uid)
     .order("created_at", { ascending: false });
   if (error) throw error;
 
-  return (data ?? []).map((course) => ({
+  let allCourses = primaryCourses ?? [];
+
+  // Lấy thêm các khóa mà user được phân công trong bảng course_instructors (đồng giảng dạy)
+  try {
+    const { data: ciData } = await supabase
+      .from("course_instructors")
+      .select("course_id")
+      .eq("instructor_id", uid);
+
+    if (ciData && ciData.length > 0) {
+      const additionalCourseIds = ciData
+        .map((r: any) => r.course_id)
+        .filter((cid: string) => !allCourses.some((c) => c.id === cid));
+
+      if (additionalCourseIds.length > 0) {
+        const { data: extraCourses } = await supabase
+          .from("courses")
+          .select("*")
+          .in("id", additionalCourseIds)
+          .order("created_at", { ascending: false });
+        if (extraCourses) {
+          allCourses = [...allCourses, ...extraCourses];
+        }
+      }
+    }
+  } catch {
+    // Bỏ qua nếu bảng chưa tạo
+  }
+
+  return allCourses.map((course) => ({
     id: course.id,
     instructorId: course.instructor_id,
     categoryId: course.category_id,
@@ -46,14 +78,11 @@ export async function getInstructorStats(): Promise<InstructorStats> {
   const uid = userData.user?.id;
   if (!uid) return { totalCourses: 0, publishedCourses: 0, pendingCourses: 0, totalStudents: 0, avgRating: null };
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("id, status")
-    .eq("instructor_id", uid);
-  const courseIds = (courses ?? []).map((c) => c.id as string);
+  const courses = await getMyCourses();
+  const courseIds = courses.map((c) => c.id);
   const totalCourses = courseIds.length;
-  const publishedCourses = (courses ?? []).filter((c) => c.status === "published").length;
-  const pendingCourses = (courses ?? []).filter((c) => c.status === "pending").length;
+  const publishedCourses = courses.filter((c) => c.status === "published").length;
+  const pendingCourses = courses.filter((c) => c.status === "pending").length;
 
   let totalStudents = 0;
   let avgRating: number | null = null;
