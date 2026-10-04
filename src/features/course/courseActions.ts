@@ -154,6 +154,15 @@ export async function addLesson(
       .limit(1);
     if (positionError) throw positionError;
 
+    // Kiểm tra xem khóa học cha có đang published không
+    const { data: parentCourse } = await supabase
+      .from("courses")
+      .select("status")
+      .eq("id", courseId)
+      .maybeSingle();
+
+    const isPublished = parentCourse?.status === "published";
+
     const { error } = await supabase.from("lessons").insert({
       chapter_id: chapterId,
       title,
@@ -161,6 +170,8 @@ export async function addLesson(
       duration_seconds: durationSeconds,
       is_free: formData.get("isFree") === "on",
       position: Number(data?.[0]?.position ?? 0) + 1,
+      content_review: isPublished ? "pending" : "approved",
+      is_updated: isPublished,
     });
     if (error) {
       if (error.code === "23505") {
@@ -168,8 +179,13 @@ export async function addLesson(
       }
       throw error;
     }
+
+    if (isPublished) {
+      await supabase.from("courses").update({ update_status: "pending" }).eq("id", courseId);
+    }
+
     revalidatePath(editorPath(courseId));
-    return { status: "success", message: "Đã thêm bài học." };
+    return { status: "success", message: isPublished ? "Đã thêm bài học (đang chờ Admin duyệt)." : "Đã thêm bài học." };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Lỗi không xác định từ máy chủ.";
     return { status: "error", message: `Không thể thêm bài học: ${message}` };
@@ -179,14 +195,36 @@ export async function addLesson(
 export async function updateCourse(formData: FormData) {
   const courseId = String(formData.get("courseId"));
   const supabase = createClient();
+
+  const { data: currentCourse } = await supabase
+    .from("courses")
+    .select("status")
+    .eq("id", courseId)
+    .single();
+
+  const isPublished = currentCourse?.status === "published";
+
   const { error } = await supabase
     .from("courses")
     .update({
       title: String(formData.get("title")).trim(),
       description: String(formData.get("description")).trim(),
       price: Number(formData.get("price")),
+      update_status: isPublished ? "pending" : "none",
     })
     .eq("id", courseId);
+  if (error) throw error;
+  revalidatePath(editorPath(courseId));
+  revalidatePath("/studio");
+}
+
+export async function submitCourseUpdate(formData: FormData) {
+  const courseId = String(formData.get("courseId"));
+  await requireRole(["instructor", ...ADMIN_ROLES]);
+  const supabase = createClient();
+  const { error } = await supabase.rpc("fn_submit_course_update", {
+    p_course: courseId,
+  });
   if (error) throw error;
   revalidatePath(editorPath(courseId));
   revalidatePath("/studio");
@@ -255,6 +293,15 @@ export async function updateLesson(
 ) {
   await requireRole(["instructor", ...ADMIN_ROLES]);
   const supabase = createClient();
+
+  const { data: parentCourse } = await supabase
+    .from("courses")
+    .select("status")
+    .eq("id", courseId)
+    .maybeSingle();
+
+  const isPublished = parentCourse?.status === "published";
+
   const { error } = await supabase
     .from("lessons")
     .update({
@@ -262,9 +309,16 @@ export async function updateLesson(
       video_url: input.videoUrl,
       duration_seconds: input.durationSeconds,
       is_free: input.isFree,
+      content_review: isPublished ? "pending" : "approved",
+      is_updated: isPublished,
     })
     .eq("id", lessonId);
   if (error) throw error;
+
+  if (isPublished) {
+    await supabase.from("courses").update({ update_status: "pending" }).eq("id", courseId);
+  }
+
   revalidatePath(editorPath(courseId));
 }
 

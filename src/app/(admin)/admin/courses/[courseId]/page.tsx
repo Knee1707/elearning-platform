@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
-import { Pencil } from "lucide-react";
+import { Pencil, Sparkles, Video } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { moderateCourseAction } from "@/features/admin/actions";
-import { FlashMessage, ReasonAction, type SearchParams } from "@/features/admin/ui";
+import { moderateCourseAction, reviewVideoAction, reviewLessonContentAction } from "@/features/admin/actions";
+import { FlashMessage, ReasonAction, param, type SearchParams } from "@/features/admin/ui";
+import { getLessonVideoPreviewUrl } from "@/lib/queries/courses";
+import { getYouTubeEmbedUrl } from "@/lib/video";
+import { LessonHighlightScroll } from "@/features/admin/LessonHighlightScroll";
 
 type PageProps = { params: { courseId: string }; searchParams: SearchParams };
 
@@ -47,10 +50,13 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
   await requireRole(ADMIN_ROLES);
   const supabase = createClient();
 
+  const highlightLesson = param(searchParams, "highlightLesson");
+  const highlightType = param(searchParams, "type");
+
   const { data: course } = await supabase
     .from("courses")
     .select(
-      "id, title, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, is_free, position))",
+      "id, title, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, is_free, position, video_url, video_review, video_review_reason, content_review, content_review_reason, is_updated, duration_seconds))",
     )
     .eq("id", params.courseId)
     .single();
@@ -63,8 +69,21 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
 
   const instructorName = (course as any).profiles?.full_name ?? "Không rõ";
 
+  // Lấy video preview url cho bài học được highlight (nếu có video)
+  let highlightedVideoUrl: string | null = null;
+  if (highlightLesson) {
+    highlightedVideoUrl = await getLessonVideoPreviewUrl(highlightLesson).catch(() => null);
+  }
+
+  const here = `/admin/courses/${course.id}${
+    highlightLesson ? `?highlightLesson=${highlightLesson}${highlightType ? `&type=${highlightType}` : ""}` : ""
+  }`;
+
   return (
     <main className="mx-auto max-w-4xl p-8">
+      {/* Tự động cuộn đến bài học được highlight */}
+      <LessonHighlightScroll targetId={highlightLesson ? `lesson-${highlightLesson}` : undefined} />
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">{String(course.title)}</h1>
@@ -80,24 +99,24 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
         </Link>
       </div>
 
-      {/* Kiểm duyệt ngay sau khi xem nội dung (lý do bắt buộc khi từ chối/ẩn). */}
+      {/* Kiểm duyệt khóa học (toàn bộ) */}
       <div className="mt-4 flex flex-wrap items-start gap-2">
         {(course.status === "draft" || course.status === "pending" || course.status === "hidden") && (
           <form action={moderateCourseAction}>
             <input type="hidden" name="courseId" value={String(course.id)} />
             <input type="hidden" name="status" value="published" />
             <input type="hidden" name="returnTo" value={`/admin/courses/${course.id}`} />
-            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-semibold">
-              {course.status === "pending" ? "Duyệt xuất bản" : course.status === "draft" ? "Xuất bản ngay lên Khám phá" : "Hiển thị lại"}
+            <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground font-semibold hover:opacity-90">
+              {course.status === "pending" ? "Duyệt xuất bản khóa học" : course.status === "draft" ? "Xuất bản ngay lên Khám phá" : "Hiển thị lại"}
             </button>
           </form>
         )}
         {course.status === "pending" && (
           <ReasonAction
             action={moderateCourseAction}
-            label="Từ chối"
+            label="Từ chối khóa học"
             submitLabel="Xác nhận từ chối"
-            placeholder="Lý do từ chối (giảng viên sẽ thấy)…"
+            placeholder="Lý do từ chối (giảng viên sẽ thấy feedback này)…"
             hidden={{ courseId: String(course.id), status: "rejected", returnTo: `/admin/courses/${course.id}` }}
           />
         )}
@@ -106,7 +125,7 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
             action={moderateCourseAction}
             label="Ẩn khóa học"
             submitLabel="Xác nhận ẩn"
-            placeholder="Lý do ẩn (giảng viên sẽ thấy)…"
+            placeholder="Lý do ẩn (giảng viên sẽ thấy feedback này)…"
             hidden={{ courseId: String(course.id), status: "hidden", returnTo: `/admin/courses/${course.id}` }}
           />
         )}
@@ -134,40 +153,161 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
       </section>
 
       <section className="mt-6 rounded-lg border border-border p-5">
-        <h2 className="font-semibold">Học thử miễn phí theo bài</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Quyết định bài học nào cho xem miễn phí, ghi đè cài đặt của giảng viên.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">Nội dung khóa học &amp; Kiểm duyệt bài học</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Xem chi tiết các chương, bài học, video và duyệt trực tiếp các bài học được cập nhật.
+            </p>
+          </div>
+        </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-4 space-y-6">
           {chapters.map((chapter: any) => (
-            <div key={chapter.id}>
-              <p className="text-sm font-medium text-muted-foreground">{chapter.title}</p>
-              <ul className="mt-2 space-y-2">
-                {chapter.lessons.map((lesson: any) => (
-                  <li
-                    key={lesson.id}
-                    className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2 text-sm"
-                  >
-                    <span>{lesson.title}</span>
-                    <form action={adminToggleLessonFree}>
-                      <input type="hidden" name="courseId" value={String(course.id)} />
-                      <input type="hidden" name="lessonId" value={lesson.id} />
-                      <input type="hidden" name="nextValue" value={String(!lesson.is_free)} />
-                      <button
-                        type="submit"
-                        className={
-                          lesson.is_free
-                            ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                            : "rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
-                        }
-                      >
-                        {lesson.is_free ? "Miễn phí — bấm để đổi thành Trả phí" : "Trả phí — bấm để đổi thành Miễn phí"}
-                      </button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
+            <div key={chapter.id} className="rounded-lg border border-border/70 p-4 bg-muted/20">
+              <p className="text-base font-semibold text-foreground">{chapter.title}</p>
+              <div className="mt-3 space-y-3">
+                {chapter.lessons.map((lesson: any) => {
+                  const isHighlighted = highlightLesson === lesson.id;
+                  const isUpdated =
+                    lesson.is_updated ||
+                    lesson.video_review === "pending" ||
+                    lesson.content_review === "pending" ||
+                    isHighlighted;
+
+                  return (
+                    <div
+                      key={lesson.id}
+                      id={`lesson-${lesson.id}`}
+                      className={`rounded-lg border p-4 transition-all ${
+                        isHighlighted
+                          ? "border-amber-400 bg-amber-50/50 shadow-md dark:border-amber-600 dark:bg-amber-950/20"
+                          : "border-border bg-background"
+                      }`}
+                    >
+                      {/* Tag nhỏ Updated phía trên nếu bài học có update hoặc được highlight */}
+                      {isUpdated && (
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/20 px-2 py-0.5 text-xs font-bold text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            <Sparkles className="h-3 w-3" />
+                            Updated
+                          </span>
+                          <span className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                            {lesson.video_review === "pending"
+                              ? "Video bài giảng mới chờ duyệt"
+                              : lesson.content_review === "pending"
+                              ? "Nội dung bài học có thay đổi chờ duyệt"
+                              : "Phần vừa được cập nhật"}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <h3 className="font-medium text-sm sm:text-base">{lesson.title}</h3>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            Thời lượng: {Math.round(Number(lesson.duration_seconds || 0) / 60)} phút ·{" "}
+                            {lesson.is_free ? "Học thử miễn phí" : "Trả phí"}
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          <form action={adminToggleLessonFree}>
+                            <input type="hidden" name="courseId" value={String(course.id)} />
+                            <input type="hidden" name="lessonId" value={lesson.id} />
+                            <input type="hidden" name="nextValue" value={String(!lesson.is_free)} />
+                            <button
+                              type="submit"
+                              className={
+                                lesson.is_free
+                                  ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 hover:opacity-90"
+                                  : "rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted/80"
+                              }
+                            >
+                              {lesson.is_free ? "Miễn phí" : "Trả phí"}
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+
+                      {/* Nếu là bài học có video chờ duyệt hoặc được highlight xem video */}
+                      {(lesson.video_review === "pending" || (isHighlighted && highlightedVideoUrl)) && (
+                        <div className="mt-4 pt-3 border-t border-border/60">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-400 mb-2">
+                            <Video className="h-4 w-4" />
+                            Xem trước video cần duyệt:
+                          </div>
+
+                          <div className="overflow-hidden rounded-md border border-border bg-black max-w-xl">
+                            {highlightedVideoUrl && getYouTubeEmbedUrl(highlightedVideoUrl) ? (
+                              <iframe
+                                title={`Xem trước ${lesson.title}`}
+                                src={getYouTubeEmbedUrl(highlightedVideoUrl) ?? undefined}
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="aspect-video w-full"
+                              />
+                            ) : highlightedVideoUrl ? (
+                              <video
+                                controls
+                                preload="metadata"
+                                src={highlightedVideoUrl}
+                                className="max-h-[280px] w-full"
+                              />
+                            ) : lesson.video_url ? (
+                              <p className="p-4 text-xs text-center text-muted-foreground">
+                                Video URL: {lesson.video_url}
+                              </p>
+                            ) : null}
+                          </div>
+
+                          {/* Nút duyệt và từ chối video */}
+                          {lesson.video_review === "pending" && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              <form action={reviewVideoAction}>
+                                <input type="hidden" name="lessonId" value={lesson.id} />
+                                <input type="hidden" name="approve" value="true" />
+                                <input type="hidden" name="returnTo" value={here} />
+                                <button className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+                                  Duyệt video này
+                                </button>
+                              </form>
+                              <ReasonAction
+                                action={reviewVideoAction}
+                                label="Từ chối video"
+                                submitLabel="Xác nhận từ chối video"
+                                placeholder="Lý do từ chối video (giảng viên sẽ nhận được feedback này)…"
+                                hidden={{ lessonId: lesson.id, approve: "false", returnTo: here }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Nếu là bài học có nội dung chờ duyệt */}
+                      {lesson.content_review === "pending" && (
+                        <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap items-center gap-2">
+                          <form action={reviewLessonContentAction}>
+                            <input type="hidden" name="lessonId" value={lesson.id} />
+                            <input type="hidden" name="approve" value="true" />
+                            <input type="hidden" name="returnTo" value={here} />
+                            <button className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+                              Duyệt nội dung bài này
+                            </button>
+                          </form>
+                          <ReasonAction
+                            action={reviewLessonContentAction}
+                            label="Từ chối cập nhật"
+                            submitLabel="Xác nhận từ chối"
+                            placeholder="Lý do từ chối nội dung bài học (giảng viên sẽ nhận feedback này)…"
+                            hidden={{ lessonId: lesson.id, approve: "false", returnTo: here }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ))}
         </div>
