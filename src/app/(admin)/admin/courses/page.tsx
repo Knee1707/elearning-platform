@@ -4,7 +4,7 @@ import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
 import type { CourseStatus } from "@/types/domain";
 import { getCoursesForModeration } from "@/features/admin/queries";
-import { moderateCourseAction } from "@/features/admin/actions";
+import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
 import { FilterTabs, FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
 
 const TABS: { value: CourseStatus | "all"; label: string }[] = [
@@ -107,6 +107,16 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
                     hidden={{ courseId: course.id, status: "hidden", returnTo: here }}
                   />
                 )}
+                <form action={adminDeleteCourseAction}>
+                  <input type="hidden" name="courseId" value={course.id} />
+                  <input type="hidden" name="returnTo" value={here} />
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                  >
+                    Xóa
+                  </button>
+                </form>
               </div>
             </article>
           ))

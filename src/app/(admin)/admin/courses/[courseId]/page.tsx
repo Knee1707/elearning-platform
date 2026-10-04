@@ -5,7 +5,7 @@ import { Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { moderateCourseAction } from "@/features/admin/actions";
+import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
 import { FlashMessage, ReasonAction, type SearchParams } from "@/features/admin/ui";
 
 type PageProps = { params: { courseId: string }; searchParams: SearchParams };
@@ -127,6 +127,16 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
             hidden={{ courseId: String(course.id), status: "hidden", returnTo: `/admin/courses/${course.id}` }}
           />
         )}
+        <form action={adminDeleteCourseAction}>
+          <input type="hidden" name="courseId" value={String(course.id)} />
+          <input type="hidden" name="returnTo" value="/admin/courses" />
+          <button
+            type="submit"
+            className="rounded bg-destructive/10 px-3 py-2 text-sm text-destructive font-semibold hover:bg-destructive/20 transition-colors cursor-pointer"
+          >
+            Xóa khóa học
+          </button>
+        </form>
       </div>
       <FlashMessage searchParams={searchParams} />
 
