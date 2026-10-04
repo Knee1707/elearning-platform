@@ -57,11 +57,28 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
 
   if (!course) notFound();
 
+  // Lấy thêm danh sách nhiều giảng viên từ course_instructors (nếu có)
+  let instructorNames: string[] = [];
+  try {
+    const { data: ciData } = await supabase
+      .from("course_instructors")
+      .select("profiles(full_name)")
+      .eq("course_id", params.courseId);
+    if (ciData && ciData.length > 0) {
+      instructorNames = ciData.map((row: any) => row.profiles?.full_name).filter(Boolean);
+    }
+  } catch {
+    // Bỏ qua nếu bảng chưa tạo
+  }
+
+  const primaryInstructorName = (course as any).profiles?.full_name ?? "Không rõ";
+  const displayInstructor = instructorNames.length > 0
+    ? instructorNames.join(", ")
+    : primaryInstructorName;
+
   const chapters = (course.chapters ?? [])
     .map((c: any) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a: any, b: any) => a.position - b.position) }))
     .sort((a: any, b: any) => a.position - b.position);
-
-  const instructorName = (course as any).profiles?.full_name ?? "Không rõ";
 
   return (
     <main className="mx-auto max-w-4xl p-8">
@@ -69,7 +86,7 @@ export default async function AdminCourseDetailPage({ params, searchParams }: Pa
         <div>
           <h1 className="text-2xl font-bold">{String(course.title)}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Giảng viên: {instructorName} · Trạng thái: {STATUS_LABEL[String(course.status)] ?? String(course.status)}
+            Giảng viên: <strong className="text-foreground">{displayInstructor}</strong> {instructorNames.length > 1 && `(${instructorNames.length} giảng viên)`} · Trạng thái: {STATUS_LABEL[String(course.status)] ?? String(course.status)}
           </p>
         </div>
         <Link

@@ -32,13 +32,31 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
     .single();
   if (!course) notFound();
 
+  // Lấy thêm danh sách nhiều giảng viên từ course_instructors (nếu có)
+  let instructorNames: string[] = [];
+  try {
+    const { data: ciData } = await supabase
+      .from("course_instructors")
+      .select("profiles(full_name)")
+      .eq("course_id", params.courseId);
+    if (ciData && ciData.length > 0) {
+      instructorNames = ciData.map((row: any) => row.profiles?.full_name).filter(Boolean);
+    }
+  } catch {
+    // Bỏ qua nếu bảng chưa tạo
+  }
+
+  const primaryInstructorName = (course as any).profiles?.full_name ?? "Không rõ";
+  const displayInstructor = instructorNames.length > 0
+    ? instructorNames.join(", ")
+    : primaryInstructorName;
+
   const chapters = (course.chapters ?? [])
     .map((c: any) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a: any, b: any) => a.position - b.position) }))
     .sort((a: any, b: any) => a.position - b.position);
 
   const status = String(course.status);
   const canSubmit = status === "draft" || status === "rejected";
-  const instructorName = (course as any).profiles?.full_name ?? "Không rõ";
 
   return (
     <main className="mx-auto max-w-4xl p-8">
@@ -49,7 +67,9 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Chỉnh sửa khóa học</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Phụ trách: {instructorName}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Phụ trách: <strong className="text-foreground">{displayInstructor}</strong> {instructorNames.length > 1 && `(${instructorNames.length} giảng viên)`}
+          </p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLOR[status] ?? STATUS_COLOR.draft}`}>
           {STATUS_LABEL[status] ?? status}

@@ -57,6 +57,7 @@
 | `categories` | `id` · `name` · `slug`(UNIQUE) |
 | `tag` | `id` · `name` · `slug`(UNIQUE) |
 | `course_tag` | `course_id`(FK→courses) · `tag_id`(FK→tag) — PK ghép (course_id, tag_id) |
+| `course_instructors` **[0026]** | `course_id`(FK→courses) · `instructor_id`(FK→profiles) · `created_at` — PK ghép (course_id, instructor_id) |
 | `courses` | `id` · `instructor_id`(FK→profiles) · `category_id`(FK→categories) · `title` · `slug`(UNIQUE) · `description` · `level` · `price` · `status`(course_status) · `thumbnail_url` · `is_featured` · `created_at` · `updated_at` · `moderation_note` **[0014]** (lý do từ chối/ẩn gần nhất) |
 | `chapters` | `id` · `course_id`(FK→courses) · `title` · `position` |
 | `lessons` | `id` · `chapter_id`(FK→chapters) · `title` · `video_url` · `video_status` · `duration_seconds` · `is_free` · `position` |
@@ -134,7 +135,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 `idx_exams_course_id`, `idx_exam_attempts_user_id`, `idx_exam_attempts_exam_id`,
 `idx_answers_attempt_id`, `idx_certificates_user_id`, `idx_live_sessions_course_id`,
 `idx_attendance_course_id`, `idx_attendance_user_id`, `uq_attendance_once`,
-`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**.
+`idx_notification_user_unread`, `idx_report_status`, `idx_activity_log_entity` **[0010]**,
+`idx_course_instructors_course_id` **[0026]**, `idx_course_instructors_instructor_id` **[0026]**.
 
 ---
 

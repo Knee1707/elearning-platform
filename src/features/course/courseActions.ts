@@ -8,6 +8,13 @@ import type { CourseInput } from "./schema";
 
 export type CategoryOption = { id: string; name: string };
 
+export type InstructorOption = {
+  id: string;
+  fullName: string;
+  role: string;
+  avatarUrl: string | null;
+};
+
 export async function getCategories(): Promise<CategoryOption[]> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -16,6 +23,22 @@ export async function getCategories(): Promise<CategoryOption[]> {
     .order("name", { ascending: true });
   if (error) throw error;
   return data ?? [];
+}
+
+export async function getInstructors(): Promise<InstructorOption[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, full_name, role, avatar_url")
+    .in("role", ["instructor", "admin", "super_admin"])
+    .order("full_name", { ascending: true });
+  if (error) throw error;
+  return (data ?? []).map((row: any) => ({
+    id: String(row.id),
+    fullName: String(row.full_name || "Giảng viên"),
+    role: String(row.role),
+    avatarUrl: row.avatar_url ?? null,
+  }));
 }
 
 const slugify = (value: string) =>
@@ -51,10 +74,15 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
   const slug = `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`;
   const status = isAdminRole(profile.role) ? (input.status ?? "published") : "draft";
 
+  // Xác định giảng viên chính (ưu tiên giảng viên đầu tiên được chọn)
+  const primaryInstructorId = (input.instructorIds && input.instructorIds.length > 0)
+    ? input.instructorIds[0]
+    : profile.id;
+
   const { data, error } = await supabase
     .from("courses")
     .insert({
-      instructor_id: profile.id,
+      instructor_id: primaryInstructorId,
       category_id: input.categoryId,
       title,
       slug,
@@ -72,12 +100,72 @@ export async function createCourse(input: CourseInput): Promise<{ id: string }> 
     throw error;
   }
 
+  // Lưu danh sách tất cả các giảng viên được chọn vào bảng course_instructors (hỗ trợ nhiều giảng viên)
+  const allInstructorIds = Array.from(
+    new Set([
+      primaryInstructorId,
+      ...(input.instructorIds ?? []),
+    ])
+  ).filter(Boolean);
+
+  if (allInstructorIds.length > 0) {
+    try {
+      const instructorRows = allInstructorIds.map((instId) => ({
+        course_id: data.id,
+        instructor_id: instId,
+      }));
+      await supabase.from("course_instructors").insert(instructorRows);
+    } catch {
+      // Tiếp tục hoạt động bình thường nếu bảng course_instructors đang đợi migration trên DB
+    }
+  }
+
   // Revalidate toàn bộ các trang hiển thị khóa học công khai
   revalidatePath("/courses");
   revalidatePath("/");
   revalidatePath("/admin/courses");
 
   return { id: data.id };
+}
+
+/**
+ * Cập nhật danh sách giảng viên phụ trách cho khóa học
+ */
+export async function updateCourseInstructors(courseId: string, instructorIds: string[]) {
+  const profile = await requireRole(["instructor", ...ADMIN_ROLES]);
+  const supabase = createClient();
+
+  if (!instructorIds || instructorIds.length === 0) {
+    throw new Error("Phải có ít nhất 1 giảng viên phụ trách khóa học.");
+  }
+
+  const primaryInstructorId = instructorIds[0];
+
+  // Cập nhật instructor_id chính trên bảng courses
+  const { error: courseError } = await supabase
+    .from("courses")
+    .update({ instructor_id: primaryInstructorId, updated_at: new Date().toISOString() })
+    .eq("id", courseId);
+
+  if (courseError) throw courseError;
+
+  // Cập nhật lại toàn bộ bảng quan hệ course_instructors
+  try {
+    await supabase.from("course_instructors").delete().eq("course_id", courseId);
+    const rows = instructorIds.map((instId) => ({
+      course_id: courseId,
+      instructor_id: instId,
+    }));
+    await supabase.from("course_instructors").insert(rows);
+  } catch {
+    // Bỏ qua nếu bảng chưa tạo
+  }
+
+  revalidatePath(`/admin/courses/${courseId}`);
+  revalidatePath(`/admin/courses/${courseId}/edit`);
+  revalidatePath("/admin/courses");
+  revalidatePath("/courses");
+  revalidatePath("/");
 }
 
 /**
