@@ -1021,6 +1021,7 @@ export async function getCertificateCategories(): Promise<CertificateCategoryTab
   return list;
 }
 
+
 // Tìm học viên đã nhận chứng chỉ hợp lệ theo Danh mục, Tên học sinh, và Khoảng thời gian
 export async function getCertificates(filters: {
   keyword?: string;
@@ -1030,9 +1031,21 @@ export async function getCertificates(filters: {
   toDate?: string;
   courseId?: string;
   revokedOnly?: boolean;
+  sortBy?: "name" | "time";
+  sortDir?: "asc" | "desc";
 }) {
   const supabase = createClient();
   const cleaned = cleanKeyword(filters.keyword ?? "");
+  const sortBy = filters.sortBy ?? "time";
+  const sortDir = filters.sortDir ?? "desc";
+  const sortRows = (rows: CertificateRow[]) => [...rows].sort((a, b) => {
+    if (sortBy === "name") {
+      const nameResult = (a.studentName ?? "").localeCompare(b.studentName ?? "", "vi", { sensitivity: "base" });
+      if (nameResult !== 0) return sortDir === "asc" ? nameResult : -nameResult;
+    }
+    const timeResult = a.issuedAt.localeCompare(b.issuedAt);
+    return sortDir === "asc" ? timeResult : -timeResult;
+  });
 
   let dateFromIso: string | null = null;
   let dateToIso: string | null = null;
@@ -1062,11 +1075,11 @@ export async function getCertificates(filters: {
     dateToIso = new Date(`${filters.toDate}T23:59:59.999Z`).toISOString();
   }
 
+
   const base = () => {
     let q = supabase
       .from("certificates")
       .select(CERT_SELECT)
-      .is("revoked_at", null) // CHỈ HIỂN THỊ HỌC VIÊN ĐÃ NHẬN CHỨNG CHỈ (KHÔNG LẤY ĐÃ THU HỒI)
       .neq("status", "pending")
       .neq("status", "rejected")
       .order("issued_at", { ascending: false })
@@ -1074,6 +1087,11 @@ export async function getCertificates(filters: {
 
     if (filters.courseId) {
       q = q.eq("course_id", filters.courseId);
+    }
+    if (filters.revokedOnly) {
+      q = q.not("revoked_at", "is", null);
+    } else {
+      q = q.is("revoked_at", null);
     }
     if (dateFromIso) {
       q = q.gte("issued_at", dateFromIso);
@@ -1088,6 +1106,7 @@ export async function getCertificates(filters: {
   if (!cleaned) {
     const { data, error } = await base();
     if (error) throw error;
+
     rows = (data ?? []).map(toCertificate);
   } else {
     const [byCode, byName] = await Promise.all([
@@ -1096,12 +1115,9 @@ export async function getCertificates(filters: {
     ]);
     if (byCode.error) throw byCode.error;
     if (byName.error) throw byName.error;
-
     const merged = new Map<string, CertificateRow>();
-    for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) {
-      merged.set(String(row.id), toCertificate(row));
-    }
-    rows = [...merged.values()].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt));
+    for (const row of [...(byCode.data ?? []), ...(byName.data ?? [])]) merged.set(String(row.id), toCertificate(row));
+    rows = [...merged.values()];
   }
 
   // Lọc theo Danh mục
@@ -1113,6 +1129,7 @@ export async function getCertificates(filters: {
     }
   }
 
-  return rows;
+  return sortRows(rows);
+
 }
 

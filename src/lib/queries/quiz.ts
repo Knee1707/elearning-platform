@@ -286,6 +286,7 @@ export async function getMyCertificates(): Promise<Certificate[]> {
  *
  * Nghiệp vụ:
  * - Tra cứu bảng `quizzes` theo `lesson_id`.
+ * - Một bài học có thể có nhiều quiz; hàm này lấy quiz đầu tiên để giữ luồng học hiện tại tương thích.
  * - Nếu tìm thấy, lấy đề quiz an toàn qua `getQuiz(quiz.id)`.
  * - Hỗ trợ fallback offline nếu không tìm thấy hoặc đang chạy mock.
  */
@@ -296,6 +297,9 @@ export async function getQuizByLessonId(lessonId: string): Promise<QuizData | nu
       .from("quizzes")
       .select("id")
       .eq("lesson_id", lessonId)
+      .eq("is_final", false)
+      .order("title")
+      .limit(1)
       .maybeSingle();
 
     if (error || !data) {
@@ -335,7 +339,9 @@ export async function getQuizzesForLessons(
     const { data, error } = await supabase
       .from("quizzes")
       .select("id, lesson_id, title, pass_score")
-      .in("lesson_id", lessonIds);
+      .in("lesson_id", lessonIds)
+      .eq("is_final", false)
+      .order("title");
 
     const map: Record<string, { id: string; title: string; passScore: number }> = {};
     if (!error && data) {
