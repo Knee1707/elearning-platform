@@ -379,15 +379,67 @@ export async function submitForReview(formData: FormData) {
     throw new Error("Chỉ gửi duyệt được khi khóa đang ở trạng thái Nháp hoặc Bị từ chối.");
   }
 
+  // 1. RÀNG BUỘC 1: Cần ít nhất 3 chương
   const { data: chapterRows } = await supabase.from("chapters").select("id").eq("course_id", courseId);
   const chapterIds = (chapterRows ?? []).map((row) => row.id);
-  if (chapterIds.length === 0) throw new Error("Cần ít nhất 1 chương trước khi gửi duyệt.");
+  if (chapterIds.length < 3) {
+    throw new Error(`Khóa học cần có ít nhất 3 chương trước khi gửi duyệt (hiện có ${chapterIds.length}/3 chương).`);
+  }
 
-  const { count: lessonCount } = await supabase
+  // 2. RÀNG BUỘC 2: Cần ít nhất 5 video bài giảng trong toàn khóa học
+  const { data: lessons } = await supabase
     .from("lessons")
-    .select("id", { count: "exact", head: true })
+    .select("id, title, video_url")
     .in("chapter_id", chapterIds);
-  if (!lessonCount) throw new Error("Cần ít nhất 1 bài học trước khi gửi duyệt.");
+  const allLessons = lessons ?? [];
+  const lessonsWithVideo = allLessons.filter((l) => Boolean(l.video_url && l.video_url.trim().length > 0));
+  if (lessonsWithVideo.length < 5) {
+    throw new Error(
+      `Khóa học cần có ít nhất 5 bài giảng có video trước khi gửi duyệt (hiện có ${lessonsWithVideo.length}/5 video).`
+    );
+  }
+
+  // 3. RÀNG BUỘC 3: Sau các bài giảng video phải có quiz để kiểm tra
+  const lessonIdsWithVideo = lessonsWithVideo.map((l) => l.id);
+  const { data: quizzes } = await supabase
+    .from("quizzes")
+    .select("id, lesson_id")
+    .in("lesson_id", lessonIdsWithVideo);
+
+  const quizLessonIds = new Set((quizzes ?? []).map((q) => q.lesson_id));
+  const missingQuizLessons = lessonsWithVideo.filter((l) => !quizLessonIds.has(l.id));
+  if (missingQuizLessons.length > 0) {
+    const missingTitles = missingQuizLessons.slice(0, 3).map((l) => `"${l.title}"`).join(", ");
+    const andMore = missingQuizLessons.length > 3 ? ` và ${missingQuizLessons.length - 3} bài khác` : "";
+    throw new Error(
+      `Sau mỗi bài giảng video phải có 1 bài quiz kiểm tra. Còn thiếu quiz ở các bài: ${missingTitles}${andMore}.`
+    );
+  }
+
+  // 4. RÀNG BUỘC 4: Cuối khóa phải có bài thi cuối kỳ (final exam) để học viên nhận giấy chứng nhận
+  const { data: finalExam } = await supabase
+    .from("exams")
+    .select("id, quiz_id, title")
+    .eq("course_id", courseId)
+    .eq("is_final", true)
+    .maybeSingle();
+
+  if (!finalExam) {
+    throw new Error(
+      "Khóa học cần có bài thi cuối kỳ (final test) để học viên làm bài và nhận giấy chứng nhận hoàn thành khóa học."
+    );
+  }
+
+  if (finalExam.quiz_id) {
+    const { count: examQuestionCount } = await supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("quiz_id", finalExam.quiz_id);
+
+    if (!examQuestionCount || examQuestionCount === 0) {
+      throw new Error("Bài thi cuối kỳ cần có ít nhất 1 câu hỏi đánh giá trước khi gửi duyệt khóa học.");
+    }
+  }
 
   const { error: updateError } = await supabase.from("courses").update({ status: "pending" }).eq("id", courseId);
   if (updateError) throw updateError;
