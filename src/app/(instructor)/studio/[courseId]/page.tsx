@@ -1,10 +1,11 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Award, FileQuestion } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES, isAdminRole } from "@/lib/utils";
 import { updateCourse, submitForReview } from "@/features/course/courseActions";
 import { ChapterManager } from "@/features/course/ChapterManager";
-import { FinalExamAuthor } from "@/features/quiz/author/FinalExamAuthor";
 
 type PageProps = { params: { courseId: string } };
 
@@ -32,6 +33,23 @@ export default async function EditCoursePage({ params }: PageProps) {
   const chapters = (course.chapters ?? [])
     .map((c) => ({ ...c, lessons: [...(c.lessons ?? [])].sort((a, b) => a.position - b.position) }))
     .sort((a, b) => a.position - b.position);
+
+  // Tra cứu kỳ thi cuối khóa nếu đã được tạo
+  const { data: finalExam } = await supabase
+    .from("exams")
+    .select("id, title, time_limit_minutes, pass_score, quiz_id")
+    .eq("course_id", params.courseId)
+    .eq("is_final", true)
+    .maybeSingle();
+
+  let questionCount = 0;
+  if (finalExam?.quiz_id) {
+    const { count } = await supabase
+      .from("questions")
+      .select("id", { count: "exact", head: true })
+      .eq("quiz_id", finalExam.quiz_id);
+    questionCount = count || 0;
+  }
 
   const status = String(course.status);
   const canSubmit = status === "draft" || status === "rejected";
@@ -81,7 +99,41 @@ export default async function EditCoursePage({ params }: PageProps) {
       </form>
 
       <ChapterManager courseId={String(course.id)} initialChapters={chapters} />
-      <FinalExamAuthor courseId={String(course.id)} />
+
+      {/* KHỐI QUẢN LÝ KỲ THI CUỐI KHÓA */}
+      <section className="mt-8 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50/70 via-orange-50/40 to-white p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                <Award className="h-3.5 w-3.5 text-amber-600" />
+                Đánh giá & Chứng nhận
+              </span>
+              {finalExam && (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                  Đã có đề thi ({questionCount} câu)
+                </span>
+              )}
+            </div>
+            <h2 className="text-lg font-black text-slate-900">
+              Kỳ thi cuối khóa (Trắc nghiệm & Tự luận)
+            </h2>
+            <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+              {finalExam
+                ? `Đề thi: "${finalExam.title}" · Thời lượng: ${finalExam.time_limit_minutes} phút · Điểm đạt: ${finalExam.pass_score}%. Bấm nút bên cạnh để xem và chỉnh sửa nội dung câu hỏi.`
+                : "Tạo đề thi gồm các câu hỏi trắc nghiệm và tự luận để học viên làm bài thi và nhận chứng chỉ hoàn thành khóa học."}
+            </p>
+          </div>
+
+          <Link
+            href={`/studio/${course.id}/exam`}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-amber-600 hover:bg-amber-700 px-6 py-3 text-xs font-bold text-white shadow-md shadow-amber-500/20 transition-all active:scale-95 cursor-pointer"
+          >
+            <FileQuestion className="h-4 w-4" />
+            <span>{finalExam ? "Chỉnh sửa nội dung kỳ thi" : "Tạo kỳ thi cuối khóa"}</span>
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }
