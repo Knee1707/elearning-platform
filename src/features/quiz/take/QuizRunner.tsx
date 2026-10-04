@@ -80,6 +80,7 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   const [resolvedSlug, setResolvedSlug] = useState<string | null>(courseSlug || null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [essayTexts, setEssayTexts] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
@@ -471,43 +472,74 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-blue-600">
               <FileQuestion className="h-4 w-4" />
-              <span>Câu hỏi {currentIndex + 1} / {quiz.questions.length}</span>
+              <span>
+                Câu hỏi {currentIndex + 1} / {quiz.questions.length}
+                {currentQuestion.questionText.startsWith("[Tự luận]") && (
+                  <span className="ml-2 rounded-full bg-purple-100 border border-purple-200 px-2 py-0.5 text-[10px] font-bold text-purple-800 uppercase tracking-wider">
+                    Tự luận
+                  </span>
+                )}
+              </span>
             </div>
             <p className="mt-2 text-base font-bold leading-relaxed text-slate-900">
-              {currentQuestion.questionText}
+              {currentQuestion.questionText.replace(/^\[Tự luận\]\s*/i, "")}
             </p>
           </div>
 
-          {/* Danh sách lựa chọn */}
-          <div className="space-y-3">
-            {currentQuestion.options.map((option) => {
-              const isSelected = answers[currentQuestion.questionId] === option.optionId;
+          {/* Kiểm tra câu hỏi tự luận hay trắc nghiệm */}
+          {currentQuestion.questionText.startsWith("[Tự luận]") ? (
+            <div className="space-y-3">
+              <div className="rounded-2xl border border-purple-200 bg-purple-50/40 p-4">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-purple-800 block mb-2">
+                  Bài làm tự luận của bạn:
+                </span>
+                <textarea
+                  rows={6}
+                  value={essayTexts[currentQuestion.questionId] || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setEssayTexts((prev) => ({ ...prev, [currentQuestion.questionId]: val }));
+                    if (currentQuestion.options[0]) {
+                      handleSelectOption(currentQuestion.questionId, currentQuestion.options[0].optionId);
+                    }
+                  }}
+                  placeholder="Gõ nội dung bài làm, câu trả lời tự luận hoặc lời giải chi tiết của bạn tại đây..."
+                  className="w-full rounded-xl border border-purple-200 bg-white p-3.5 text-xs sm:text-sm font-medium focus:border-purple-600 focus:outline-none transition-all shadow-2xs"
+                />
+              </div>
+            </div>
+          ) : (
+            /* Danh sách lựa chọn trắc nghiệm */
+            <div className="space-y-3">
+              {currentQuestion.options.map((option) => {
+                const isSelected = answers[currentQuestion.questionId] === option.optionId;
 
-              return (
-                <button
-                  key={option.optionId}
-                  type="button"
-                  onClick={() => handleSelectOption(currentQuestion.questionId, option.optionId)}
-                  className={`flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-[0.99] ${
-                    isSelected
-                      ? "border-blue-600 bg-blue-50/70 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
-                      : "border-slate-200/90 bg-white hover:border-blue-200 hover:bg-slate-50/50 text-slate-700"
-                  }`}
-                >
-                  <div
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                return (
+                  <button
+                    key={option.optionId}
+                    type="button"
+                    onClick={() => handleSelectOption(currentQuestion.questionId, option.optionId)}
+                    className={`flex w-full items-center gap-3.5 rounded-2xl border p-4 text-left text-xs sm:text-sm font-semibold transition-all duration-200 active:scale-[0.99] ${
                       isSelected
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-slate-300 text-slate-400"
+                        ? "border-blue-600 bg-blue-50/70 text-blue-900 ring-2 ring-blue-500/20 shadow-xs"
+                        : "border-slate-200/90 bg-white hover:border-blue-200 hover:bg-slate-50/50 text-slate-700"
                     }`}
                   >
-                    {isSelected ? "✓" : ""}
-                  </div>
-                  <span className="leading-snug flex-1">{option.optionText}</span>
-                </button>
-              );
-            })}
-          </div>
+                    <div
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-all ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-600 text-white"
+                          : "border-slate-300 text-slate-400"
+                      }`}
+                    >
+                      {isSelected ? "✓" : ""}
+                    </div>
+                    <span className="leading-snug flex-1">{option.optionText}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
