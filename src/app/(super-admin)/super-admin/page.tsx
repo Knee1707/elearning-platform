@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Banknote, Crown, Percent, ShieldCheck, Users, Wallet } from "lucide-react";
+import { Crown, Percent, ShieldCheck, Users, Wallet } from "lucide-react";
 import { getAdminDashboard } from "@/lib/queries/admin";
 import { getActivityLog, getSuperAdminOverview } from "@/features/super-admin/queries";
 import {
@@ -35,13 +35,7 @@ export default async function SuperAdminDashboardPage() {
     { label: "Super admin", value: overview.superAdminCount, icon: Crown, href: "/super-admin/admins" },
     { label: "Admin", value: overview.adminCount, icon: ShieldCheck, href: "/super-admin/admins" },
     { label: "Tổng người dùng", value: dashboard?.totalUsers ?? "—", icon: Users, href: "/admin/users" },
-    { label: "Tổng doanh thu", value: dashboard ? money.format(dashboard.totalRevenue) : "—", icon: Wallet, href: "/super-admin/payouts" },
-    {
-      label: "Payout chưa chi trả",
-      value: `${overview.draftPayoutCount} · ${money.format(overview.draftPayoutNet)}`,
-      icon: Banknote,
-      href: "/super-admin/payouts",
-    },
+    { label: "Tổng doanh thu", value: dashboard ? money.format(dashboard.totalRevenue) : "—", icon: Wallet, href: "/admin/payments" },
     {
       label: "Phí nền tảng",
       value: overview.platformFeePercent === null ? "Chưa đặt" : `${overview.platformFeePercent}%`,

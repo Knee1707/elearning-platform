@@ -67,9 +67,6 @@ export default async function InstructorDashboardPage() {
         <Link href="/studio" className="rounded border px-4 py-2 text-sm">
           Quản lý khóa học
         </Link>
-        <Link href="/payout" className="rounded border px-4 py-2 text-sm">
-          Xem chi tiết doanh thu
-        </Link>
       </div>
     </main>
   );

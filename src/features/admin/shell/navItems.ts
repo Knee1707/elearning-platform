@@ -1,6 +1,5 @@
 import {
   Award,
-  Banknote,
   Bell,
   BookCheck,
   CreditCard,
@@ -67,15 +66,9 @@ const MODERATION_GROUPS: NavGroup[] = [
   { title: "Truyền thông", items: [{ href: "/admin/notifications", label: "Gửi thông báo", icon: Bell }] },
 ];
 
-// Nhóm riêng của super admin (nhân sự, tài chính, hệ thống).
+// Nhóm riêng của super admin (nhân sự, hệ thống).
 const SUPER_ONLY_GROUPS: NavGroup[] = [
   { title: "Nhân sự", items: [{ href: "/super-admin/admins", label: "Quản lý Admin", icon: ShieldCheck }] },
-  {
-    title: "Tài chính",
-    items: [
-      { href: "/super-admin/payouts", label: "Payout giảng viên", icon: Banknote },
-    ],
-  },
   {
     title: "Hệ thống",
     items: [
