@@ -4,8 +4,14 @@ import { ArrowLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES } from "@/lib/utils";
-import { updateCourse, submitForReview, adminPublishCourseDirectly } from "@/features/course/courseActions";
+import {
+  updateCourse,
+  submitForReview,
+  adminPublishCourseDirectly,
+  getInstructors,
+} from "@/features/course/courseActions";
 import { ChapterManager } from "@/features/course/ChapterManager";
+import { CourseInstructorsEditor } from "@/features/course/CourseInstructorsEditor";
 
 type PageProps = { params: { courseId: string } };
 
@@ -25,25 +31,35 @@ const STATUS_COLOR: Record<string, string> = {
 export default async function AdminEditCoursePage({ params }: PageProps) {
   await requireRole(ADMIN_ROLES);
   const supabase = createClient();
+  const allInstructors = await getInstructors();
+
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, description, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, video_url, video_review, video_review_reason, duration_seconds, is_free, position, attachments(id, name, file_url)))")
+    .select("id, instructor_id, title, description, price, status, profiles!courses_instructor_id_fkey(full_name), chapters(id, title, position, lessons(id, title, video_url, video_review, video_review_reason, duration_seconds, is_free, position, attachments(id, name, file_url)))")
     .eq("id", params.courseId)
     .single();
   if (!course) notFound();
 
-  // Lấy thêm danh sách nhiều giảng viên từ course_instructors (nếu có)
+  // Lấy danh sách giảng viên từ course_instructors (nếu có)
+  let instructorIds: string[] = [];
   let instructorNames: string[] = [];
   try {
     const { data: ciData } = await supabase
       .from("course_instructors")
-      .select("profiles(full_name)")
+      .select("instructor_id, profiles(full_name)")
       .eq("course_id", params.courseId);
     if (ciData && ciData.length > 0) {
+      instructorIds = ciData.map((row: any) => row.instructor_id).filter(Boolean);
       instructorNames = ciData.map((row: any) => row.profiles?.full_name).filter(Boolean);
     }
   } catch {
     // Bỏ qua nếu bảng chưa tạo
+  }
+
+  // Đảm bảo primary instructor_id luôn nằm đầu danh sách
+  const primaryId = (course as any).instructor_id;
+  if (primaryId && !instructorIds.includes(primaryId)) {
+    instructorIds = [primaryId, ...instructorIds];
   }
 
   const primaryInstructorName = (course as any).profiles?.full_name ?? "Không rõ";
@@ -59,24 +75,26 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
   const canSubmit = status === "draft" || status === "rejected";
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <Link href="/admin/courses" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Danh sách khóa học
-      </Link>
+    <main className="mx-auto max-w-4xl p-8 space-y-6">
+      <div>
+        <Link href="/admin/courses" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Danh sách khóa học
+        </Link>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Chỉnh sửa khóa học</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Phụ trách: <strong className="text-foreground">{displayInstructor}</strong> {instructorNames.length > 1 && `(${instructorNames.length} giảng viên)`}
-          </p>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">Chỉnh sửa khóa học</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Phụ trách: <strong className="text-foreground">{displayInstructor}</strong> {instructorIds.length > 1 && `(${instructorIds.length} giảng viên)`}
+            </p>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLOR[status] ?? STATUS_COLOR.draft}`}>
+            {STATUS_LABEL[status] ?? status}
+          </span>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_COLOR[status] ?? STATUS_COLOR.draft}`}>
-          {STATUS_LABEL[status] ?? status}
-        </span>
       </div>
 
-      <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border p-4 bg-slate-50/50">
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-dashed border-border p-4 bg-slate-50/50">
         {status !== "published" ? (
           <>
             <div>
@@ -113,7 +131,7 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
         )}
       </section>
 
-      <form action={updateCourse} className="mt-6 space-y-4 rounded-lg border p-5">
+      <form action={updateCourse} className="space-y-4 rounded-lg border p-5 bg-white">
         <input type="hidden" name="courseId" value={String(course.id)} />
         <div>
           <label className="text-sm font-medium" htmlFor="title">Tên khóa học</label>
@@ -127,9 +145,17 @@ export default async function AdminEditCoursePage({ params }: PageProps) {
           <label className="text-sm font-medium" htmlFor="price">Giá (VNĐ)</label>
           <input id="price" name="price" type="number" min="0" step="1000" defaultValue={Number(course.price)} className="mt-1 w-full rounded border bg-background px-3 py-2" />
         </div>
-        <button className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground">Lưu thay đổi</button>
+        <button className="rounded bg-primary px-4 py-2 text-sm text-primary-foreground font-semibold cursor-pointer">Lưu thông tin cơ bản</button>
       </form>
 
+      {/* Quản lý giảng viên phụ trách */}
+      <CourseInstructorsEditor
+        courseId={String(course.id)}
+        initialInstructorIds={instructorIds}
+        allInstructors={allInstructors}
+      />
+
+      {/* Quản lý chương và bài giảng */}
       <ChapterManager courseId={String(course.id)} initialChapters={chapters} />
     </main>
   );

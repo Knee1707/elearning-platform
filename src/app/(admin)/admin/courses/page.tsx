@@ -5,6 +5,9 @@ import { ADMIN_ROLES } from "@/lib/utils";
 import type { CourseStatus } from "@/types/domain";
 import { getUnifiedCoursesForModeration } from "@/features/admin/queries";
 import { moderateCourseAction, reviewVideoAction, reviewLessonContentAction } from "@/features/admin/actions";
+
+import { getCoursesForModeration } from "@/features/admin/queries";
+import { moderateCourseAction, adminDeleteCourseAction } from "@/features/admin/actions";
 import { FilterTabs, FlashMessage, PageHeader, ReasonAction, buildHref, dateTime, money, param, type SearchParams } from "@/features/admin/ui";
 
 const TABS: { value: CourseStatus | "all"; label: string }[] = [
@@ -203,6 +206,49 @@ export default async function AdminCoursesPage({ searchParams }: { searchParams:
               </article>
             );
           })
+
+              <div className="flex flex-wrap items-start gap-2">
+                {(course.status === "pending" || course.status === "hidden") && (
+                  <form action={moderateCourseAction}>
+                    <input type="hidden" name="courseId" value={course.id} />
+                    <input type="hidden" name="status" value="published" />
+                    <input type="hidden" name="returnTo" value={here} />
+                    <button className="rounded bg-primary px-3 py-2 text-sm text-primary-foreground">
+                      {course.status === "pending" ? "Duyệt" : "Hiển thị lại"}
+                    </button>
+                  </form>
+                )}
+                {course.status === "pending" && (
+                  <ReasonAction
+                    action={moderateCourseAction}
+                    label="Từ chối"
+                    submitLabel="Xác nhận từ chối"
+                    placeholder="Lý do từ chối (giảng viên sẽ thấy)…"
+                    hidden={{ courseId: course.id, status: "rejected", returnTo: here }}
+                  />
+                )}
+                {course.status === "published" && (
+                  <ReasonAction
+                    action={moderateCourseAction}
+                    label="Ẩn khóa"
+                    submitLabel="Xác nhận ẩn"
+                    placeholder="Lý do ẩn (giảng viên sẽ thấy)…"
+                    hidden={{ courseId: course.id, status: "hidden", returnTo: here }}
+                  />
+                )}
+                <form action={adminDeleteCourseAction}>
+                  <input type="hidden" name="courseId" value={course.id} />
+                  <input type="hidden" name="returnTo" value={here} />
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors cursor-pointer"
+                  >
+                    Xóa
+                  </button>
+                </form>
+              </div>
+            </article>
+          ))
         ) : (
           <p className="text-sm text-muted-foreground">Không có khóa học nào{keyword ? ` khớp “${keyword}”` : ""}.</p>
         )}
