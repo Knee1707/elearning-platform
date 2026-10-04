@@ -523,38 +523,46 @@ export function CartView() {
     setPurchasing(true);
     try {
       const supabase = createClient();
-      await supabase.rpc("fn_mock_purchase", {
+      const { data, error } = await supabase.rpc("fn_mock_purchase", {
         p_course_ids: paidIds,
         p_coupon_code: appliedCoupon ? appliedCoupon.split(" ")[0] : null,
       });
+      if (error) throw error;
+      // fn_mock_purchase bỏ qua khóa chưa xuất bản / đã sở hữu → không có payment nào.
+      if (!Array.isArray(data) || data.length === 0) {
+        throw new Error("Không thể thanh toán: khóa học chưa được xuất bản hoặc bạn đã sở hữu khóa này.");
+      }
 
       // Dọn dẹp các khóa học đã mua khỏi bảng cart_item trong DB
       for (const cid of paidIds) {
         await supabase.rpc("fn_remove_from_cart", { p_course: cid });
       }
-    } catch {
-      // Cho phép hoàn tất mô phỏng ngay cả khi RPC chưa sẵn sàng (môi trường test).
-    } finally {
-      // Gỡ các khóa đã mua khỏi giỏ, giữ lại phần còn lại.
-      const paid = new Set(paidIds);
-      const remaining = items.filter((i) => !paid.has(i.courseId));
-      setItems(remaining);
-      setSelectedIds(new Set(remaining.map((i) => i.courseId)));
-      setAppliedCoupon(null);
-      setDiscountAmount(0);
-      try {
-        const stored = localStorage.getItem("demo_cart_items");
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const filtered = Array.isArray(parsed) ? parsed.filter((id: string) => !paid.has(id)) : [];
-          localStorage.setItem("demo_cart_items", JSON.stringify(filtered));
-        }
-      } catch {}
-      window.dispatchEvent(new Event("cart-updated"));
-      if (remaining.length === 0) setPurchaseSuccess(true);
-      else setFlash(`Đã thanh toán ${paidIds.length} khóa. Còn ${remaining.length} khóa trong giỏ.`);
+    } catch (err) {
+      // Thanh toán thất bại → KHÔNG gỡ khỏi giỏ, KHÔNG báo thành công.
+      setFlash(err instanceof Error ? err.message : "Thanh toán thất bại. Vui lòng thử lại.");
       setPurchasing(false);
+      return;
     }
+
+    // Gỡ các khóa đã mua khỏi giỏ, giữ lại phần còn lại.
+    const paid = new Set(paidIds);
+    const remaining = items.filter((i) => !paid.has(i.courseId));
+    setItems(remaining);
+    setSelectedIds(new Set(remaining.map((i) => i.courseId)));
+    setAppliedCoupon(null);
+    setDiscountAmount(0);
+    try {
+      const stored = localStorage.getItem("demo_cart_items");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const filtered = Array.isArray(parsed) ? parsed.filter((id: string) => !paid.has(id)) : [];
+        localStorage.setItem("demo_cart_items", JSON.stringify(filtered));
+      }
+    } catch {}
+    window.dispatchEvent(new Event("cart-updated"));
+    if (remaining.length === 0) setPurchaseSuccess(true);
+    else setFlash(`Đã thanh toán ${paidIds.length} khóa. Còn ${remaining.length} khóa trong giỏ.`);
+    setPurchasing(false);
   }
 
   const subtotal = selectedItems.reduce((sum, item) => sum + item.price, 0);

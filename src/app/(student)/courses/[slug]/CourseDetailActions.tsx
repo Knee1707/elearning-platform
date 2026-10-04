@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatPrice } from "@/lib/utils";
+import { getYouTubeEmbedUrl } from "@/lib/video";
 
 interface CourseDetailActionsProps {
   courseId: string;
@@ -459,14 +460,24 @@ export function FreeLessonPreviewModal({
         )}
 
         <div className="aspect-video w-full overflow-hidden rounded-lg bg-black relative flex items-center justify-center">
-          <video
-            key={currentSrc}
-            src={currentSrc}
-            controls
-            playsInline
-            onError={handleVideoError}
-            className="h-full w-full object-contain"
-          />
+          {getYouTubeEmbedUrl(videoUrl) ? (
+            <iframe
+              title={`Học thử ${lessonTitle}`}
+              src={getYouTubeEmbedUrl(videoUrl) ?? undefined}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          ) : (
+            <video
+              key={currentSrc}
+              src={currentSrc}
+              controls
+              playsInline
+              onError={handleVideoError}
+              className="h-full w-full object-contain"
+            />
+          )}
         </div>
 
         <div className="flex items-center justify-between pt-1">
