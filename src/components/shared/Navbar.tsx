@@ -684,12 +684,12 @@ export function Navbar() {
                     </Link>
 
                     <Link
-                      href="/profile"
+                      href={profile.role === "instructor" ? "/studio/profile" : "/profile"}
                       onClick={() => setProfileDropdownOpen(false)}
                       className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-600"
                     >
                       <User className="h-4 w-4 text-slate-400" />
-                      <span>Hồ sơ cá nhân</span>
+                      <span>{profile.role === "instructor" ? "Hồ sơ giảng viên" : "Hồ sơ cá nhân"}</span>
                     </Link>
 
                     {profile.role === "instructor" && (
