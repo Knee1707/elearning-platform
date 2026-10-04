@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Search, UserPlus } from "lucide-react";
+import { Search } from "lucide-react";
 import { requireRole } from "@/lib/queries/auth";
 import { ADMIN_ROLES, ROLE_LABELS, isAdminRole } from "@/lib/utils";
 import type { UserRole } from "@/types/domain";
 import { ADMIN_PAGE_SIZE, getUsers } from "@/features/admin/queries";
-import { createUserAction, deleteUserAction, setUserRoleAction, toggleBanAction } from "@/features/admin/actions";
+import { deleteUserAction, setUserRoleAction, toggleBanAction } from "@/features/admin/actions";
 import { ConfirmAction, FlashMessage, PageHeader, Pagination, ReasonAction, RoleBadge, buildHref, dateTime, param, type SearchParams } from "@/features/admin/ui";
 
 const ROLE_FILTERS: UserRole[] = ["student", "instructor", "admin", "super_admin"];
@@ -29,39 +29,10 @@ export default async function AdminUsersPage({ searchParams }: { searchParams: S
 
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <PageHeader
-          title="Người dùng"
-          description={`Thêm, sửa, xóa; đổi vai trò hoặc khóa tài khoản (bắt buộc ghi lý do).${isSuperAdmin ? "" : " Tài khoản quản trị chỉ super admin mới thay đổi được."}`}
-        />
-        <details className="group">
-          <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 [&::-webkit-details-marker]:hidden">
-            <UserPlus className="h-4 w-4" /> Thêm người dùng
-          </summary>
-          <form action={createUserAction} className="mt-2 w-80 max-w-[calc(100vw-3rem)] space-y-3 rounded-lg border border-border bg-background p-4 shadow-lg">
-            <input type="hidden" name="returnTo" value={here} />
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Họ tên</span>
-              <input name="fullName" required className="w-full rounded border border-border bg-background px-2 py-1.5" />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Email</span>
-              <input name="email" type="email" required className="w-full rounded border border-border bg-background px-2 py-1.5" />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Mật khẩu tạm (tối thiểu 6 ký tự)</span>
-              <input name="password" type="text" required minLength={6} autoComplete="off" className="w-full rounded border border-border bg-background px-2 py-1.5" />
-            </label>
-            <label className="block text-sm">
-              <span className="mb-1 block text-muted-foreground">Vai trò</span>
-              <select name="role" defaultValue="student" className="w-full rounded border border-border bg-background px-2 py-1.5">
-                {assignableRoles.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
-              </select>
-            </label>
-            <button type="submit" className="w-full rounded bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">Tạo tài khoản</button>
-          </form>
-        </details>
-      </div>
+      <PageHeader
+        title="Người dùng"
+        description={`Sửa, xóa; đổi vai trò hoặc khóa tài khoản (bắt buộc ghi lý do).${isSuperAdmin ? "" : " Tài khoản quản trị chỉ super admin mới thay đổi được."}`}
+      />
       <FlashMessage searchParams={searchParams} />
 
       <form key={`${keyword}|${role ?? ""}|${statusParam ?? ""}`} className="mt-6 flex flex-wrap items-end gap-3" role="search">
