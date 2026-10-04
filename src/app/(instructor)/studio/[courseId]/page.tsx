@@ -25,6 +25,9 @@ export default async function EditCoursePage({ params }: PageProps) {
   const { data: course } = await supabase
     .from("courses")
     .select("id, instructor_id, title, description, price, status, chapters(id, title, position, lessons(id, title, video_url, video_review, video_review_reason, duration_seconds, is_free, position, attachments(id, name, file_url)))")
+    .eq("id", params.courseId)
+    .single();
+
   // Kiểm tra quyền chỉnh sửa: Chủ khóa, Giảng viên đồng phụ trách, hoặc Admin/Super Admin
   let isAuthorized = course ? (course.instructor_id === profile.id || isAdminRole(profile.role)) : false;
   if (course && !isAuthorized) {
