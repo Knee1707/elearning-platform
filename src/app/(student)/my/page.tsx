@@ -98,111 +98,146 @@ export default function MyLearningPage() {
       setIsLoading(true);
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
-          .from("view_course_progress")
-          .select("*");
-
-        if (error || !data || data.length === 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           if (isMounted) {
             setCourses([]);
           }
-        } else if (isMounted) {
-          // 2. Tra cứu thêm thông tin slug và thumbnail từ bảng courses để bảo đảm link chính xác
-          const courseIds = Array.from(new Set((data as Array<Record<string, unknown>>).map((r) => r.course_id as string)));
-          const { data: coursesInfo } = await supabase
-            .from("courses")
-            .select("id, slug, thumbnail_url, profiles!courses_instructor_id_fkey(full_name)")
-            .in("id", courseIds);
+          return;
+        }
 
-          const courseMetaMap = new Map<string, { slug: string; thumbnail: string | null; instructor: string }>();
-          if (coursesInfo) {
-            for (const c of coursesInfo as Array<Record<string, unknown>>) {
-              const prof = c.profiles as Record<string, unknown> | null;
-              courseMetaMap.set(c.id as string, {
-                slug: c.slug as string,
-                thumbnail: (c.thumbnail_url as string) || null,
-                instructor: (prof?.full_name as string) || "Giảng viên LMS",
+        // 1. Lấy tất cả các khóa học đã ghi danh/mua thành công của học viên từ bảng enrollments
+        const { data: enrollmentsData } = await supabase
+          .from("enrollments")
+          .select("course_id, status")
+          .eq("user_id", user.id)
+          .eq("status", "active");
+
+        const enrolledCourseIds = Array.from(
+          new Set((enrollmentsData ?? []).map((e: any) => e.course_id as string)),
+        );
+
+        if (enrolledCourseIds.length === 0) {
+          if (isMounted) {
+            setCourses([]);
+          }
+          return;
+        }
+
+        // 2. Tra cứu thông tin khóa học từ bảng courses
+        const { data: coursesInfo } = await supabase
+          .from("courses")
+          .select("id, slug, title, thumbnail_url, instructor_id, profiles!courses_instructor_id_fkey(full_name)")
+          .in("id", enrolledCourseIds);
+
+        // Tra cứu tiến độ từ view_course_progress (nếu có)
+        const { data: progressData } = await supabase
+          .from("view_course_progress")
+          .select("*");
+
+        const progressMap = new Map<string, any>();
+        if (progressData) {
+          for (const row of progressData as any[]) {
+            progressMap.set(row.course_id, row);
+          }
+        }
+
+        // Tra cứu nhiều giảng viên từ bảng course_instructors (nếu có)
+        const multiInstructorMap = new Map<string, string[]>();
+        try {
+          const { data: ciData } = await supabase
+            .from("course_instructors")
+            .select("course_id, profiles(full_name)")
+            .in("course_id", enrolledCourseIds);
+          if (ciData) {
+            for (const r of ciData as any[]) {
+              const name = r.profiles?.full_name;
+              if (name) {
+                const list = multiInstructorMap.get(r.course_id) ?? [];
+                if (!list.includes(name)) list.push(name);
+                multiInstructorMap.set(r.course_id, list);
+              }
+            }
+          }
+        } catch {
+          // Bỏ qua nếu bảng chưa tạo
+        }
+
+        // 3. Gom nhóm dữ liệu cho từng khóa học
+        const resultCourses: EnrolledCourseItem[] = [];
+        for (const cid of enrolledCourseIds) {
+          const course = (coursesInfo ?? []).find((c: any) => c.id === cid);
+          const prog = progressMap.get(cid);
+          const multiNames = multiInstructorMap.get(cid);
+
+          const defaultInstructor = (course?.profiles as any)?.full_name || "Giảng viên LMS";
+          const instructorName = (multiNames && multiNames.length > 0)
+            ? multiNames.join(", ")
+            : defaultInstructor;
+
+          const total = Number(prog?.total_lessons || 0);
+          const completed = Number(prog?.completed_lessons || 0);
+          const percent = Number(prog?.progress_percent || 0);
+
+          resultCourses.push({
+            courseId: cid,
+            slug: course?.slug || prog?.slug || cid,
+            title: course?.title || prog?.course_title || "Khóa học",
+            instructorName,
+            totalLessons: total,
+            completedLessons: completed,
+            progressPercent: percent,
+            thumbnailUrl: course?.thumbnail_url || prog?.thumbnail_url || null,
+          });
+        }
+
+        // 4. Lấy chứng chỉ đã cấp để gắn mã chứng chỉ và cho phép mở mã QR
+        try {
+          const { data: certs } = await supabase
+            .from("certificates")
+            .select("id, code, course_id, issued_at")
+            .eq("status", "approved");
+
+          const certMap = new Map<string, { code: string; issuedAt: string }>();
+          if (certs) {
+            for (const c of certs as Array<Record<string, unknown>>) {
+              certMap.set(c.course_id as string, {
+                code: c.code as string,
+                issuedAt: c.issued_at as string,
               });
             }
           }
 
-          // 3. Gom nhóm theo course_id để triệt tiêu hoàn toàn trùng lặp thẻ khóa học
-          const courseMap = new Map<string, EnrolledCourseItem>();
-          for (const row of data as Array<Record<string, unknown>>) {
-            const cid = row.course_id as string;
-            const meta = courseMetaMap.get(cid);
-            const total = Number(row.total_lessons || 0);
-            const completed = Number(row.completed_lessons || 0);
-
-            const existing = courseMap.get(cid);
-            if (!existing) {
-              courseMap.set(cid, {
-                courseId: cid,
-                slug: meta?.slug || (row.slug as string) || cid,
-                title: (row.course_title as string) || "Khóa học",
-                instructorName: meta?.instructor || (row.instructor_name as string) || "Giảng viên LMS",
-                totalLessons: total,
-                completedLessons: completed,
-                progressPercent: Number(row.progress_percent || 0),
-                thumbnailUrl: meta?.thumbnail || (row.thumbnail_url as string) || null,
+          for (const item of resultCourses) {
+            const cert = certMap.get(item.courseId);
+            if (cert) {
+              item.isCertified = true;
+              item.certificateCode = cert.code;
+              item.certificateIssuedAt = cert.issuedAt;
+            } else if (item.progressPercent === 100 && item.totalLessons > 0) {
+              // Tự động kiểm tra và cấp chứng chỉ nếu đã hoàn thành mọi video, quiz và bài thi
+              checkAndAutoIssueCertificate(item.courseId, item.title, item.instructorName).then((res) => {
+                if (res.certificate && isMounted) {
+                  setCourses((prev) =>
+                    prev.map((c) =>
+                      c.courseId === item.courseId
+                        ? {
+                            ...c,
+                            isCertified: true,
+                            certificateCode: res.certificate!.code,
+                            certificateIssuedAt: res.certificate!.issuedAt,
+                          }
+                        : c
+                    )
+                  );
+                }
               });
-            } else {
-              // Gộp tiến độ nếu DB view cũ tách thành 2 dòng (do lp.user_id null)
-              const newTotal = Math.max(existing.totalLessons, total);
-              const newCompleted = Math.max(existing.completedLessons, completed);
-              const newPercent = newTotal > 0 ? Math.round((newCompleted / newTotal) * 100) : existing.progressPercent;
-              existing.totalLessons = newTotal;
-              existing.completedLessons = newCompleted;
-              existing.progressPercent = Math.max(existing.progressPercent, newPercent);
             }
           }
+        } catch {}
 
-          // 4. Lấy chứng chỉ đã cấp để gắn mã chứng chỉ và cho phép mở mã QR
-          try {
-            const { data: certs } = await supabase
-              .from("certificates")
-              .select("id, code, course_id, issued_at")
-              .eq("status", "approved");
-
-            const certMap = new Map<string, { code: string; issuedAt: string }>();
-            if (certs) {
-              for (const c of certs as Array<Record<string, unknown>>) {
-                certMap.set(c.course_id as string, {
-                  code: c.code as string,
-                  issuedAt: c.issued_at as string,
-                });
-              }
-            }
-
-            for (const item of courseMap.values()) {
-              const cert = certMap.get(item.courseId);
-              if (cert) {
-                item.isCertified = true;
-                item.certificateCode = cert.code;
-                item.certificateIssuedAt = cert.issuedAt;
-              } else if (item.progressPercent === 100) {
-                // Tự động kiểm tra và cấp chứng chỉ nếu đã hoàn thành mọi video, quiz và bài thi
-                checkAndAutoIssueCertificate(item.courseId, item.title, item.instructorName).then((res) => {
-                  if (res.certificate && isMounted) {
-                    setCourses((prev) =>
-                      prev.map((c) =>
-                        c.courseId === item.courseId
-                          ? {
-                              ...c,
-                              isCertified: true,
-                              certificateCode: res.certificate!.code,
-                              certificateIssuedAt: res.certificate!.issuedAt,
-                            }
-                          : c
-                      )
-                    );
-                  }
-                });
-              }
-            }
-          } catch {}
-
-          setCourses(Array.from(courseMap.values()));
+        if (isMounted) {
+          setCourses(resultCourses);
         }
       } catch {
         if (isMounted) {

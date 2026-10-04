@@ -21,8 +21,8 @@ select
   end                                                      as progress_percent
 from courses c
 join profiles p on p.id = c.instructor_id
-join chapters ch on ch.course_id = c.id
-join lessons l   on l.chapter_id = ch.id
+left join chapters ch on ch.course_id = c.id
+left join lessons l   on l.chapter_id = ch.id
 left join lesson_progress lp
        on lp.lesson_id = l.id and lp.user_id = auth.uid()
 where exists (

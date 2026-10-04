@@ -165,15 +165,51 @@ export async function getCoursesForModeration(status: CourseStatus | "all", keyw
   if (cleaned) query = query.ilike("title", `%${cleaned}%`);
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row: Row) => ({
-    id: String(row.id),
-    title: String(row.title),
-    status: row.status as CourseStatus,
-    price: Number(row.price),
-    instructorName: nameOf(row.profiles),
-    categoryName: ((row.categories as { name?: string } | null)?.name ?? null) || null,
-    updatedAt: String(row.updated_at),
-  }));
+
+  const courses = data ?? [];
+  const courseIds = courses.map((c) => c.id);
+
+  // Lấy danh sách nhiều giảng viên từ bảng course_instructors (nếu có)
+  const instructorMap: Record<string, string[]> = {};
+  if (courseIds.length > 0) {
+    try {
+      const { data: ciData } = await supabase
+        .from("course_instructors")
+        .select("course_id, profiles(full_name)")
+        .in("course_id", courseIds);
+      if (ciData) {
+        for (const row of ciData as any[]) {
+          const name = row.profiles?.full_name;
+          if (name) {
+            if (!instructorMap[row.course_id]) instructorMap[row.course_id] = [];
+            if (!instructorMap[row.course_id].includes(name)) {
+              instructorMap[row.course_id].push(name);
+            }
+          }
+        }
+      }
+    } catch {
+      // Graceful fallback nếu chưa có bảng
+    }
+  }
+
+  return courses.map((row: Row) => {
+    const defaultName = nameOf(row.profiles);
+    const multiInstructors = instructorMap[String(row.id)];
+    const instructorDisplayName = multiInstructors && multiInstructors.length > 0
+      ? multiInstructors.join(", ")
+      : defaultName;
+
+    return {
+      id: String(row.id),
+      title: String(row.title),
+      status: row.status as CourseStatus,
+      price: Number(row.price),
+      instructorName: instructorDisplayName,
+      categoryName: ((row.categories as { name?: string } | null)?.name ?? null) || null,
+      updatedAt: String(row.updated_at),
+    };
+  });
 }
 
 export async function getUnifiedCoursesForModeration(

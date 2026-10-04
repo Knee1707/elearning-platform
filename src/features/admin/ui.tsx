@@ -93,6 +93,8 @@ export const ENTITY_LABELS: Record<string, string> = {
   qa_answer: "Trả lời Q&A",
   certificate: "Chứng chỉ",
   student_discipline: "Xử lý học viên",
+  student: "Học viên",
+  student_management: "Quản lý học viên",
 };
 
 const show = (v: unknown) => (v === null || v === undefined ? "—" : typeof v === "string" ? v : JSON.stringify(v));
