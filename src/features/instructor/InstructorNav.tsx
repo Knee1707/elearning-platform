@@ -128,7 +128,7 @@ export function InstructorNav({ fullName }: { fullName: string }) {
 
                 <div className="py-1.5 space-y-0.5">
                   <Link
-                    href="/profile"
+                    href="/studio/profile"
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-bold text-slate-700 transition-colors hover:bg-emerald-50 hover:text-emerald-700"
                   >
