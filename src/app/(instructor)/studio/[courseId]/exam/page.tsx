@@ -25,7 +25,7 @@ export default async function CourseFinalExamPage({ params }: PageProps) {
   // 2. Tra cứu kỳ thi cuối khóa đã thiết lập (nếu có)
   const { data: examData } = await supabase
     .from("exams")
-    .select("id, title, time_limit_minutes, pass_score, quiz_id")
+    .select("id, title, time_limit_minutes, pass_score, quiz_id, is_published")
     .eq("course_id", params.courseId)
     .eq("is_final", true)
     .maybeSingle();
@@ -61,6 +61,7 @@ export default async function CourseFinalExamPage({ params }: PageProps) {
         title: String(examData.title),
         timeLimitMinutes: Number(examData.time_limit_minutes || 60),
         passScore: Number(examData.pass_score || 70),
+        isPublished: Boolean(examData.is_published),
       }
     : null;
 

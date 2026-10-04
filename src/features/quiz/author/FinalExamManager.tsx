@@ -44,6 +44,7 @@ interface FinalExamManagerProps {
     title: string;
     timeLimitMinutes: number;
     passScore: number;
+    isPublished: boolean;
   } | null;
   initialQuestions: ExamQuestion[];
 }
@@ -62,6 +63,7 @@ export function FinalExamManager({
   const [title, setTitle] = useState(initialExam?.title ?? `Kỳ thi cuối khóa: ${courseTitle}`);
   const [timeLimit, setTimeLimit] = useState(initialExam?.timeLimitMinutes ?? 60);
   const [passScore, setPassScore] = useState(initialExam?.passScore ?? 70);
+  const [isPublished, setIsPublished] = useState(initialExam?.isPublished ?? false);
 
   // Danh sách câu hỏi
   const [questions, setQuestions] = useState<ExamQuestion[]>(initialQuestions);
@@ -72,7 +74,7 @@ export function FinalExamManager({
   // State câu hỏi trắc nghiệm
   const [mcContent, setMcContent] = useState("");
   const [mcOptions, setMcOptions] = useState(["", "", "", ""]);
-  const [mcCorrectIndex, setMcCorrectIndex] = useState(0);
+  const [mcCorrectIndex, setMcCorrectIndex] = useState<number | null>(null);
 
   // State câu hỏi tự luận
   const [essayContent, setEssayContent] = useState("");
@@ -159,6 +161,26 @@ export function FinalExamManager({
     }
   }
 
+  async function handlePublishExam() {
+    if (!examId) {
+      showMessage("error", "Hãy khởi tạo kỳ thi trước khi đăng đề.");
+      return;
+    }
+    if (!window.confirm("Đăng đề thi cho học viên? Học viên đủ điều kiện sẽ nhìn thấy bài thi.")) return;
+    setIsSavingExam(true);
+    try {
+      const { error } = await createClient().rpc("fn_publish_final_exam", { p_exam: examId });
+      if (error) throw error;
+      setIsPublished(true);
+      showMessage("success", "Đã đăng đề thi cuối khóa cho học viên.");
+      router.refresh();
+    } catch (err) {
+      showMessage("error", err instanceof Error ? err.message : "Không thể đăng đề thi.");
+    } finally {
+      setIsSavingExam(false);
+    }
+  }
+
   // Helper đảm bảo có quiz_id trước khi thêm câu hỏi
   async function ensureQuiz(): Promise<string> {
     if (quizId) return quizId;
@@ -189,6 +211,10 @@ export function FinalExamManager({
     }
     if (mcOptions.some((opt) => !opt.trim())) {
       showMessage("error", "Vui lòng điền đầy đủ 4 phương án lựa chọn.");
+      return;
+    }
+    if (mcCorrectIndex === null) {
+      showMessage("error", "Vui lòng chọn đáp án đúng sau khi đã nhập đủ 4 phương án.");
       return;
     }
 
@@ -230,7 +256,7 @@ export function FinalExamManager({
         id: qData.id,
         content: mcContent.trim(),
         position: nextPos,
-        options: (oData || []).map((o) => ({
+        options: (oData || []).map((o: { id: string; content: string; is_correct: boolean }) => ({
           id: o.id,
           content: o.content,
           isCorrect: o.is_correct,
@@ -240,7 +266,7 @@ export function FinalExamManager({
       setQuestions((prev) => [...prev, newQ]);
       setMcContent("");
       setMcOptions(["", "", "", ""]);
-      setMcCorrectIndex(0);
+      setMcCorrectIndex(null);
       showMessage("success", "Đã thêm câu hỏi trắc nghiệm thành công!");
       router.refresh();
     } catch (err) {
@@ -301,7 +327,7 @@ export function FinalExamManager({
         id: qData.id,
         content: fullContent,
         position: nextPos,
-        options: (oData || []).map((o) => ({
+        options: (oData || []).map((o: { id: string; content: string; is_correct: boolean }) => ({
           id: o.id,
           content: o.content,
           isCorrect: o.is_correct,
@@ -394,10 +420,15 @@ export function FinalExamManager({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-2xs">
               Tổng số: <strong>{questions.length} câu</strong> ({mcCount} trắc nghiệm, {essayCount} tự luận)
             </span>
+            {examId && (
+              <button type="button" onClick={() => void handlePublishExam()} disabled={isSavingExam || isPublished} className="rounded-2xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-60">
+                {isPublished ? "Đã đăng cho học viên" : "Đăng đề thi cuối khóa"}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -546,12 +577,12 @@ export function FinalExamManager({
                 {mcOptions.map((opt, idx) => {
                   const labelLetters = ["A", "B", "C", "D"];
                   const isChecked = mcCorrectIndex === idx;
+                  const allOptionsFilled = mcOptions.every((option) => option.trim().length > 0);
 
                   return (
                     <div
                       key={idx}
-                      onClick={() => setMcCorrectIndex(idx)}
-                      className={`flex items-center gap-3 rounded-2xl border p-2.5 transition-all cursor-pointer ${
+                      className={`flex items-center gap-3 rounded-2xl border p-2.5 transition-all cursor-default ${
                         isChecked
                           ? "border-emerald-500 bg-emerald-50/50 ring-2 ring-emerald-500/20"
                           : "border-slate-200 bg-white hover:border-slate-300"
@@ -559,7 +590,10 @@ export function FinalExamManager({
                     >
                       <button
                         type="button"
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black transition-all ${
+                        onClick={() => allOptionsFilled && setMcCorrectIndex(idx)}
+                        disabled={!allOptionsFilled}
+                        aria-label={allOptionsFilled ? `Chọn đáp án ${labelLetters[idx]}` : "Nhập đủ 4 đáp án trước"}
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                           isChecked
                             ? "bg-emerald-600 text-white"
                             : "border border-slate-300 bg-slate-50 text-slate-600"
@@ -575,6 +609,7 @@ export function FinalExamManager({
                           const val = e.target.value;
                           setMcOptions((prev) => prev.map((item, i) => (i === idx ? val : item)));
                         }}
+                        onClick={(e) => e.stopPropagation()}
                         placeholder={`Phương án ${labelLetters[idx]}...`}
                         required
                         className="flex-1 bg-transparent text-xs font-medium focus:outline-none"

@@ -9,6 +9,8 @@ alter table exam_attempts
   add column if not exists grader_feedback text;
 
 alter table answers add column if not exists answer_text text;
+alter table exams add column if not exists is_published boolean not null default false;
+alter table quizzes add column if not exists is_published boolean not null default false;
 
 alter table exam_attempts drop constraint if exists exam_attempts_status_check;
 alter table exam_attempts add constraint exam_attempts_status_check
@@ -26,7 +28,7 @@ declare
 begin
   if v_uid is null then raise exception 'Chưa đăng nhập'; end if;
   select e.course_id, e.time_limit_minutes into v_course, v_minutes
-  from exams e where e.id = p_exam and e.is_final = true;
+  from exams e where e.id = p_exam and e.is_final = true and coalesce(e.is_published, false) = true;
   if v_course is null then raise exception 'Không tìm thấy kỳ thi cuối khóa'; end if;
   if not fn_is_enrolled(v_course) then raise exception 'Bạn chưa ghi danh khóa học này'; end if;
   if exists (

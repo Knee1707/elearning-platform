@@ -213,6 +213,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 **Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
 
 **Cột [0028]:** `exam_attempts.status`, `is_time_expired`, `graded_at`, `graded_by`, `grader_feedback`; `answers.answer_text` cho bài tự luận.
+**Cột [0029]:** `exams.is_published`, `quizzes.is_published` — trạng thái giảng viên đã đăng đề cuối khóa cho học viên.
+| `fn_publish_final_exam` **[0029]** | `p_exam uuid` → kiểm tra đủ câu/đáp án và đăng đề cuối khóa |
 | `fn_start_final_exam` **[0028]** | `p_exam uuid` → lần thi, thời điểm bắt đầu, thời điểm hết hạn; kiểm tra ghi danh và hoàn thành toàn bộ bài học |
 | `fn_grade_final_exam_attempt` **[0028]** | `p_attempt uuid`, `p_score integer`, `p_feedback text` → giảng viên/admin chấm bài tự luận và cấp chứng chỉ nếu đạt |
 
