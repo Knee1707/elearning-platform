@@ -41,6 +41,9 @@ export function LoginForm() {
     searchParams.get("banned") === "1" ? BANNED_MESSAGE : null,
   );
   const [showPassword, setShowPassword] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"password" | "email_code">("password");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const {
     register,
@@ -57,14 +60,48 @@ export function LoginForm() {
   async function onSubmit(values: LoginInput) {
     setServerError(null);
     const supabase = createClient();
+    // Supabase SSR client trong dự án đang dùng kiểu auth rút gọn; các API Auth runtime vẫn đầy đủ.
+    const auth = supabase.auth as any;
 
-    const { error: signInError, data: signInData } = await supabase.auth.signInWithPassword({
-      email: values.email,
-      password: values.password,
-    });
+    if (loginMethod === "password" && (!values.password || values.password.length < 6)) {
+      setServerError("Mật khẩu tối thiểu 6 ký tự.");
+      return;
+    }
+
+    let signInError;
+    let signInData;
+    if (loginMethod === "email_code" && !otpSent) {
+      const { error } = await auth.signInWithOtp({
+        email: values.email.trim(),
+        options: { shouldCreateUser: false },
+      });
+      if (error) {
+        setServerError(`Không thể gửi mã xác thực: ${error.message}`);
+        return;
+      }
+      setOtpSent(true);
+      return;
+    }
+
+    if (loginMethod === "email_code") {
+      const result = await auth.verifyOtp({
+        email: values.email.trim(),
+        token: otp.trim(),
+        type: "email",
+      });
+      signInError = result.error;
+      signInData = result.data;
+    } else {
+      const result = await auth.signInWithPassword({
+        email: values.email,
+        password: values.password!,
+      });
+      signInError = result.error;
+      signInData = result.data;
+    }
 
     if (signInError) {
-      setServerError(mapAuthError(signInError.message));
+      setServerError(loginMethod === "email_code" ? `Mã xác thực không hợp lệ: ${signInError.message}` : mapAuthError(signInError.message));
       return;
     }
 
@@ -79,7 +116,7 @@ export function LoginForm() {
       role = (profile?.role as string | undefined) ?? null;
       // Phòng khi Auth chưa đồng bộ banned_until: vẫn không cho tài khoản bị khóa vào.
       if (profile?.is_banned) {
-        await supabase.auth.signOut();
+        await auth.signOut();
         setServerError(BANNED_MESSAGE);
         return;
       }
@@ -87,12 +124,12 @@ export function LoginForm() {
 
     // Gác cổng: cổng admin CHỈ cho admin; cổng user KHÔNG cho admin.
     if (APP_MODE === "admin" && !isAdminRole(role)) {
-      await supabase.auth.signOut();
+      await auth.signOut();
       setServerError("Cổng quản trị chỉ dành cho tài khoản admin.");
       return;
     }
     if (APP_MODE === "user" && isAdminRole(role)) {
-      await supabase.auth.signOut();
+      await auth.signOut();
       setServerError("Tài khoản admin vui lòng đăng nhập ở cổng quản trị riêng.");
       return;
     }
@@ -109,6 +146,13 @@ export function LoginForm() {
     router.push(destination);
   }
 
+  function switchLoginMethod(method: "password" | "email_code") {
+    setLoginMethod(method);
+    setOtpSent(false);
+    setOtp("");
+    setServerError(null);
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-2">
@@ -117,7 +161,12 @@ export function LoginForm() {
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
 
-      <div className="space-y-2">
+      <div className="flex justify-center gap-4 text-sm">
+        <button type="button" className={loginMethod === "password" ? "font-semibold text-primary" : "text-muted-foreground underline"} onClick={() => switchLoginMethod("password")}>Mật khẩu</button>
+        <button type="button" className={loginMethod === "email_code" ? "font-semibold text-primary" : "text-muted-foreground underline"} onClick={() => switchLoginMethod("email_code")}>Mã email</button>
+      </div>
+
+      {loginMethod === "password" ? <div className="space-y-2">
         <Label htmlFor="password">Mật khẩu</Label>
         <div className="relative">
           <Input
@@ -140,12 +189,18 @@ export function LoginForm() {
         {errors.password && (
           <p className="text-sm text-destructive">{errors.password.message}</p>
         )}
-      </div>
+      </div> : (
+        <div className="space-y-2">
+          <Label htmlFor="otp">Mã xác thực email</Label>
+          <Input id="otp" inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(event) => setOtp(event.target.value)} disabled={!otpSent} placeholder={otpSent ? "Nhập mã trong email" : "Bấm gửi mã trước"} />
+          {otpSent && <p className="text-xs text-muted-foreground">Mã đã được gửi đến email của bạn.</p>}
+        </div>
+      )}
 
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
+        {isSubmitting ? "Đang xử lý..." : loginMethod === "email_code" && !otpSent ? "Gửi mã xác thực" : "Đăng nhập"}
       </Button>
 
       <div className="flex justify-between text-sm text-muted-foreground">
