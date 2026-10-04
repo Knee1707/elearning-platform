@@ -201,6 +201,8 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_create_final_exam` **[0021]** | `p_course uuid`, `p_title text`, `p_time_limit integer`, `p_pass_score integer` → `exam_id`, `quiz_id`; GV tạo kỳ thi cuối khóa |
 | `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
 | `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
+| `fn_review_lesson_content` **[0027]** | `p_lesson uuid`, `p_approve boolean`, `p_reason text`; admin duyệt/từ chối nội dung bài học, báo giảng viên |
+| `fn_submit_course_update` **[0027]** | `p_course uuid`, `p_note text`; giảng viên gửi yêu cầu duyệt cập nhật nội dung khóa học đã publish |
 | `fn_verify_certificate` **[sửa 0019]** | chỉ tra cứu công khai chứng chỉ `status='approved'` |
 | `fn_submit_quiz` **[0020]** | `p_quiz uuid`, `p_answers jsonb` → `jsonb`. Học viên nộp bài quiz bài học, DB chấm điểm và cập nhật `lesson_progress` |
 | `fn_is_lesson_unlocked` **[0020]** | `p_lesson uuid`, `p_user uuid` (mặc định auth.uid()). Kiểm tra bài học đã mở khóa chưa (bài 1 luôn mở, bài N yêu cầu bài N-1 xem xong + pass quiz) |
@@ -212,6 +214,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 **Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
+**Cột thêm [0027]:** `lessons.content_review` (text, mặc định `'approved'`), `lessons.content_review_reason` (text), `lessons.is_updated` (boolean, mặc định `false`), `courses.update_status` (text, mặc định `'none'`), `courses.update_feedback` (text).
 
 **View:** `view_admin_dashboard`, `view_instructor_payout`.
 **Trigger:** `trg_profile_on_signup` (auth.users), `trg_courses_touch` (courses), `trg_profiles_guard_privilege` (profiles) **[0010]**, `trg_system_setting_audit` (system_setting) **[0011]**, `trg_profiles_sync_auth_ban` (profiles) **[0013]**, `trg_reviews_guard_status` (reviews) **[0014]**, `trg_lesson_video_review` (lessons) **[0015]**, `trg_live_sessions_validate_date` (live_sessions) **[0020]**, `trg_<bảng>_block_banned` **[0013]** trên: `payments`, `enrollments`, `cart_item`, `wishlist`, `reviews`, `qa_question`, `qa_answer`, `lesson_note`, `lesson_progress`, `exam_attempts`, `report`, `refund`, `courses`, `live_sessions`, `coupon`.

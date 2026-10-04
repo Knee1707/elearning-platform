@@ -44,13 +44,58 @@ interface Lesson {
   video_url: string | null;
   video_review?: string | null;
   video_review_reason?: string | null;
+  content_review?: string | null;
+  content_review_reason?: string | null;
+  is_updated?: boolean;
   duration_seconds: number;
   is_free: boolean;
   position: number;
   attachments: Attachment[];
 }
 
-// Nhãn trạng thái duyệt video hiển thị cho giảng viên.
+// Nhãn trạng thái duyệt video và nội dung hiển thị cho giảng viên.
+function ReviewStatusBadge({
+  contentReview,
+  contentReason,
+  videoReview,
+  videoReason,
+}: {
+  contentReview?: string | null;
+  contentReason?: string | null;
+  videoReview?: string | null;
+  videoReason?: string | null;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 mt-1">
+      {contentReview === "pending" && (
+        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+          Nội dung chờ duyệt
+        </span>
+      )}
+      {contentReview === "rejected" && (
+        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+          Nội dung bị từ chối {contentReason ? `— Lý do: ${contentReason}` : ""}
+        </span>
+      )}
+      {videoReview === "pending" && (
+        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-950 dark:text-amber-300">
+          Video chờ duyệt
+        </span>
+      )}
+      {videoReview === "rejected" && (
+        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700 dark:bg-red-950 dark:text-red-300">
+          Video bị từ chối {videoReason ? `— Lý do: ${videoReason}` : ""}
+        </span>
+      )}
+      {videoReview === "approved" && contentReview === "approved" && (
+        <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+          Đã duyệt
+        </span>
+      )}
+    </div>
+  );
+}
+
 function VideoReviewBadge({ review, reason }: { review?: string | null; reason?: string | null }) {
   if (!review || review === "none") return null;
   const map: Record<string, { label: string; cls: string }> = {
@@ -283,6 +328,13 @@ function SortableLesson({
           </button>
         </div>
       </div>
+
+      <ReviewStatusBadge
+        contentReview={lesson.content_review}
+        contentReason={lesson.content_review_reason}
+        videoReview={lesson.video_review}
+        videoReason={lesson.video_review_reason}
+      />
 
       {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
 
