@@ -14,13 +14,15 @@ import {
   Maximize,
   Volume2,
   VolumeX,
+  Clock,
+  VideoOff,
 } from "lucide-react";
 import { updateWatch, savePosition, getLastPosition, markComplete } from "@/lib/queries/progress";
 
 // Fallback video stream chuẩn phục vụ thử nghiệm mượt mà khi URL là placeholder
 const FALLBACK_STREAM_URL = "https://media.w3.org/2010/05/sintel/trailer.mp4";
 
-type PlayerState = "idle" | "loading" | "ready" | "locked";
+type PlayerState = "idle" | "loading" | "ready" | "locked" | "pending_review" | "no_video";
 
 export interface VideoPlayerProps {
   lessonId: string;
@@ -87,7 +89,7 @@ export function VideoPlayer({
 
       try {
         const res = await fetch(`/api/lesson-video/${lessonId}`);
-        const data = (await res.json()) as { url: string | null };
+        const data = (await res.json()) as { url: string | null; reason?: string };
 
         if (!isMounted) return;
 
@@ -99,6 +101,10 @@ export function VideoPlayer({
             setVideoUrl(data.url);
           }
           setState("ready");
+        } else if (data.reason === "pending_review") {
+          setState("pending_review");
+        } else if (data.reason === "no_video") {
+          setState("no_video");
         } else if (isDemo || isFree) {
           // Cho phép học viên demo hoặc bài học thử xem video mẫu
           setVideoUrl(FALLBACK_STREAM_URL);
@@ -261,6 +267,36 @@ export function VideoPlayer({
             </button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // Giao diện khi video đang chờ kiểm duyệt (giảng viên vừa cập nhật video mới cho khóa đã xuất bản)
+  if (state === "pending_review") {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-amber-300 bg-gradient-to-b from-amber-50/70 to-white p-12 text-center shadow-xs">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 border border-amber-200 shadow-xs">
+          <Clock className="h-7 w-7" />
+        </div>
+        <h3 className="mt-4 text-base font-black text-slate-900">Video bài giảng đang chờ kiểm duyệt</h3>
+        <p className="mt-2 max-w-md text-xs text-slate-600 leading-relaxed font-medium">
+          Giảng viên vừa tải lên hoặc thay đổi video cho bài học này. Video đang được ban quản trị kiểm duyệt nội dung và sẽ tự động hiển thị ngay khi được duyệt.
+        </p>
+      </div>
+    );
+  }
+
+  // Giao diện khi bài học chưa có video
+  if (state === "no_video") {
+    return (
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/60 p-12 text-center shadow-xs">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+          <VideoOff className="h-7 w-7" />
+        </div>
+        <h3 className="mt-4 text-base font-black text-slate-900">Bài học chưa có video</h3>
+        <p className="mt-2 max-w-md text-xs text-slate-500 leading-relaxed font-medium">
+          Nội dung video đang được giảng viên chuẩn bị và sẽ sớm được cập nhật.
+        </p>
       </div>
     );
   }

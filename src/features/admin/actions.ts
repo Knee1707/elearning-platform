@@ -41,6 +41,8 @@ export async function moderateCourseAction(formData: FormData) {
       await moderateCourse(text(formData, "courseId"), status, text(formData, "reason") || undefined);
       revalidatePath("/courses");
       revalidatePath("/");
+      revalidatePath("/admin/video-reviews");
+      revalidatePath("/admin/courses");
     },
     returnTo: formData.get("returnTo"),
   });
