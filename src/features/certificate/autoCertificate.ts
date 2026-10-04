@@ -8,15 +8,13 @@ export interface AutoCertificateResult {
   reason?: string;
 }
 
-const LOCAL_STORAGE_CERT_KEY = "lms_approved_certificates";
-
 /**
- * Lấy chứng chỉ lưu trữ cục bộ (dành cho chế độ offline/demo)
+ * Lấy chứng chỉ lưu trữ cục bộ phân lập theo từng tài khoản học viên (tránh trùng dữ liệu giữa các tài khoản)
  */
-function getLocalCertificates(): Certificate[] {
-  if (typeof window === "undefined") return [];
+function getLocalCertificates(userId?: string | null): Certificate[] {
+  if (typeof window === "undefined" || !userId) return [];
   try {
-    const raw = localStorage.getItem(LOCAL_STORAGE_CERT_KEY);
+    const raw = localStorage.getItem(`lms_approved_certificates_${userId}`);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -24,14 +22,14 @@ function getLocalCertificates(): Certificate[] {
 }
 
 /**
- * Lưu chứng chỉ vào local storage
+ * Lưu chứng chỉ vào local storage theo userId của học viên
  */
-function saveLocalCertificate(cert: Certificate) {
-  if (typeof window === "undefined") return;
+function saveLocalCertificate(cert: Certificate, userId?: string | null) {
+  if (typeof window === "undefined" || !userId) return;
   try {
-    const existing = getLocalCertificates();
+    const existing = getLocalCertificates(userId);
     const updated = [cert, ...existing.filter((c) => c.courseId !== cert.courseId)];
-    localStorage.setItem(LOCAL_STORAGE_CERT_KEY, JSON.stringify(updated));
+    localStorage.setItem(`lms_approved_certificates_${userId}`, JSON.stringify(updated));
   } catch {}
 }
 
@@ -96,7 +94,7 @@ export async function checkAndAutoIssueCertificate(
             instructorName ||
             "Giảng viên",
         };
-        saveLocalCertificate(cert);
+        saveLocalCertificate(cert, userId);
         return { eligible: true, issued: false, certificate: cert };
       }
     } catch {
@@ -104,8 +102,8 @@ export async function checkAndAutoIssueCertificate(
     }
   }
 
-  // Kiểm tra trong local cache offline
-  const localCerts = getLocalCertificates();
+  // Kiểm tra trong local cache offline của chính user này
+  const localCerts = getLocalCertificates(userId);
   const cached = localCerts.find((c) => c.courseId === courseId);
   if (cached) {
     return { eligible: true, issued: false, certificate: cached };

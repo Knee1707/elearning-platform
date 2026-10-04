@@ -56,35 +56,15 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
   });
 
   // Danh sách các bài đã hoàn thành video (watched >= 95% hoặc bấm nút hoàn thành)
-  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`demo_completed_${course.id}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // Bỏ qua
-        }
-      }
-    }
-    // Mặc định ban đầu chưa có bài nào hoàn thành, bài 1 bắt đầu học
-    return [];
-  });
+  // Khởi tạo rỗng mặc định để đảm bảo tài khoản mới hoàn toàn mới và không nhận nhầm tiến độ người khác
+  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
 
   // Danh sách các bài đã vượt qua bài quiz (is_quiz_passed = true)
-  const [quizPassedLessonIds, setQuizPassedLessonIds] = useState<string[]>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem(`demo_quiz_passed_${course.id}`);
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          // Bỏ qua
-        }
-      }
-    }
-    return [];
-  });
+  const [quizPassedLessonIds, setQuizPassedLessonIds] = useState<string[]>([]);
+
+  // ID của người dùng hiện tại để phân lập cache hoàn toàn giữa các tài khoản
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
 
   // Bản đồ quiz đính kèm theo từng bài học { [lessonId]: { id, title, passScore } }
   const [quizzesMap, setQuizzesMap] = useState<
@@ -231,12 +211,10 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
             .filter((p) => p.isQuizPassed)
             .map((p) => p.lessonId);
 
-          if (completedFromDb.length > 0) {
-            setCompletedLessonIds((prev) => [...new Set([...prev, ...completedFromDb])]);
-          }
-          if (quizPassedFromDb.length > 0) {
-            setQuizPassedLessonIds((prev) => [...new Set([...prev, ...quizPassedFromDb])]);
-          }
+          // Gán trực tiếp theo dữ liệu thật của chính học viên này trên DB:
+          // Tài khoản mới chưa học bài nào sẽ là [] (mới hoàn toàn)
+          setCompletedLessonIds(completedFromDb);
+          setQuizPassedLessonIds(quizPassedFromDb);
         }
       } catch {
         // Dự phòng
@@ -248,6 +226,9 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
         const {
           data: { user },
         } = await supabase.auth.getUser();
+        if (user && isMounted) {
+          setCurrentUserId(user.id);
+        }
         if (user && user.id === course.instructorId) {
           setIsInstructorOrAdmin(true);
         } else if (user) {
@@ -372,19 +353,18 @@ export function LearningWorkspace({ course }: LearningWorkspaceProps) {
       });
   }, [currentLesson?.id]);
 
-  // Lưu danh sách bài đã hoàn thành vào localStorage để giữ state mượt mà khi test
+  // Lưu danh sách bài đã hoàn thành vào localStorage phân lập theo từng userId
+  useEffect(() => {
+    if (typeof window !== "undefined" && course.id && currentUserId) {
+      localStorage.setItem(`demo_completed_${currentUserId}_${course.id}`, JSON.stringify(completedLessonIds));
+    }
+  }, [completedLessonIds, course.id, currentUserId]);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && course.id) {
-      localStorage.setItem(`demo_completed_${course.id}`, JSON.stringify(completedLessonIds));
+    if (typeof window !== "undefined" && course.id && currentUserId) {
+      localStorage.setItem(`demo_quiz_passed_${currentUserId}_${course.id}`, JSON.stringify(quizPassedLessonIds));
     }
-  }, [completedLessonIds, course.id]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && course.id) {
-      localStorage.setItem(`demo_quiz_passed_${course.id}`, JSON.stringify(quizPassedLessonIds));
-    }
-  }, [quizPassedLessonIds, course.id]);
+  }, [quizPassedLessonIds, course.id, currentUserId]);
 
   // 4. TÍNH TOÁN DANH SÁCH BÀI HỌC ĐƯỢC MỞ KHÓA TUẦN TỰ (Sequential Unlock Computation)
   // - Bài 1 luôn được mở khóa.
