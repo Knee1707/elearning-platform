@@ -124,9 +124,13 @@ export async function getCourseProgress(courseId: string): Promise<CourseProgres
  */
 export async function getLastPosition(lessonId: string): Promise<number> {
   const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return 0;
+
   const { data, error } = await supabase
     .from("lesson_progress")
     .select("last_position_seconds")
+    .eq("user_id", user.id)
     .eq("lesson_id", lessonId)
     .maybeSingle();
 
@@ -154,9 +158,13 @@ export async function getCourseLessonsProgress(
   if (!lessonIds || lessonIds.length === 0) return {};
   const supabase = createClient();
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return {};
+
     const { data, error } = await supabase
       .from("lesson_progress")
       .select("lesson_id, watched_percent, is_completed, is_quiz_passed, quiz_score")
+      .eq("user_id", user.id)
       .in("lesson_id", lessonIds);
 
     if (error || !data) return {};

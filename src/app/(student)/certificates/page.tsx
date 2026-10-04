@@ -22,18 +22,6 @@ import { CertificateQrModal } from "@/features/certificate/CertificateQrModal";
 import { createClient } from "@/lib/supabase/client";
 import { checkAndAutoIssueCertificate } from "@/features/certificate/autoCertificate";
 
-
-const FALLBACK_CERTIFICATES: Certificate[] = [
-  {
-    id: "cert-demo-1",
-    code: "CERT-NEXTJS-2026-A1B2C3D4",
-    courseId: "20000000-0000-0000-0000-000000000001",
-    courseTitle: "Khóa học Next.js từ cơ bản đến nâng cao",
-    instructorName: "Nguyễn Văn Giảng Viên",
-    issuedAt: new Date().toISOString(),
-  },
-];
-
 export default function MyCertificatesPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [selectedCert, setSelectedCert] = useState<Certificate | null>(null);
@@ -46,13 +34,18 @@ export default function MyCertificatesPage() {
     async function loadCertificates() {
       setIsLoading(true);
       try {
-        const data = await getMyCertificates();
-        let list: Certificate[] = data ?? [];
-
         const supabase = createClient();
         const {
           data: { user },
         } = await supabase.auth.getUser();
+
+        if (!user) {
+          if (isMounted) setCertificates([]);
+          return;
+        }
+
+        const data = await getMyCertificates();
+        let list: Certificate[] = data ?? [];
 
         // Hợp nhất với chứng chỉ được cấp tự động lưu ở local storage theo đúng user_id của học viên này
         if (typeof window !== "undefined" && user?.id) {

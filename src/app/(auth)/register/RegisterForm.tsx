@@ -59,6 +59,30 @@ export function RegisterForm() {
         return;
       }
 
+      // Dọn sạch toàn bộ cache và demo data của phiên trước để đảm bảo tài khoản mới hoàn toàn trắng data
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem("demo_logged_in");
+          localStorage.removeItem("demo_cart_items");
+          localStorage.removeItem("demo_wishlist");
+          localStorage.removeItem("lms_approved_certificates");
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (
+              key &&
+              (key.startsWith("demo_") ||
+                key.startsWith("lms_approved_certificates") ||
+                key.startsWith("user_bio_"))
+            ) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach((k) => localStorage.removeItem(k));
+          document.cookie = "demo_logged_in=; path=/; max-age=0";
+        } catch {}
+      }
+
       setSubmitted(true);
     } catch (error) {
       setServerError(

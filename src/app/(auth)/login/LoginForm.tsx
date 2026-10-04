@@ -68,6 +68,17 @@ export function LoginForm() {
       return;
     }
 
+    // Dọn sạch demo cart, demo wishlist và session demo cũ trên trình duyệt
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("demo_logged_in");
+        localStorage.removeItem("demo_cart_items");
+        localStorage.removeItem("demo_wishlist");
+        localStorage.removeItem("lms_approved_certificates");
+        document.cookie = "demo_logged_in=; path=/; max-age=0";
+      } catch {}
+    }
+
     // Lấy vai trò để phân luồng theo cổng (admin vs user).
     let role: string | null = null;
     if (signInData.user) {
