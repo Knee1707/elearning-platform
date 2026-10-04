@@ -192,10 +192,12 @@ export default function MyLearningPage() {
         }
 
         // 4. Lấy chứng chỉ đã cấp để gắn mã chứng chỉ và cho phép mở mã QR
+        // 4. Lấy chứng chỉ đã cấp của chính user này để gắn mã chứng chỉ và cho phép mở mã QR
         try {
           const { data: certs } = await supabase
             .from("certificates")
             .select("id, code, course_id, issued_at")
+            .eq("user_id", user.id)
             .eq("status", "approved");
 
           const certMap = new Map<string, { code: string; issuedAt: string }>();
@@ -241,7 +243,8 @@ export default function MyLearningPage() {
         }
       } catch {
         if (isMounted) {
-          setCourses(FALLBACK_MY_COURSES);
+          // Tránh gán nhầm khóa học demo của người khác cho tài khoản mới
+          setCourses([]);
         }
       } finally {
         if (isMounted) {

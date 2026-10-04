@@ -361,7 +361,31 @@ export function Navbar() {
 
   async function handleSignOut() {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("demo_logged_in");
+      try {
+        localStorage.removeItem("demo_logged_in");
+        localStorage.removeItem("demo_cart_items");
+        localStorage.removeItem("demo_wishlist");
+        localStorage.removeItem("lms_approved_certificates");
+
+        // Dọn sạch tất cả các key cache tiến độ học tập, bài thi, ghi chú của phiên trước
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (
+            key &&
+            (key.startsWith("demo_completed_") ||
+              key.startsWith("demo_quiz_passed_") ||
+              key.startsWith("demo_notes_") ||
+              key.startsWith("user_bio_") ||
+              key.startsWith("lms_approved_certificates"))
+          ) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+      } catch {
+        // Bỏ qua nếu môi trường chặn localStorage
+      }
       document.cookie = "demo_logged_in=; path=/; max-age=0";
     }
     setProfile(null);

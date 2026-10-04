@@ -47,10 +47,15 @@ export default function MyCertificatesPage() {
         const data = await getMyCertificates();
         let list: Certificate[] = data ?? [];
 
-        // Hợp nhất với chứng chỉ được cấp tự động lưu ở local storage (hỗ trợ offline/mock)
-        if (typeof window !== "undefined") {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        // Hợp nhất với chứng chỉ được cấp tự động lưu ở local storage theo đúng user_id của học viên này
+        if (typeof window !== "undefined" && user?.id) {
           try {
-            const raw = localStorage.getItem("lms_approved_certificates");
+            const raw = localStorage.getItem(`lms_approved_certificates_${user.id}`);
             if (raw) {
               const localList: Certificate[] = JSON.parse(raw);
               const existingIds = new Set(list.map((c) => c.id));
