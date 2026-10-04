@@ -20,7 +20,7 @@ export async function getInstructorCertificateCourses() {
   return (data ?? []).map((row: any) => ({ id: String(row.id), title: String(row.title) }));
 }
 
-export async function getInstructorCertificateRequests(courseId?: string): Promise<InstructorCertificateRequest[]> {
+export async function getInstructorCertificateRequests(courseId?: string, sortBy: "name" | "time" = "time", sortDir: "asc" | "desc" = "desc"): Promise<InstructorCertificateRequest[]> {
   const supabase = createClient();
   let query = supabase
     .from("certificates")
@@ -29,7 +29,7 @@ export async function getInstructorCertificateRequests(courseId?: string): Promi
   if (courseId) query = query.eq("course_id", courseId);
   const { data, error } = await query;
   if (error) throw error;
-  return (data ?? []).map((row: any) => ({
+  const rows: InstructorCertificateRequest[] = (data ?? []).map((row: any) => ({
     id: String(row.id),
     courseId: String(row.course_id),
     code: String(row.code),
@@ -38,4 +38,12 @@ export async function getInstructorCertificateRequests(courseId?: string): Promi
     courseTitle: row.courses?.title ?? null,
     status: String(row.status ?? "approved"),
   }));
+  return rows.sort((a, b) => {
+    if (sortBy === "name") {
+      const result = (a.studentName ?? "").localeCompare(b.studentName ?? "", "vi", { sensitivity: "base" });
+      if (result !== 0) return sortDir === "asc" ? result : -result;
+    }
+    const result = a.requestedAt.localeCompare(b.requestedAt);
+    return sortDir === "asc" ? result : -result;
+  });
 }

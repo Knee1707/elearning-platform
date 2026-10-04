@@ -203,15 +203,45 @@ export async function getQuiz(quizId: string): Promise<QuizData> {
 export async function submitAttempt(
   examId: string,
   answers: Record<string, string>,
-): Promise<number> {
+  attemptId?: string,
+): Promise<number | null> {
   const supabase = createClient();
+  const payload = Object.fromEntries(
+    Object.entries(answers).map(([questionId, answer]) =>
+      answer.startsWith("essay:")
+        ? [questionId, { answer_text: answer.slice("essay:".length) }]
+        : [questionId, { option_id: answer }],
+    ),
+  );
   const { data, error } = await supabase.rpc("fn_submit_attempt", {
     p_exam: examId,
-    p_answers: answers,
+    p_answers: payload,
+    p_attempt: attemptId ?? null,
   });
 
   if (error) throw new Error(`fn_submit_attempt: ${error.message}`);
   return data as number;
+}
+
+export interface FinalExamAttempt {
+  attemptId: string;
+  startedAt: string;
+  expiresAt: string;
+  timeLimitMinutes: number;
+}
+
+export async function startFinalExam(examId: string): Promise<FinalExamAttempt> {
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("fn_start_final_exam", { p_exam: examId });
+  if (error) throw new Error(`fn_start_final_exam: ${error.message}`);
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) throw new Error("Không thể bắt đầu kỳ thi");
+  return {
+    attemptId: String(row.attempt_id),
+    startedAt: String(row.started_at),
+    expiresAt: String(row.expires_at),
+    timeLimitMinutes: Number(row.time_limit_minutes),
+  };
 }
 
 /**
@@ -286,6 +316,7 @@ export async function getMyCertificates(): Promise<Certificate[]> {
  *
  * Nghiệp vụ:
  * - Tra cứu bảng `quizzes` theo `lesson_id`.
+ * - Một bài học có thể có nhiều quiz; hàm này lấy quiz đầu tiên để giữ luồng học hiện tại tương thích.
  * - Nếu tìm thấy, lấy đề quiz an toàn qua `getQuiz(quiz.id)`.
  * - Hỗ trợ fallback offline nếu không tìm thấy hoặc đang chạy mock.
  */
@@ -296,6 +327,9 @@ export async function getQuizByLessonId(lessonId: string): Promise<QuizData | nu
       .from("quizzes")
       .select("id")
       .eq("lesson_id", lessonId)
+      .eq("is_final", false)
+      .order("title")
+      .limit(1)
       .maybeSingle();
 
     if (error || !data) {
@@ -335,7 +369,9 @@ export async function getQuizzesForLessons(
     const { data, error } = await supabase
       .from("quizzes")
       .select("id, lesson_id, title, pass_score")
-      .in("lesson_id", lessonIds);
+      .in("lesson_id", lessonIds)
+      .eq("is_final", false)
+      .order("title");
 
     const map: Record<string, { id: string; title: string; passScore: number }> = {};
     if (!error && data) {

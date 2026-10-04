@@ -124,7 +124,7 @@ export async function createUserAction(formData: FormData) {
       const email = text(formData, "email").toLowerCase();
       const password = String(formData.get("password") ?? "");
       const fullName = text(formData, "fullName");
-      const role = (text(formData, "role") || "student") as UserRole;
+      const role = (text(formData, "role") || "instructor") as UserRole;
 
       if (!EMAIL_RE.test(email)) throw new Error("Email không hợp lệ.");
       if (password.length < 6) throw new Error("Mật khẩu tối thiểu 6 ký tự.");
@@ -198,27 +198,6 @@ export async function updateUserNameAction(formData: FormData) {
       const supabase = createClient();
       const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", userId);
       if (error) throw new Error(error.message);
-    },
-    returnTo: formData.get("returnTo"),
-  });
-}
-
-// ------------------------------------------------------------------ //
-// Duyệt yêu cầu cấp chứng chỉ (rpc fn_review_certificate — chỉ admin)
-// ------------------------------------------------------------------ //
-export async function reviewCertificateAction(formData: FormData) {
-  const approve = text(formData, "approve") === "true";
-  await runAction({
-    path: "/admin/certificates",
-    roles: ADMIN_ROLES,
-    success: approve ? "Đã duyệt cấp chứng chỉ." : "Đã từ chối yêu cầu.",
-    task: async () => {
-      const supabase = createClient();
-      const { error } = await supabase.rpc("fn_review_certificate", {
-        p_certificate: text(formData, "certificateId"),
-        p_approve: approve,
-      });
-      if (error) throw error;
     },
     returnTo: formData.get("returnTo"),
   });

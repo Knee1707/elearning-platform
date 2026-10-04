@@ -196,8 +196,7 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 
 **Bảng [0018]:** `student_feedback` (id, course_id, student_id, instructor_id, content, created_at) — GV nhận xét học viên; RLS `student_feedback_select` (học viên nhận / GV gửi / admin).
 
-| `fn_request_certificate` **[0019]** | `p_course uuid`. Học viên xin cấp chứng chỉ khi đã ĐẠT bài thi → `certificates.status='pending'` |
-| `fn_review_certificate` **[0019]** | `p_certificate uuid`, `p_approve boolean`. Admin duyệt (`pending→approved`, cấp) hoặc từ chối (xóa), báo học viên |
+| `fn_request_certificate` **[0019, sửa 0027]** | Không còn mở luồng chờ duyệt; gọi trực tiếp sẽ báo chứng chỉ được cấp tự động sau khi đạt kỳ thi cuối khóa |
 | `fn_create_final_exam` **[0021]** | `p_course uuid`, `p_title text`, `p_time_limit integer`, `p_pass_score integer` → `exam_id`, `quiz_id`; GV tạo kỳ thi cuối khóa |
 | `fn_request_student_discipline` **[0022]** | `p_enrollment uuid`, `p_action text` (`warning`/`suspend`/`expel`), `p_reason text`; GV đề xuất xử lý học viên, chờ admin duyệt |
 | `fn_review_student_discipline` **[0022]** | `p_request uuid`, `p_approve boolean`, `p_review_reason text`; admin duyệt/từ chối và ghi log |
@@ -208,10 +207,14 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | `fn_is_lesson_unlocked` **[0020]** | `p_lesson uuid`, `p_user uuid` (mặc định auth.uid()). Kiểm tra bài học đã mở khóa chưa (bài 1 luôn mở, bài N yêu cầu bài N-1 xem xong + pass quiz) |
 | `fn_get_lesson_video` **[sửa 0020]** | thêm điều kiện `fn_is_lesson_unlocked(p_lesson)` cho học viên |
 
-**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`/`rejected`). **Bỏ trigger** `trg_issue_certificate` (không tự cấp nữa — chuyển sang xin/duyệt).
+**Cột [0019]:** `certificates.status` (text, mặc định `'approved'`: `pending`/`approved`/`rejected`). **[0027]** Chứng chỉ đạt kỳ thi cuối khóa được cấp tự động với `status='approved'`; không còn bước giảng viên/admin duyệt.
 **Cột [0021]:** `quizzes.course_id`, `quizzes.is_final`, `exams.quiz_id`, `exams.is_final` — kỳ thi cuối khóa và bộ câu hỏi độc lập với bài học.
 
 **Cột thêm [0020]:** `lesson_progress.quiz_score` (integer), `lesson_progress.is_quiz_passed` (boolean, mặc định `false`).
+
+**Cột [0028]:** `exam_attempts.status`, `is_time_expired`, `graded_at`, `graded_by`, `grader_feedback`; `answers.answer_text` cho bài tự luận.
+| `fn_start_final_exam` **[0028]** | `p_exam uuid` → lần thi, thời điểm bắt đầu, thời điểm hết hạn; kiểm tra ghi danh và hoàn thành toàn bộ bài học |
+| `fn_grade_final_exam_attempt` **[0028]** | `p_attempt uuid`, `p_score integer`, `p_feedback text` → giảng viên/admin chấm bài tự luận và cấp chứng chỉ nếu đạt |
 
 **Cột thêm [0015]:** `lessons.video_review` (text, mặc định `'none'`: `none`/`pending`/`approved`/`rejected`), `lessons.video_review_reason` (text).
 **Cột thêm [0027]:** `lessons.content_review` (text, mặc định `'approved'`), `lessons.content_review_reason` (text), `lessons.is_updated` (boolean, mặc định `false`), `courses.update_status` (text, mặc định `'none'`), `courses.update_feedback` (text).
@@ -244,6 +247,9 @@ Policy:            <bảng>_<hành_động>_<vai>  courses_select_visible
 | view | `view_course_progress` | `user_id`, `course_id`, `percent` |
 | fn | `fn_get_quiz` | `p_quiz uuid` → câu hỏi + đáp án **KHÔNG kèm `is_correct`** |
 | fn | `fn_submit_attempt` | `p_exam uuid`, `p_answers jsonb` → `int` (điểm) |
+| fn | `fn_start_final_exam` **[0028]** | `p_exam uuid` → lần thi và thời điểm hết hạn; kiểm tra hoàn thành khóa học |
+| fn | `fn_grade_final_exam_attempt` **[0028]** | `p_attempt uuid`, `p_score integer`, `p_feedback text` → chấm bài tự luận |
+| fn | `fn_issue_certificate_for_exam` **[0028]** | hàm nội bộ cấp chứng chỉ và ghi log sau khi đạt kỳ thi |
 | fn | `fn_issue_certificate` | trigger function cho `trg_issue_certificate` |
 | trg | `trg_issue_certificate` | cấp khi đạt |
 | fn | `fn_verify_certificate` | `p_code text` |

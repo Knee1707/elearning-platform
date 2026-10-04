@@ -161,4 +161,4 @@ Tự kiểm tay: `pnpm check:names`. Cần tên mới → thêm vào `DATA_DICTI
 > Hàm `M1/M2` nằm ở `lib/queries` (họ điền). Hàm `L` (`commerce.ts`, `admin.ts`, `auth.ts`) **đã viết sẵn** — M3/M4 gọi được ngay.
 
 ### 🟦 L — Leader (đã xong khung)
-Tạo repo + Issue mỗi màn (theo bảng trên) + review PR + deploy. Không sửa `0001/0002/0003/0006` (đã đóng băng).
+Tạo repo + Issue mỗi màn (theo bảng trên) + review PR + deploy. Không sửa `0001/0002/0003/0006`.

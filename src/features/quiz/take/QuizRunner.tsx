@@ -20,6 +20,7 @@ import {
   getQuiz,
   submitLessonQuiz,
   submitAttempt,
+  startFinalExam,
   type QuizData,
   type Certificate,
 } from "@/lib/queries/quiz";
@@ -86,6 +87,12 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
   const [earnedCert, setEarnedCert] = useState<Certificate | null>(null);
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const [isEssayPending, setIsEssayPending] = useState(false);
+  const [wasAutoSubmitted, setWasAutoSubmitted] = useState(false);
 
   // Tự động tìm slug khóa học tương ứng nếu không được truyền trực tiếp
   useEffect(() => {
@@ -138,12 +145,23 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
 
     async function loadQuiz() {
       try {
+        if (examId) {
+          const attempt = await startFinalExam(examId);
+          if (isMounted) {
+            setAttemptId(attempt.attemptId);
+            const expiry = new Date(attempt.expiresAt).getTime();
+            setExpiresAt(expiry);
+            setRemainingSeconds(Math.max(0, Math.ceil((expiry - Date.now()) / 1000)));
+          }
+        }
         const data = await getQuiz(quizId);
         if (isMounted) {
           setQuiz(data);
         }
-      } catch {
-        if (isMounted) {
+      } catch (error) {
+        if (isMounted && examId) {
+          setLoadError(error instanceof Error ? error.message.replace(/^fn_[^:]+:\s*/, "") : "Không thể mở kỳ thi.");
+        } else if (isMounted) {
           setQuiz(FALLBACK_QUIZ);
         }
       } finally {
@@ -158,7 +176,22 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
     return () => {
       isMounted = false;
     };
-  }, [quizId]);
+  }, [quizId, examId]);
+
+  useEffect(() => {
+    if (!examId || !expiresAt || result || isSubmitting) return;
+    const timer = window.setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+      if (remaining === 0) {
+        window.clearInterval(timer);
+        void handleSubmit(true);
+      }
+    }, 1000);
+    return () => window.clearInterval(timer);
+  // handleSubmit is intentionally excluded: the interval must use the latest timer state without restarting every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [examId, expiresAt, result, isSubmitting]);
 
   // Chọn phương án
   function handleSelectOption(questionId: string, optionId: string) {
@@ -170,33 +203,33 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
   }
 
   // Nộp bài làm
-  async function handleSubmit() {
+  async function handleSubmit(autoSubmit = false) {
     if (!quiz) return;
+    if (autoSubmit) setWasAutoSubmitted(true);
     setIsSubmitting(true);
 
     try {
-      const res = await submitLessonQuiz(quiz.quizId, answers);
+      const res = examId ? { score: 0, passed: false } : await submitLessonQuiz(quiz.quizId, answers);
 
-      let targetExamId = examId;
-      if (!targetExamId) {
-        // Tự động tra cứu ID kỳ thi từ Database để không bao giờ bị lỗi khóa ngoại FK
-        try {
-          const supabase = createClient();
-          const { data: exRow } = await supabase
-            .from("exams")
-            .select("id")
-            .limit(1)
-            .maybeSingle();
-          if (exRow?.id) targetExamId = exRow.id;
-        } catch {}
+      const finalAnswers = {
+        ...answers,
+        ...Object.fromEntries(Object.entries(essayTexts).map(([id, text]) => [id, `essay:${text}`])),
+      };
+      const targetExamId = examId;
+      const finalScore = targetExamId
+        ? await submitAttempt(targetExamId, finalAnswers, attemptId ?? undefined).catch(() => res.score)
+        : res.score;
+      const hasEssay = Boolean(examId) && quiz.questions.some((question) => question.questionText.startsWith("[Tự luận]"));
+      if (hasEssay) {
+        setIsEssayPending(true);
+        setResult({ score: finalScore ?? 0, passed: false });
+        return;
       }
 
-      await submitAttempt(targetExamId || "60000000-0000-0000-0000-000000000001", answers).catch(() => res.score);
-
-      let calculatedPassed = res.passed;
+      const calculatedPassed = examId ? (finalScore ?? 0) >= quiz.passScore : res.passed;
       setResult({
-        score: res.score,
-        passed: res.passed,
+        score: finalScore ?? res.score,
+        passed: calculatedPassed,
       });
 
       if (calculatedPassed) {
@@ -299,6 +332,17 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-2xl rounded-3xl border border-amber-200 bg-amber-50 p-8 text-center">
+        <AlertCircle className="mx-auto h-10 w-10 text-amber-600" />
+        <h2 className="mt-3 text-lg font-bold text-slate-900">Chưa thể vào bài thi</h2>
+        <p className="mt-2 text-sm text-slate-600">{loadError}</p>
+        <Link href={backCourseUrl} className="mt-5 inline-flex rounded-full bg-blue-600 px-5 py-2 text-sm font-semibold text-white">Quay lại khóa học</Link>
+      </div>
+    );
+  }
+
   if (!quiz) {
     return (
       <div className="rounded-2xl border border-dashed border-border p-12 text-center">
@@ -329,11 +373,15 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
           </div>
 
           <h2 className="mt-5 text-2xl font-black text-slate-900">
-            {result.passed ? "Chúc mừng bạn đã hoàn thành bài thi!" : "Chưa đạt điểm yêu cầu"}
+            {isEssayPending ? "Bài thi đã được nộp" : result.passed ? "Chúc mừng bạn đã hoàn thành bài thi!" : "Chưa đạt điểm yêu cầu"}
           </h2>
 
           <p className="mt-2 text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed font-medium">
-            {result.passed
+            {isEssayPending
+              ? "Bài thi có câu tự luận và đang chờ giảng viên chấm. Hệ thống sẽ thông báo kết quả sau khi chấm xong."
+              : wasAutoSubmitted
+                ? "Đã hết thời gian, hệ thống đã tự động nộp bài của bạn."
+                : result.passed
               ? "Bạn đã xuất sắc vượt qua bài kiểm tra trắc nghiệm với điểm số ấn tượng."
               : `Bạn cần tối thiểu ${quiz.passScore} điểm để vượt qua bài kiểm tra này.`}
           </p>
@@ -444,6 +492,11 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
           <span className="font-bold text-blue-600">
             Đã làm {answeredCount}/{quiz.questions.length} câu
           </span>
+          {remainingSeconds !== null && (
+            <span className={`font-bold ${remainingSeconds <= 60 ? "text-rose-600" : "text-amber-600"}`}>
+              Còn {Math.floor(remainingSeconds / 60)}:{String(remainingSeconds % 60).padStart(2, "0")}
+            </span>
+          )}
         </div>
       </div>
 
@@ -568,7 +621,7 @@ export function QuizRunner({ quizId, examId, courseSlug }: QuizRunnerProps) {
           ) : (
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => void handleSubmit()}
               disabled={isSubmitting}
               className="inline-flex items-center gap-1.5 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-bold text-white shadow-sm shadow-emerald-600/25 hover:bg-emerald-700 transition-all active:scale-95 disabled:opacity-50"
             >
