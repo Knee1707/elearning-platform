@@ -150,9 +150,6 @@ export default function MyCertificatesPage() {
         </div>
 
 
-        {/* Danh sách chứng chỉ */}
-        <div className="mt-2">
-
         {/* Danh sách chứng chỉ đã nhận */}
         <div className="mt-8">
 
