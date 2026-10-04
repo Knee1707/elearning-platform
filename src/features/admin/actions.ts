@@ -124,7 +124,7 @@ export async function createUserAction(formData: FormData) {
       const email = text(formData, "email").toLowerCase();
       const password = String(formData.get("password") ?? "");
       const fullName = text(formData, "fullName");
-      const role = (text(formData, "role") || "student") as UserRole;
+      const role = (text(formData, "role") || "instructor") as UserRole;
 
       if (!EMAIL_RE.test(email)) throw new Error("Email không hợp lệ.");
       if (password.length < 6) throw new Error("Mật khẩu tối thiểu 6 ký tự.");
