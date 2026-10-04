@@ -40,6 +40,8 @@ declare
   v_instructor_id uuid := '00000000-0000-0000-0000-000000000001';
   v_student1_id   uuid := '00000000-0000-0000-0000-000000000002';
   v_student2_id   uuid := '00000000-0000-0000-0000-000000000003';
+  v_admin_id      uuid := '00000000-0000-0000-0000-000000000004';
+  v_superadmin_id uuid := '00000000-0000-0000-0000-000000000005';
 
   -- ── Nội dung mẫu của M2 (UUID cứng để gắn dữ liệu học tập) ────────
   v_cat_id        uuid;
@@ -120,6 +122,28 @@ begin
       '{"provider":"email","providers":["email"]}'::jsonb,
       '{"full_name":"Lê Văn Học Viên B"}'::jsonb,
       false, '', '', '', ''
+    ),
+    (
+      v_admin_id,
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'admin@demo.local',
+      crypt('Password123!', gen_salt('bf')),
+      now(), now(), now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"full_name":"Trần Quản Trị Viên (Admin)"}'::jsonb,
+      false, '', '', '', ''
+    ),
+    (
+      v_superadmin_id,
+      '00000000-0000-0000-0000-000000000000',
+      'authenticated', 'authenticated',
+      'superadmin@demo.local',
+      crypt('Password123!', gen_salt('bf')),
+      now(), now(), now(),
+      '{"provider":"email","providers":["email"]}'::jsonb,
+      '{"full_name":"Nguyễn Tổng Quản Trị (Super Admin)"}'::jsonb,
+      true, '', '', '', ''
     )
   on conflict (id) do nothing;
 
@@ -130,7 +154,9 @@ begin
   insert into profiles (id, full_name, role) values
     (v_instructor_id, 'Nguyễn Văn Giảng Viên', 'instructor'),
     (v_student1_id,   'Trần Thị Học Viên A',   'student'),
-    (v_student2_id,   'Lê Văn Học Viên B',      'student')
+    (v_student2_id,   'Lê Văn Học Viên B',      'student'),
+    (v_admin_id,      'Trần Quản Trị Viên (Admin)', 'admin'),
+    (v_superadmin_id, 'Nguyễn Tổng Quản Trị (Super Admin)', 'super_admin')
   on conflict (id) do update set
     full_name = excluded.full_name,
     role      = excluded.role;
