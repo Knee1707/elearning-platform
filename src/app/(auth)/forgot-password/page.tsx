@@ -6,7 +6,7 @@ export default function ForgotPasswordPage() {
     <main className="mx-auto max-w-md p-8">
       <h1 className="text-2xl font-bold">Quên mật khẩu</h1>
       <p className="mt-1 mb-6 text-sm text-muted-foreground">
-        TOD0(M4): gửi email đặt lại mật khẩu.
+        Nhập email đã đăng ký để nhận liên kết đặt lại mật khẩu.
       </p>
       <ForgotPasswordForm />
     </main>
